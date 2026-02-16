@@ -1,0 +1,16 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/debian
+{
+   "name": "Debian",
+   "image": "mcr.microsoft.com/devcontainers/base:trixie",
+   "postCreateCommand": "sudo apt update && sudo apt -y install plantuml php php-cli php-zip php-sqlite3 php-xml php-pgsql php-bcmath php-intl php-mbstring composer npm sqlite3 && composer install && npm install",
+   "customizations": {
+       "vscode": {
+           "extensions": [
+               "jebbs.plantuml",
+               "xdebug.php-pack",
+               "bmewburn.vscode-intelephense-client"
+           ]
+       }
+   }
+}
