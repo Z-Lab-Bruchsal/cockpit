@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
-use App\Orderstatus;
+use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -36,7 +36,7 @@ class OrdersTable
                 TextColumn::make('count')
                     ->numeric()
                     ->sortable(),
-                SelectColumn::make('orderstatus')->options(Orderstatus::class)
+                TextColumn::make('orderstatus.name')
                     ->searchable(),
                 TextColumn::make('user.name')
                     ->numeric()

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
-use App\Orderstatus;
+use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -25,7 +25,7 @@ class OrderForm
                     ->required()
                     ->numeric()
                     ->default(1),
-                Select::make("orderstatus")->options(Orderstatus::class)->visibleOn(["edit"]),
+                Select::make("orderstatus_id")->relationship("orderstatus", "name")->visibleOn(["edit"]),
                 DateTimePicker::make('orderdatetime')->visibleOn(["edit", "view"]),
                 Select::make('user_id')
                     ->relationship("user", "name")

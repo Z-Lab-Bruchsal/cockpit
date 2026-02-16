@@ -7,6 +7,7 @@ use App\Mail\OrderRegistered;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use App\Models\Orderstatus;
 
 class OrderObserver
 {
@@ -24,9 +25,9 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
-        $orderstatusArrived = Orderstatus::find("name", "angekommen")->first();
-        if($order->orderstatus == $orderstatusArrived->id) {
-            $user = $order->usery;
+        $orderstatusArrived = Orderstatus::where("name", "angekommen")->first();
+        if($order->orderstatus_id == $orderstatusArrived->id) {
+            $user = User::find($order->user_id);
             Mail::to($user)->send(new OrderArrived($order));
         }
     }
