@@ -17,8 +17,10 @@ class OrderObserver
      */
     public function created(Order $order): void
     {
-        $user = User::find(1);
-        Mail::to($user)->send(new OrderRegistered($order));
+        $users = User::where("ordermanager", 1)->get();
+        foreach ($users as $user) {
+            Mail::to($user)->send(new OrderRegistered($order));
+        }
     }
 
     /**
