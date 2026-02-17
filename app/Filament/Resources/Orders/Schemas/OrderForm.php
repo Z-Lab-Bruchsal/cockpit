@@ -26,7 +26,7 @@ class OrderForm
                     ->numeric()
                     ->default(1),
                 Select::make("orderstatus_id")->relationship("orderstatus", "name")->visibleOn(["edit"]),
-                DateTimePicker::make('orderdatetime')->visibleOn(["edit", "view"]),
+                DateTimePicker::make('orderdatetime')->visibleOn(["edit", "view"])->disabled(),
                 Select::make('user_id')
                     ->relationship("user", "name")
                     ->required()
