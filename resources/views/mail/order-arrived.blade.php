@@ -2,10 +2,10 @@
 # Bestellung angekommen
 
 Eine deiner Bestellungen ist angekommen.
-Bitte nicht vergessen, die Bestellung "abzuhaken"
+Bitte nicht vergessen, die Bestellung "abzuhaken", indem du auf "angenommen" drückst
 
-<x-mail::button :url="''">
-Button Text
+<x-mail::button :url="'https://z-lab-cockpit.digital-infinity.de/orders'">
+Zum Cockpit
 </x-mail::button>
 
 Danke,<br>

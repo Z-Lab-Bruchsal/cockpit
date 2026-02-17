@@ -1,12 +1,12 @@
 <x-mail::message>
-# Bestellung eingegange
+# Bestellung eingegangen
 
 Hi,
 
 es gibt eine neue Bestellung.
 
-<x-mail::button :url="''">
-Button Text
+<x-mail::button :url="'https://z-lab-cockpit.digital-infinity.de/orders'">
+Zum Cockpit
 </x-mail::button>
 
 Danke,<br>
