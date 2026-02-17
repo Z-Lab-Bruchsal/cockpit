@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Orderstatus;
+use Carbon\Carbon;
 
 class OrderObserver
 {
@@ -25,10 +26,18 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
-        $orderstatusArrived = Orderstatus::where("name", "angekommen")->first();
-        if($order->orderstatus_id == $orderstatusArrived->id) {
-            $user = User::find($order->user_id);
-            Mail::to($user)->send(new OrderArrived($order));
+        $hasChanged = array_diff($order->getOriginal(), $order->getAttributes());
+        if($hasChanged && isset($hasChanged['orderstatus_id'])) {
+            $orderstatusOrdered = Orderstatus::where("name", "bestellt")->first();
+            if($order->orderstatus_id == $orderstatusOrdered->id) {
+                $order->orderdatetime = Carbon::now()->toDateTimeString();
+                $order->saveQuietly();
+            }
+            $orderstatusArrived = Orderstatus::where("name", "angekommen")->first();
+            if($order->orderstatus_id == $orderstatusArrived->id) {
+                $user = User::find($order->user_id);
+                Mail::to($user)->send(new OrderArrived($order));
+            }
         }
     }
 
