@@ -89,6 +89,7 @@ class OrdersTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     Action::make('bestellt_bulk')
+                        ->label("Ausgewählte bestellt")
                         ->accessSelectedRecords()
                         ->action(function (Collection $selectedRecords) {
                             $orderstatusBestellt = Orderstatus::where("name", "bestellt")->first();
@@ -98,6 +99,17 @@ class OrdersTable
                                 ]),
                             );
                         })->requiresConfirmation()->icon(Heroicon::ShoppingCart),
+                    Action::make('angekommen_bulk')
+                        ->label("Ausgewählte angekommen")
+                        ->accessSelectedRecords()
+                        ->action(function (Collection $selectedRecords) {
+                            $orderstatusAngekommen = Orderstatus::where("name", "angekommen")->first();
+                            $selectedRecords->each(
+                                fn (Model $selectedRecord) => $selectedRecord->update([
+                                    'orderstatus_id' => $orderstatusAngekommen->id
+                                ]),
+                            );
+                        })->requiresConfirmation()->icon(Heroicon::BuildingOffice),
                 ]),
             ]);
     }
