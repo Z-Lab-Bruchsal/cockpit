@@ -5,12 +5,16 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class OrdersTable
@@ -43,8 +47,21 @@ class OrdersTable
             ])->striped()
             ->selectable()
             ->filters([
-                //
+                SelectFilter::make('orderstatus_id')->relationship('orderstatus', 'name')->label("Bestellstatus")->multiple(),
+                Filter::make('mine')->label("meine")->query(fn (Builder $query): Builder => $query->where('user_id', filament()->auth()->user()))->default(function() {
+                    if(filament()->auth()->user()->id == 1) return false;
+                    return true;
+                }),
+                Filter::make('alleoffenen')
+                    ->default()
+                    ->label("alle offenen")
+                    ->query(function (Builder $query) {
+                        $orderstatusGenommen = Orderstatus::where("name", "genommen")->first();
+                        $query->where('orderstatus_id', '<', $orderstatusGenommen->id);
+                        return $query;
+                    }),
             ])
+            ->persistFiltersInSession()
             ->recordActions([
                 Action::make('bestellt_single')
                     ->icon(Heroicon::ShoppingCart)->iconButton()->label("Bestellt")->action(function(Model $record) {
@@ -65,7 +82,8 @@ class OrdersTable
                         $record->save();
                     })->visible(function(Model $record) {$orderstatusAngekommen = Orderstatus::where("name", "angekommen")->first();return ($orderstatusAngekommen->id == $record->orderstatus_id);}),
                 Action::make("url_oeffnen")->icon(Heroicon::Link)->iconButton()->label("URL öffnen")->url(function (Model $record) { return $record->url;}, true),
-                EditAction::make()->iconButton()->label("Bearbeiten"),
+                EditAction::make()->iconButton(),
+                DeleteAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
