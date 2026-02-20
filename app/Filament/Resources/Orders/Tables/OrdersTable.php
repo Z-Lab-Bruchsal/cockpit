@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Models\Order;
 use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -11,6 +12,7 @@ use Filament\Actions\EditAction;
 use Illuminate\Database\Eloquent\Collection;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -59,7 +61,6 @@ class OrdersTable
                     ->toggleable(isToggledHiddenByDefault: false),
             ])->striped()
             ->selectable()
-            ->defaultGroup('orderstatus.name')
             ->groups([
                 Group::make('orderstatus.name')->label('Bestellstatus'),
                 Group::make('user.name')->label('Bestellt von'),
@@ -103,7 +104,7 @@ class OrdersTable
                 Action::make("url_oeffnen")->icon(Heroicon::Link)->iconButton()->label("URL öffnen")->url(function (Model $record) { return $record->url;}, true),
                 EditAction::make()->iconButton(),
                 DeleteAction::make()->iconButton(),
-            ])
+            ], position: RecordActionsPosition::BeforeColumns)
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
