@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Filament\Tables\Grouping\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,28 +25,45 @@ class OrdersTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
+                    ->label('Erstellungsdatum')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Änderungsdatum')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
-                    ->searchable(),
-                TextColumn::make('url')
+                    ->label('Name')
                     ->searchable()
-                    ->formatStateUsing(fn (string $state): string => substr($state, 0, 40)) ,
+                    ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('url')
+                    ->label('URL')
+                    ->searchable()
+                    ->formatStateUsing(fn (string $state): string => substr($state, 0, 40))
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('count')
+                    ->label('Anzahl')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('orderstatus.name')
-                    ->searchable(),
+                    ->label('Bestellstatus')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('user.name')
+                    ->label('Bestellt von')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
             ])->striped()
             ->selectable()
+            ->defaultGroup('orderstatus.name')
+            ->groups([
+                Group::make('orderstatus.name')->label('Bestellstatus'),
+                Group::make('user.name')->label('Bestellt von'),
+            ])
             ->filters([
                 SelectFilter::make('orderstatus_id')->relationship('orderstatus', 'name')->label("Bestellstatus")->multiple(),
                 Filter::make('mine')->label("meine")->query(fn (Builder $query): Builder => $query->where('user_id', filament()->auth()->user()))->default(function() {
@@ -62,6 +80,7 @@ class OrdersTable
                     }),
             ])
             ->persistFiltersInSession()
+            ->persistColumnsInSession()
             ->recordActions([
                 Action::make('bestellt_single')
                     ->icon(Heroicon::ShoppingCart)->iconButton()->label("Bestellt")->action(function(Model $record) {
