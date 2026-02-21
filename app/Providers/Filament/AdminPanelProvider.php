@@ -31,6 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->spa()
             ->unsavedChangesAlerts()
+            ->databaseNotifications()
             ->profile()
             ->passwordReset()
             ->colors([
