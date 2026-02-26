@@ -28,15 +28,13 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
-        $hasChanged = array_diff($order->getOriginal(), $order->getAttributes());
+        $hasChanged = $order->getChanges();
         if($hasChanged && isset($hasChanged['orderstatus_id'])) {
-            $orderstatusOrdered = Orderstatus::where("name", "bestellt")->first();
-            if($order->orderstatus_id == $orderstatusOrdered->id) {
-                $order->orderdatetime = Carbon::now()->toDateTimeString();
+            if($order->orderstatus->name == "bestellt") {
+                $order->orderdatetime = $order->updated_at;
                 $order->saveQuietly();
             }
-            $orderstatusArrived = Orderstatus::where("name", "angekommen")->first();
-            if($order->orderstatus_id == $orderstatusArrived->id) {
+            if($order->orderstatus->name == "angekommen") {
                 $user = User::find($order->user_id);
                 Mail::to($user)->send(new OrderArrived($order));
             }

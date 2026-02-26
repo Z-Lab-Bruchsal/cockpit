@@ -3,10 +3,14 @@
 
 Hi,
 
-es gibt eine neue Bestellung.
+es gibt eine neue Bestellung:
+* Name: {{ $order->name }}
+* Anzahl: {{ $order->count }}
+* <a href="{{ $order->url }}">{{ $order->url }}</a>
+* Bestellt von: {{ $order->user->name }}
 
-<x-mail::button :url="'https://z-lab-cockpit.digital-infinity.de/orders'">
-Zum Cockpit
+<x-mail::button :url="$url">
+Zur Bestellung
 </x-mail::button>
 
 Danke,<br>

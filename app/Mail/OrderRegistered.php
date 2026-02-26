@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -41,6 +42,10 @@ class OrderRegistered extends Mailable
     {
         return new Content(
             markdown: 'mail.order-registered',
+            with: [
+                'url' => OrderResource::getUrl('edit', ['record' => $this->order]),
+                'order' => $this->order,
+            ],
         );
     }
 
