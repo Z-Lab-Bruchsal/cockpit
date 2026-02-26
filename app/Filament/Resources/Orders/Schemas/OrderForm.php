@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -46,19 +47,22 @@ class OrderForm
                                     $orderstatusBestellt = Orderstatus::where("name", "bestellt")->first();
                                     $record->orderstatus_id = $orderstatusBestellt->id;
                                     $record->save();
-                                })->visible(function(Model $record) {$orderstatusErfasst = Orderstatus::where("name", "erfasst")->first();return ($orderstatusErfasst->id == $record->orderstatus_id);}),
+                                    redirect(OrderResource::getUrl('edit', ['record' => $record->id,]));
+                            })->visible(function(Model $record) {return ($record->orderstatus->name == 'erfasst');}),
                             Action::make('angekommen_single')
                                 ->icon(Heroicon::BuildingOffice)->label("Angekommen")->action(function(Model $record) {
                                     $orderstatusAngekommen = Orderstatus::where("name", "angekommen")->first();
                                     $record->orderstatus_id = $orderstatusAngekommen->id;
                                     $record->save();
-                                })->visible(function(Model $record) {$orderstatusBestellt = Orderstatus::where("name", "bestellt")->first();return ($orderstatusBestellt->id == $record->orderstatus_id);}),
+                                    redirect(OrderResource::getUrl('edit', ['record' => $record->id,]));
+                            })->visible(function(Model $record) {return ($record->orderstatus->name == 'bestellt');}),
                             Action::make('genommen_single')
                                 ->icon(Heroicon::Check)->label("Genommen")->action(function(Model $record) {
                                     $orderstatusGenommen = Orderstatus::where("name", "genommen")->first();
                                     $record->orderstatus_id = $orderstatusGenommen->id;
                                     $record->save();
-                                })->visible(function(Model $record) {$orderstatusAngekommen = Orderstatus::where("name", "angekommen")->first();return ($orderstatusAngekommen->id == $record->orderstatus_id);}),
+                                    redirect(OrderResource::getUrl('edit', ['record' => $record->id,]));
+                            })->visible(function(Model $record) {return ($record->orderstatus->name == 'angekommen');}),
                             Action::make("url_oeffnen")->icon(Heroicon::Link)->label("URL öffnen")->url(function (Model $record) { return $record->url;}, true),
                         ]),
                 DateTimePicker::make('orderdatetime')
