@@ -5,7 +5,7 @@ Eine deiner Bestellungen ist angekommen.
 
 * Name: {{ $order->name }}
 * Anzahl: {{ $order->count }}
-* <a href="{{ $order->url }}">{{ $order->url }}</a>
+* <a href="{{ $order->url }}">URL zum Artikel</a>
 
 Bitte nicht vergessen, die Bestellung "abzuhaken", indem du auf "angenommen" drückst
 

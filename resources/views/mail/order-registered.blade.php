@@ -6,7 +6,7 @@ Hi,
 es gibt eine neue Bestellung:
 * Name: {{ $order->name }}
 * Anzahl: {{ $order->count }}
-* <a href="{{ $order->url }}">{{ $order->url }}</a>
+* <a href="{{ $order->url }}">URL zum Artikel</a>
 * Bestellt von: {{ $order->user->name }}
 
 <x-mail::button :url="$url">
