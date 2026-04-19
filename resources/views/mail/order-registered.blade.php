@@ -9,8 +9,12 @@ es gibt eine neue Bestellung:
 * <a href="{{ $order->url }}">URL zum Artikel</a>
 * Bestellt von: {{ $order->user->name }}
 
-<x-mail::button :url="$url">
-Zur Bestellung
+<x-mail::button :url="$url_ordered" color="success">
+Habe bestellt
+</x-mail::button>
+
+<x-mail::button :url="$url_order" color="primary">
+Bestellung im Cockpit ansehen
 </x-mail::button>
 
 Danke,<br>

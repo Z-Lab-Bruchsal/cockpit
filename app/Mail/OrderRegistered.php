@@ -5,11 +5,11 @@ namespace App\Mail;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class OrderRegistered extends Mailable
 {
@@ -43,7 +43,8 @@ class OrderRegistered extends Mailable
         return new Content(
             markdown: 'mail.order-registered',
             with: [
-                'url' => OrderResource::getUrl('edit', ['record' => $this->order]),
+                'url_order' => OrderResource::getUrl('edit', ['record' => $this->order]),
+                'url_ordered' => URL::to('/updateOrderstatusOrdered/'.$this->order->public_uuid),
                 'order' => $this->order,
             ],
         );

@@ -7,8 +7,7 @@ use App\Mail\OrderRegistered;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use App\Models\Orderstatus;
-use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class OrderObserver
 {
@@ -17,6 +16,8 @@ class OrderObserver
      */
     public function created(Order $order): void
     {
+        $order->public_uuid = (string) Str::uuid();
+        $order->save();
         $users = User::where("ordermanager", 1)->get();
         foreach ($users as $user) {
             Mail::to($user)->send(new OrderRegistered($order));

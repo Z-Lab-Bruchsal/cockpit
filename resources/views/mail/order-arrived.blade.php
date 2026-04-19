@@ -9,8 +9,12 @@ Eine deiner Bestellungen ist angekommen.
 
 Bitte nicht vergessen, die Bestellung "abzuhaken", indem du auf "angenommen" drückst
 
-<x-mail::button :url="$url">
-Zur Bestellung
+<x-mail::button :url="$url_taken" color="success">
+Hab's genommen
+</x-mail::button>
+
+<x-mail::button :url="$url_order" color="primary">
+Bestellung im Cockpit ansehen
 </x-mail::button>
 
 Danke,<br>
