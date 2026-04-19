@@ -60,7 +60,6 @@ class OrdersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
             ])->striped()
-            ->selectable()
             ->groups([
                 Group::make('orderstatus.name')->label('Bestellstatus'),
                 Group::make('user.name')->label('Bestellt von'),
@@ -80,8 +79,6 @@ class OrdersTable
                         return $query;
                     }),
             ])
-            ->persistFiltersInSession()
-            ->persistColumnsInSession()
             ->recordActions([
                 Action::make('bestellt_single')
                     ->icon(Heroicon::ShoppingCart)->iconButton()->label("Bestellt")->action(function(Model $record) {
