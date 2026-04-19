@@ -28,7 +28,8 @@ class AppServiceProvider extends ServiceProvider
                 ->persistFiltersInSession()
                 ->persistSearchInSession()
                 ->persistSortInSession()
-                ->selectable();
+                ->selectable()
+                ->defaultPaginationPageOption(50);
         });
     }
 }
