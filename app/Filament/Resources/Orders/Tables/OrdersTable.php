@@ -66,16 +66,18 @@ class OrdersTable
             ])
             ->filters([
                 SelectFilter::make('orderstatus_id')->relationship('orderstatus', 'name')->label("Bestellstatus")->multiple(),
-                Filter::make('mine')->label("meine")->query(fn (Builder $query): Builder => $query->where('user_id', filament()->auth()->user()))->default(function() {
-                    if(filament()->auth()->user()->id == 1) return false;
-                    return true;
-                }),
+                Filter::make('mine')->label("meine")
+                    ->default()
+                    ->query(function (Builder $query) {
+                        $query->where('user_id', filament()->auth()->user()->id);
+                        return $query;
+                    }),
                 Filter::make('alleoffenen')
                     ->default()
                     ->label("alle offenen")
                     ->query(function (Builder $query) {
                         $orderstatusGenommen = Orderstatus::where("name", "genommen")->first();
-                        $query->where('orderstatus_id', '<', $orderstatusGenommen->id);
+                        $query->where('orderstatus_id', '!=', $orderstatusGenommen->id);
                         return $query;
                     }),
             ])
