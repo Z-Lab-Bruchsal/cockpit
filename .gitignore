@@ -6,6 +6,8 @@
 .phpactor.json
 .phpunit.result.cache
 /.fleet
+/.codex
+/.cursor/
 /.idea
 /.nova
 /.phpunit.cache
@@ -17,12 +19,14 @@
 public/css/**/*.css
 /public/fonts/**/*.woff2
 /public/fonts/**/*.css
+/public/fonts-manifest.dev.json
 /public/hot
 public/js/**/*.js
 /public/storage
 /storage/*.key
 /storage/pail
 /vendor
+_ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
