@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Kids;
 use App\Filament\Resources\Kids\Pages\CreateKid;
 use App\Filament\Resources\Kids\Pages\EditKid;
 use App\Filament\Resources\Kids\Pages\ListKids;
-use App\Filament\Resources\Kids\Pages\ViewKid;
 use App\Filament\Resources\Kids\RelationManagers\CoursesRelationManager;
 use App\Filament\Resources\Kids\Schemas\KidForm;
 use App\Filament\Resources\Kids\Schemas\KidInfolist;
@@ -16,12 +15,14 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class KidResource extends Resource
 {
     protected static ?string $model = Kid::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
+    protected static string | UnitEnum | null $navigationGroup = 'Verwaltung';
 
     protected static ?string $recordTitleAttribute = 'name';
 
