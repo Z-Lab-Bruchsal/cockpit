@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
 use Illuminate\Support\ServiceProvider;
 
@@ -30,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
                 ->persistSortInSession()
                 ->selectable()
                 ->defaultPaginationPageOption(50);
+        });
+        Column::configureUsing(function (Column $column): void {
+            $column->toggleable();
         });
     }
 }
