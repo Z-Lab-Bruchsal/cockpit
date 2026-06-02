@@ -22,15 +22,20 @@ class CourseResource extends Resource
     protected static ?string $model = Course::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBox;
-    protected static string | UnitEnum | null $navigationGroup = 'Verwaltung';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Verwaltung';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $pluralLabel = 'Kurse';
+
     protected static ?string $label = 'Kurs';
-    protected static ?string $navigationLabel = "Kurse";
-    protected static ?string $pluralModelLabel = "Kurse";
-    protected static ?string $modelLabel = "Kurs";
+
+    protected static ?string $navigationLabel = 'Kurse';
+
+    protected static ?string $pluralModelLabel = 'Kurse';
+
+    protected static ?string $modelLabel = 'Kurs';
 
     public static function form(Schema $schema): Schema
     {
@@ -50,7 +55,7 @@ class CourseResource extends Resource
     public static function getRelations(): array
     {
         return [
-            KidsRelationManager::class
+            KidsRelationManager::class,
         ];
     }
 

@@ -24,10 +24,10 @@ class UsersTable
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('roles.title')
-                    ->label("Rollen")
+                    ->label('Rollen')
                     ->toggleable(),
                 TextColumn::make('groups.name')
-                    ->label("Gruppen")
+                    ->label('Gruppen')
                     ->toggleable(),
                 TextColumn::make('created_at')
                     ->dateTime()

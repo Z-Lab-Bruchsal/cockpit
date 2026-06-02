@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Kid extends Model
 {
-    protected $fillable = ["name", "email"];
+    protected $fillable = ['name', 'email'];
 
     public function courses(): BelongsToMany
     {
-        return $this->belongsToMany(Course::class)->withPivot("date");
+        return $this->belongsToMany(Course::class)->withPivot('date');
     }
 }

@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Kids\RelationManagers;
 
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\DetachAction;
@@ -37,7 +36,7 @@ class CoursesRelationManager extends RelationManager
                 TextInput::make('duration')
                     ->required()
                     ->numeric(),
-                DatePicker::make('date')
+                DatePicker::make('date'),
             ]);
     }
 
@@ -86,7 +85,7 @@ class CoursesRelationManager extends RelationManager
                     ->schema(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
                         DatePicker::make('date')->required(),
-                    ])->preloadRecordSelect()
+                    ])->preloadRecordSelect(),
             ])
             ->recordActions([
                 ViewAction::make(),

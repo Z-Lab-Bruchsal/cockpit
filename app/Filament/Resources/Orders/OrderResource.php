@@ -20,10 +20,13 @@ class OrderResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ShoppingBag;
 
-    protected static ?string $navigationLabel = "Bestellungen";
-    protected static ?string $pluralLabel = "Bestellungen";
-    protected static ?string $pluralModelLabel = "Bestellungen";
-    protected static ?string $modelLabel = "Bestellung";
+    protected static ?string $navigationLabel = 'Bestellungen';
+
+    protected static ?string $pluralLabel = 'Bestellungen';
+
+    protected static ?string $pluralModelLabel = 'Bestellungen';
+
+    protected static ?string $modelLabel = 'Bestellung';
 
     public static function form(Schema $schema): Schema
     {

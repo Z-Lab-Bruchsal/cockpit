@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamps();
             $table->foreignIdFor(Kid::class);
             $table->foreignIdFor(Course::class);
-            $table->date("date")->nullable();
+            $table->date('date')->nullable();
         });
     }
 

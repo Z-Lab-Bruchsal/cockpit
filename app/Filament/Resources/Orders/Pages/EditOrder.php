@@ -18,27 +18,35 @@ class EditOrder extends EditRecord
     {
         return [
             Action::make('bestellt_single')
-                ->icon(Heroicon::ShoppingCart)->label("Bestellt")->action(function(Model $record) {
-                    $orderstatusBestellt = Orderstatus::where("name", "bestellt")->first();
+                ->icon(Heroicon::ShoppingCart)->label('Bestellt')->action(function (Model $record) {
+                    $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
                     $record->orderstatus()->associate($orderstatusBestellt);
                     $record->save();
                     $this->refreshFormData(['orderstatus_id']);
-                })->visible(function(Model $record) {return ($record->orderstatus->name == 'erfasst');}),
+                })->visible(function (Model $record) {
+                    return $record->orderstatus->name == 'erfasst';
+                }),
             Action::make('angekommen_single')
-                ->icon(Heroicon::BuildingOffice)->label("Angekommen")->action(function(Model $record) {
-                    $orderstatusAngekommen = Orderstatus::where("name", "angekommen")->first();
+                ->icon(Heroicon::BuildingOffice)->label('Angekommen')->action(function (Model $record) {
+                    $orderstatusAngekommen = Orderstatus::where('name', 'angekommen')->first();
                     $record->orderstatus()->associate($orderstatusAngekommen);
                     $record->save();
                     $this->refreshFormData(['orderstatus_id']);
-                })->visible(function(Model $record) {return ($record->orderstatus->name == 'bestellt');}),
+                })->visible(function (Model $record) {
+                    return $record->orderstatus->name == 'bestellt';
+                }),
             Action::make('genommen_single')
-                ->icon(Heroicon::Check)->label("Genommen")->action(function(Model $record) {
-                    $orderstatusGenommen = Orderstatus::where("name", "genommen")->first();
+                ->icon(Heroicon::Check)->label('Genommen')->action(function (Model $record) {
+                    $orderstatusGenommen = Orderstatus::where('name', 'genommen')->first();
                     $record->orderstatus()->associate($orderstatusGenommen);
                     $record->save();
                     $this->refreshFormData(['orderstatus_id']);
-                })->visible(function(Model $record) {return ($record->orderstatus->name == 'angekommen');}),
-            Action::make("url_oeffnen")->icon(Heroicon::Link)->label("URL öffnen")->url(function (Model $record) { return $record->url;}, true),
+                })->visible(function (Model $record) {
+                    return $record->orderstatus->name == 'angekommen';
+                }),
+            Action::make('url_oeffnen')->icon(Heroicon::Link)->label('URL öffnen')->url(function (Model $record) {
+                return $record->url;
+            }, true),
             DeleteAction::make(),
         ];
     }

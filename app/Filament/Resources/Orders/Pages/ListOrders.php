@@ -16,7 +16,7 @@ class ListOrders extends ListRecords
     {
         return [
             CreateAction::make(),
-            ExportAction::make()->label('exportieren')->exporter(OrderExporter::class)->enableVisibleTableColumnsByDefault()
+            ExportAction::make()->label('exportieren')->exporter(OrderExporter::class)->enableVisibleTableColumnsByDefault(),
         ];
     }
 }

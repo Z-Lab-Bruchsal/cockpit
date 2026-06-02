@@ -20,12 +20,16 @@ class GroupResource extends Resource
     protected static ?string $model = Group::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
-    protected static string | UnitEnum | null $navigationGroup = 'Verwaltung';
 
-    protected static ?string $navigationLabel = "Gruppen";
-    protected static ?string $pluralLabel = "Gruppen";
-    protected static ?string $pluralModelLabel = "Gruppen";
-    protected static ?string $modelLabel = "Gruppe";
+    protected static string|UnitEnum|null $navigationGroup = 'Verwaltung';
+
+    protected static ?string $navigationLabel = 'Gruppen';
+
+    protected static ?string $pluralLabel = 'Gruppen';
+
+    protected static ?string $pluralModelLabel = 'Gruppen';
+
+    protected static ?string $modelLabel = 'Gruppe';
 
     protected static ?string $recordTitleAttribute = 'name';
 

@@ -22,15 +22,20 @@ class KidResource extends Resource
     protected static ?string $model = Kid::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
-    protected static string | UnitEnum | null $navigationGroup = 'Verwaltung';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Verwaltung';
 
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $pluralLabel = 'Kinder';
+
     protected static ?string $label = 'Kind';
-    protected static ?string $navigationLabel = "Kinder";
-    protected static ?string $pluralModelLabel = "Kinder";
-    protected static ?string $modelLabel = "Kind";
+
+    protected static ?string $navigationLabel = 'Kinder';
+
+    protected static ?string $pluralModelLabel = 'Kinder';
+
+    protected static ?string $modelLabel = 'Kind';
 
     public static function form(Schema $schema): Schema
     {
@@ -50,7 +55,7 @@ class KidResource extends Resource
     public static function getRelations(): array
     {
         return [
-            CoursesRelationManager::class
+            CoursesRelationManager::class,
         ];
     }
 

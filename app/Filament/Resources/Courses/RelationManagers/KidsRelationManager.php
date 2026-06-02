@@ -85,7 +85,7 @@ class KidsRelationManager extends RelationManager
                     ->form(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
                         DatePicker::make('date')->required(),
-                    ])->preloadRecordSelect()
+                    ])->preloadRecordSelect(),
             ])
             ->recordActions([
                 ViewAction::make(),

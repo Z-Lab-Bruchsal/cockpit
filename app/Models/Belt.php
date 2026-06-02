@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Belt extends Model
 {
-    protected $fillable = ["name"];
+    protected $fillable = ['name'];
 
     public function courses(): BelongsToMany
     {
         return $this->belongsToMany(Course::class);
     }
-
 }

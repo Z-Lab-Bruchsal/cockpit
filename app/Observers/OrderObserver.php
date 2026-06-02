@@ -19,7 +19,7 @@ class OrderObserver
     {
         $order->public_uuid = (string) Str::uuid();
         $order->save();
-        $users = Role::where("name", "ordermanager")->users()->get();
+        $users = Role::where('name', 'ordermanager')->users()->get();
         foreach ($users as $user) {
             Mail::to($user)->send(new OrderRegistered($order));
         }
@@ -31,12 +31,12 @@ class OrderObserver
     public function updated(Order $order): void
     {
         $hasChanged = $order->getChanges();
-        if($hasChanged && isset($hasChanged['orderstatus_id'])) {
-            if($order->orderstatus->name == "bestellt") {
+        if ($hasChanged && isset($hasChanged['orderstatus_id'])) {
+            if ($order->orderstatus->name == 'bestellt') {
                 $order->orderdatetime = $order->updated_at;
                 $order->saveQuietly();
             }
-            if($order->orderstatus->name == "angekommen") {
+            if ($order->orderstatus->name == 'angekommen') {
                 $user = User::find($order->user_id);
                 Mail::to($user)->send(new OrderArrived($order));
             }

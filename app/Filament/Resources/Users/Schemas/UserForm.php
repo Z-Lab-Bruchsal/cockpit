@@ -2,9 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use App\Filament\Resources\Groups\GroupResource;
 use App\Filament\Resources\Groups\Schemas\GroupForm;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -36,7 +34,7 @@ class UserForm
                     ->relationship('groups', 'name')
                     ->label('Gruppen')
                     ->preload()
-                    ->createOptionForm(function(Schema $schema) {
+                    ->createOptionForm(function (Schema $schema) {
                         return GroupForm::configure($schema);
                     })
                     ->multiple(),
