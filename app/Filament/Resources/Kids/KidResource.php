@@ -7,7 +7,6 @@ use App\Filament\Resources\Kids\Pages\EditKid;
 use App\Filament\Resources\Kids\Pages\ListKids;
 use App\Filament\Resources\Kids\RelationManagers\CoursesRelationManager;
 use App\Filament\Resources\Kids\Schemas\KidForm;
-use App\Filament\Resources\Kids\Schemas\KidInfolist;
 use App\Filament\Resources\Kids\Tables\KidsTable;
 use App\Models\Kid;
 use BackedEnum;
@@ -40,11 +39,6 @@ class KidResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return KidForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return KidInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
