@@ -23,7 +23,7 @@ class KidResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Verwaltung';
+    protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
 
     protected static ?string $recordTitleAttribute = 'name';
 
