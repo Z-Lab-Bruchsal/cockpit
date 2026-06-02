@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Observers\TodoObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Override;
 
 #[Fillable('name', 'content', 'user_id', 'todoable_type', 'todoable_id', 'due_date', 'done_date', 'follow_up', 'review')]
+#[ObservedBy([TodoObserver::class])]
 class Todo extends Model
 {
     public function todoable(): MorphTo
@@ -16,8 +17,8 @@ class Todo extends Model
         return $this->morphTo();
     }
 
-    public function user(): BelongsTo {
+    public function user(): BelongsTo
+    {
         return $this->belongsTo(User::class);
     }
-
 }
