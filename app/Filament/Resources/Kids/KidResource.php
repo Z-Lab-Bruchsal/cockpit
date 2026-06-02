@@ -58,7 +58,6 @@ class KidResource extends Resource
         return [
             'index' => ListKids::route('/'),
             'create' => CreateKid::route('/create'),
-            'view' => ViewKid::route('/{record}'),
             'edit' => EditKid::route('/{record}/edit'),
         ];
     }
