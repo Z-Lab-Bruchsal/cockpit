@@ -28,7 +28,7 @@ class TodosTable
                 TextColumn::make('user.name')
                     ->searchable(),
                 TextColumn::make('todoable.name')
-                    ->label('Zugewiesen')    
+                    ->label('Zugewiesen')
                     ->searchable(),
                 TextColumn::make('due_date')
                     ->date()
