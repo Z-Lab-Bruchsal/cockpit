@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -33,6 +34,10 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->profile()
             ->passwordReset()
+            ->font(
+                'Bunny',
+                provider: LocalFontProvider::class,
+            )
             ->colors([
                 'primary' => Color::Amber,
             ])
