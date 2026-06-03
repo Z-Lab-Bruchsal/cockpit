@@ -4,14 +4,17 @@ namespace App\Filament\Resources\Todos\Tables;
 
 use App\Models\Group;
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TodosTable
 {
@@ -55,25 +58,36 @@ class TodosTable
                     ->boolean(),
             ])
             ->filters([
-                Filter::make('mine')->label('von mir oder für mich')
-                    ->default()
-                    ->query(function (Builder $query) {
-                        $query->where('user_id', filament()->auth()->user()->id)
-                            ->orWhere('todoable_type', User::class)->where('todoable_id', filament()->auth()->user()->id)
-                            ->orwhere('todoable_type', Group::class)->whereIn('todoable_id', User::find(filament()->auth()->user()->id)->groups()->get()->pluck('id'));
-                        return $query;
-                    }),
                 Filter::make('alleoffenen')
                     ->default()
                     ->label('nicht erledigt')
                     ->query(function (Builder $query) {
-                        $query->where('done_date', null);
+                        $query->whereNull('done_date');
+                        return $query;
+                    }),
+                Filter::make('mine')->label('von mir oder für mich')
+                    ->default()
+                    ->query(function (Builder $query) {
+                        $query->where(function (Builder $query) {
+                            $query
+                                ->orWhere('user_id', filament()->auth()->user()->id)
+                                ->orWhere('todoable_type', User::class)->where('todoable_id', filament()->auth()->user()->id)
+                                ->orwhere('todoable_type', Group::class)->whereIn('todoable_id', User::find(filament()->auth()->user()->id)->groups()->get()->pluck('id'));
+                            return $query;
+                        });
                         return $query;
                     }),
 
             ])
             ->recordActions([
-                EditAction::make(),
+                Action::make('done')
+                    ->iconButton()
+                    ->icon(Heroicon::Check)
+                    ->action(function (Model $record) {
+                        $record->done_date = now()->today();
+                        $record->save();
+                    }),
+                EditAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
