@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Todos\Tables;
 
+use App\Filament\Actions\DoneTodoAction;
+use App\Filament\Actions\ReopenTodoAction;
 use App\Models\Group;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Support\Icons\Heroicon;
@@ -80,14 +83,13 @@ class TodosTable
 
             ])
             ->recordActions([
-                Action::make('done')
-                    ->iconButton()
-                    ->icon(Heroicon::Check)
-                    ->action(function (Model $record) {
-                        $record->done_date = now()->today();
-                        $record->save();
-                    }),
+                DoneTodoAction::make('done'),
+                ReopenTodoAction::make('reopen'),
                 EditAction::make()->iconButton(),
+                DeleteAction::make()->iconButton()
+                    ->visible(function (Model $record) {
+                        return $record->is_owner_or_assigned();
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

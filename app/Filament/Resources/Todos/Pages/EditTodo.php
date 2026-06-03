@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Todos\Pages;
 
+use App\Filament\Actions\DoneTodoAction;
+use App\Filament\Actions\ReopenTodoAction;
 use App\Filament\Resources\Todos\TodoResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Icons\Heroicon;
 
 class EditTodo extends EditRecord
 {
@@ -13,7 +16,9 @@ class EditTodo extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DoneTodoAction::make('done'),
+            ReopenTodoAction::make('reopen'),
+            DeleteAction::make()->iconButton()->icon(Heroicon::Trash),
         ];
     }
 }

@@ -18,7 +18,7 @@ class TodoResource extends Resource
 {
     protected static ?string $model = Todo::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::CheckBadge;
 
     protected static ?string $recordTitleAttribute = 'name';
 
