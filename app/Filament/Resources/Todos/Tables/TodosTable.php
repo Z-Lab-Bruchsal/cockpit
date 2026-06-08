@@ -52,10 +52,10 @@ class TodosTable
                     ->label('Erledigt am')
                     ->date()
                     ->sortable(),
-                TextColumn::make('follow_up')
-                    ->label('Wiedervorlage')
-                    ->date()
-                    ->sortable(),
+                // TextColumn::make('follow_up')
+                //     ->label('Wiedervorlage')
+                //     ->date()
+                //     ->sortable(),
                 IconColumn::make('review')
                     ->label('Review')
                     ->boolean(),

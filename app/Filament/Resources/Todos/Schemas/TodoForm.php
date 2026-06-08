@@ -39,7 +39,7 @@ class TodoForm
                     Toggle::make('review')->label('Review')->hint('Todo geht nach Erledigung noch mal zum Ersteller'),
 
                 ]),
-                DatePicker::make('follow_up')->label('Wiedervorlage/Erinnerung'),
+                // DatePicker::make('follow_up')->label('Wiedervorlage/Erinnerung'),
                 DatePicker::make('done_date')->label('Erledigt am')->hiddenOn(['create']),
             ]);
     }
