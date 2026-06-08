@@ -25,13 +25,13 @@ class Todo extends Model
 
     public function is_owner_or_assigned() {
         if(filament()->auth()->user()->id == $this->user_id) return true;
-        if($this->todoable_type == Group::class && in_array(filament()->auth()->user()->id, $this->todoable()->first()->get()->users()->get()->pluck('id')->toArray())) return true;
-        if($this->todoable_type == User::class && $this->todoable()->first()->get()->id == filament()->auth()->user()->id) return true;
+        if($this->todoable_type == Group::class && in_array(filament()->auth()->user()->id, $this->todoable()->first()->users()->get()->pluck('id')->toArray())) return true;
+        if($this->todoable_type == User::class && $this->todoable()->first()->id == filament()->auth()->user()->id) return true;
         else return false;
     }
 
     public function getassignetusers() {
         if($this->todoable_type == Group::class) return $this->todoable()->first()->users()->get();
-        if($this->todoable_type == User::class) return [$this->todoable()->first()->get()];
+        if($this->todoable_type == User::class) return [$this->todoable()->first()];
     }
 }
