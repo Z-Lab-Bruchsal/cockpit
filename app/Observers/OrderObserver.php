@@ -19,7 +19,7 @@ class OrderObserver
     {
         $order->public_uuid = (string) Str::uuid();
         $order->save();
-        $users = Role::where('name', 'ordermanager')->users()->get();
+        $users = Role::where('name', 'ordermanager')->first()->users()->get();
         foreach ($users as $user) {
             Mail::to($user)->send(new OrderRegistered($order));
         }
