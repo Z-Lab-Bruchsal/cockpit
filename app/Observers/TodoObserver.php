@@ -2,16 +2,10 @@
 
 namespace App\Observers;
 
-use App\Mail\TodoAssigned;
-use App\Mail\TodoCreated;
 use App\Mail\TodoMail;
-use App\Mail\TodoNeedsReview;
-use App\Mail\TodoReopened;
-use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class TodoObserver
 {
@@ -20,16 +14,27 @@ class TodoObserver
      */
     public function created(Todo $todo): void
     {
-        if($todo->todoable_type == null) return;
-        // if($todo->todoable_type == User::class && $todo->user_id == $todo->todoable_id) return;
-        if($todo->todoable_type == User::class) {
-            Mail::to(User::find($todo->todoable()->first()))->send(new TodoMail($todo, 'Neue Todo', 'Es gibt eine neue Todo für dich:'));
+        if ($todo->todoable_type == null) {
+            return;
         }
-        else {
+        // if($todo->todoable_type == User::class && $todo->user_id == $todo->todoable_id) return;
+        if ($todo->todoable_type == User::class) {
+            Mail::to(User::find($todo->todoable()->first()))->send(new TodoMail($todo, 'Neue Todo', 'Es gibt eine neue Todo für dich:'));
+        } else {
             $users = $todo->todoable()->first()->users()->get();
             foreach ($users as $user) {
                 Mail::to($user)->send(new TodoMail($todo, 'Neue Todo', 'Es gibt eine neue Todo für dich:'));
             }
+        }
+    }
+
+    /**
+     * Handle the Todo "updating" event.
+     */
+    public function updating(Todo $todo): void
+    {
+        if ($todo->isDirty('follow_up')) {
+            $todo->follow_up_notified_at = null;
         }
     }
 
