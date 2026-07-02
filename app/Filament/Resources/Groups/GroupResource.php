@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Groups;
 use App\Filament\Resources\Groups\Pages\CreateGroup;
 use App\Filament\Resources\Groups\Pages\EditGroup;
 use App\Filament\Resources\Groups\Pages\ListGroups;
+use App\Filament\Resources\Groups\RelationManagers\UsersRelationManager;
 use App\Filament\Resources\Groups\Schemas\GroupForm;
 use App\Filament\Resources\Groups\Tables\GroupsTable;
 use App\Models\Group;
@@ -46,7 +47,7 @@ class GroupResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            UsersRelationManager::class,
         ];
     }
 

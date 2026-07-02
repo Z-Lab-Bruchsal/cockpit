@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Filament\Resources\Groups\RelationManagers\UsersRelationManager;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -19,12 +20,16 @@ class UsersTable
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email address')
+                    ->hiddenOn(UsersRelationManager::class)
                     ->searchable(),
                 TextColumn::make('email_verified_at')
                     ->dateTime()
+                    ->hiddenOn(UsersRelationManager::class)
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 TextColumn::make('roles.title')
                     ->label('Rollen')
+                    ->hiddenOn(UsersRelationManager::class)
                     ->toggleable(),
                 TextColumn::make('groups.name')
                     ->label('Gruppen')
