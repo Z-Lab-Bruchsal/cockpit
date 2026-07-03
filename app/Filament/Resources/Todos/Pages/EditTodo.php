@@ -19,7 +19,7 @@ class EditTodo extends EditRecord
         return [
             DoneTodoAction::make('done'),
             ReopenTodoAction::make('reopen'),
-            SetReminderAction::make([]),
+            SetReminderAction::make([])->record(fn () => $this->getRecord()),
             DeleteAction::make()->iconButton()->icon(Heroicon::Trash),
         ];
     }
