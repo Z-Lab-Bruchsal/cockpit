@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
+use App\Filament\Resources\TimeEntries\Widgets\TimeClockWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
+                TimeClockWidget::class,
                 MyTodosWidget::class,
                 MyOrdersWidget::class,
                 // FilamentInfoWidget::class,

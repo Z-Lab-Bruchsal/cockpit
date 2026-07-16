@@ -19,4 +19,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('app:send-todo-follow-up-reminders')->dailyAt('07:00');
+        $schedule->command('app:send-break-compliance-warnings')->dailyAt('21:00');
     })->create();
