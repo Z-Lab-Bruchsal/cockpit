@@ -14,7 +14,7 @@ enum FollowUp: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::TOMORROW => 'Morgen',
             self::MONDAY => 'Montag',
             self::TUESDAY => 'Dienstag',
@@ -24,5 +24,4 @@ enum FollowUp: string
             self::TWO_WEEKS => 'In 2 Wochen',
         };
     }
-    
 }
