@@ -6,6 +6,7 @@
 
         @php($state = $this->getState())
         @php($workedMinutes = $this->getWorkedMinutesToday())
+        @php($currentSegmentMinutes = $this->getCurrentSegmentMinutes())
 
         <div class="flex items-center justify-between gap-4">
             <span class="text-sm text-gray-500 dark:text-gray-400">
@@ -16,6 +17,9 @@
                     \App\Enums\TimeClockState::ClockedOut => 'Ausgestempelt',
                 } }}
                 &middot; Heute gearbeitet: {{ intdiv($workedMinutes, 60) }}h {{ $workedMinutes % 60 }}min
+                @if ($currentSegmentMinutes !== null)
+                    (aktuelle Periode: {{ intdiv($currentSegmentMinutes, 60) }}h {{ $currentSegmentMinutes % 60 }}min)
+                @endif
             </span>
 
             <div class="flex gap-2">

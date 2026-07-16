@@ -71,6 +71,27 @@ class WorkTimeCalculator
         return $this->sumMinutes($this->sessionsForDay($user, $date)['work']);
     }
 
+    /**
+     * Minutes elapsed in the work segment that is currently open (i.e. since
+     * the user's last "come" or "break_end"), or null if they aren't
+     * currently in an open work segment (not clocked in, on a break, or
+     * already clocked out).
+     */
+    public function currentSegmentMinutes(User $user): ?int
+    {
+        $lastEntry = TimeEntry::query()
+            ->where('user_id', $user->id)
+            ->latest('happened_at')
+            ->latest('id')
+            ->first();
+
+        if (! $lastEntry || ! in_array($lastEntry->type, [TimeEntryType::Come, TimeEntryType::BreakEnd], true)) {
+            return null;
+        }
+
+        return (int) round($lastEntry->happened_at->diffInMinutes(now()));
+    }
+
     public function qualifyingBreakMinutes(User $user, Carbon $date): int
     {
         $minimum = WorkTimeSetting::current()->minimum_qualifying_break_minutes;

@@ -55,6 +55,7 @@ class CoursesRelationManager extends RelationManager
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('date')
+                    ->date()
                     ->searchable(),
                 TextColumn::make('duration')
                     ->numeric()

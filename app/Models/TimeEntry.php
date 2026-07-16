@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'type', 'happened_at', 'note', 'recorded_by_user_id'])]
+#[Fillable(['user_id', 'type', 'happened_at', 'note', 'recorded_by_user_id', 'worked_minutes'])]
 #[ObservedBy([TimeEntryObserver::class])]
 class TimeEntry extends Model
 {

@@ -36,6 +36,11 @@ class TimeClockWidget extends Widget implements HasActions, HasSchemas
         return app(WorkTimeCalculator::class)->workedMinutes(filament()->auth()->user(), $today);
     }
 
+    public function getCurrentSegmentMinutes(): ?int
+    {
+        return app(WorkTimeCalculator::class)->currentSegmentMinutes(filament()->auth()->user());
+    }
+
     public function clockInAction(): Action
     {
         return Action::make('clockIn')
