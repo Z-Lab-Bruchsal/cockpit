@@ -1,58 +1,113 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Z-Lab Cockpit
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Z-Lab Cockpit is a [Laravel](https://laravel.com) + [Filament](https://filamentphp.com) admin panel for running a martial-arts school: managing kids, courses and belt progressions, tracking equipment orders, assigning todos, and recording staff work time.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Kurse und Kinder**
+- **Kinder** — manage enrolled kids.
+- **Kurse** — manage courses kids attend.
+- **Gürtel** — track belt levels tied to courses.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Bestellungen**
+- Track equipment orders through a configurable status pipeline, with email notifications on arrival.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**Todos**
+- Create todos assigned to a user or a whole group, with due dates and follow-up reminders. A daily scheduled command emails follow-up reminders once their date is reached.
 
-## Learning Laravel
+**Zeiterfassung (work-time tracking)**
+- **Dashboard clock widget** — Kommen / Pause / Gehen buttons on the dashboard, enforcing a legal clock state machine (you can't start a break before clocking in, clocking out while on a break automatically closes the break first).
+- **Zeiten** — a log of every clock event, correctable after the fact by the user themselves or by a manager, with every change recorded in a visible audit trail (old value, new value, who, when).
+- **Zeitmodelle** — weekly-hours profiles (e.g. "Vollzeit 40h") assigned to users with dated validity ranges, so historical over/under-hours stay accurate even as someone's hours change.
+- **Pausenregeln** — configurable break-compliance rules matching German labor law (ArbZG §4): a break of at least 30 minutes is required after more than 6 hours worked, 45 minutes after more than 9 hours, and only break segments of at least 15 minutes count. A daily scheduled command emails anyone who didn't take a sufficient break. Restricted to users with the `zeiterfassung-admin` role.
+- **Kalender** — a combined calendar of time entries and todo deadlines/reminders, filterable by type (times / todos / both) and by user (limited to whichever users you're allowed to see, see below).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Verwaltung**
+- **Benutzer**, **Gruppen**, **Rollen** — manage accounts, and organize them into groups. Attaching a role to a group makes every member of that role able to see (and, for time entries, correct) the time entries of everyone in that group.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tech stack
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- PHP 8.5, Laravel 13
+- Filament 5 (admin panel), `guava/calendar` (calendar widget)
+- SQLite by default (see `.env`)
+- Tailwind CSS 4 + Vite
 
-## Agentic Development
+## Installation
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Local
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer setup   # composer install, .env, app key, migrate, npm install & build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Or step by step:
 
-## Contributing
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite   # only needed for the default sqlite connection
+php artisan migrate
+npm install
+npm run build
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Start the local dev stack (web server, queue listener, log tailing, Vite) in one command:
 
-## Code of Conduct
+```bash
+composer run dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Docker
 
-## Security Vulnerabilities
+A production-style `docker-compose.yml` is included, with separate `app` (web), `queue` and `scheduler` services sharing the same image and `.env` file:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose up --build
+```
 
-## License
+The web service is published on `http://localhost:8000` and exposes a health check at `/up`. Migrations aren't run automatically by the compose file — run them once against the running `app` container:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+docker compose exec app php artisan migrate --force
+```
+
+## Creating the first user & granting permissions
+
+There's no self-service registration — accounts are created by an administrator. Create the first user with Filament's built-in command (works the same in Docker via `docker compose exec app ...`):
+
+```bash
+php artisan make:filament-user
+```
+
+This prompts for a name, email and password and creates an account that can log in to the panel — every registered user can access the panel, so this alone is enough to explore Kurse und Kinder, Bestellungen, Todos and Zeiterfassung's own time clock.
+
+Two things are gated behind specific **roles** instead of a single "admin" flag:
+
+- **`ordermanager`** — order management.
+- **`zeiterfassung-admin`** — access to the Pausenregeln settings page.
+
+To grant a role, either:
+
+- In the panel, go to **Verwaltung → Benutzer**, edit the user, and add the role in the *Rollen* field (or go to **Verwaltung → Rollen**, open the role, and attach the user from its relation manager tab), or
+- Via Artisan Tinker:
+
+  ```bash
+  php artisan tinker --execute '
+      $user = App\Models\User::where("email", "someone@example.com")->firstOrFail();
+      $role = App\Models\Role::where("name", "zeiterfassung-admin")->firstOrFail();
+      $user->roles()->syncWithoutDetaching($role);
+  '
+  ```
+
+To let someone see (and correct) another group's time entries in Zeiterfassung, open the group or the role in **Verwaltung** and attach the other side via its relation manager tab.
+
+## Development
+
+```bash
+php artisan test --compact          # run the test suite
+vendor/bin/pint --dirty             # fix code style on changed files
+php artisan route:list              # inspect registered routes
+```
+
+This project uses [Laravel Boost](https://laravel.com/docs/ai) — see `CLAUDE.md` for the conventions AI coding agents should follow in this codebase.
