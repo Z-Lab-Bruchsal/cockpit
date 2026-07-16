@@ -19,10 +19,18 @@
             </span>
 
             <div class="flex gap-2">
-                {{ $this->clockInAction }}
-                {{ $this->startBreakAction }}
-                {{ $this->endBreakAction }}
-                {{ $this->clockOutAction }}
+                @if ($this->clockInAction->isVisible())
+                    {{ $this->clockInAction }}
+                @endif
+                @if ($this->startBreakAction->isVisible())
+                    {{ $this->startBreakAction }}
+                @endif
+                @if ($this->endBreakAction->isVisible())
+                    {{ $this->endBreakAction }}
+                @endif
+                @if ($this->clockOutAction->isVisible())
+                    {{ $this->clockOutAction }}
+                @endif
             </div>
         </div>
     </x-filament::section>
