@@ -13,6 +13,8 @@ class GroupForm
             ->components([
                 TextInput::make('name')
                     ->required(),
+                TextInput::make('title')
+                    ->label('Titel'),
                 TextInput::make('description')
                     ->label('Beschreibung'),
             ]);

@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Filament\Resources\Todos\TodoResource;
 use App\Models\Todo;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
@@ -23,9 +22,8 @@ class TodoMail extends Mailable
         public Todo $todo,
         public string $mail_subject,
         public string $message,
-        public string $notiz = "",
-    )
-    {
+        public string $notiz = '',
+    ) {
         //
     }
 

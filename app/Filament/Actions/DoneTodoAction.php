@@ -24,5 +24,4 @@ class DoneTodoAction extends Action
                 $record->save();
             });
     }
-
 }

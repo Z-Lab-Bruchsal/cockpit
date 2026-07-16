@@ -2,21 +2,13 @@
 
 namespace App\Filament\Resources\Todos\Widgets;
 
-use App\Filament\Actions\DoneTodoAction;
-use App\Filament\Actions\ReopenTodoAction;
 use App\Filament\Resources\Todos\Tables\TodosTable;
-use App\Filament\Resources\Todos\TodoResource;
 use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
-use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 class MyTodosWidget extends TableWidget
 {
