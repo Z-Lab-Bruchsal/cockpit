@@ -5,11 +5,12 @@
    "image": "mcr.microsoft.com/devcontainers/base:trixie",
     "postCreateCommand": "bash ./.devcontainer/postCreateCommand.sh",
     "features": {
-        "ghcr.io/devcontainers/features/node:2": {},
+        "ghcr.io/devcontainers/features/node:2.1.0": {},
         "ghcr.io/warrenbuckley/codespace-features/sqlite:latest": {},
         "ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {},
-        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/git:1.3.8": {},
         "ghcr.io/devcontainers-extra/features/composer:1": {},
+        "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
         "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
             "packages": "plantuml"
         }
@@ -20,7 +21,8 @@
            "extensions": [
                "jebbs.plantuml",
                "xdebug.php-pack",
-               "bmewburn.vscode-intelephense-client"
+               "bmewburn.vscode-intelephense-client",
+               "mehedidracula.php-namespace-resolver"
            ]
        }
    }

@@ -15,4 +15,4 @@ ${SUDO} apt-get -y install plantuml php8.5 php8.5-{cli,zip,sqlite3,xml,pgsql,bcm
 composer install
 npm install
 
-git -c --global core.fileMode=false diff
+git config --global core.filemode false
