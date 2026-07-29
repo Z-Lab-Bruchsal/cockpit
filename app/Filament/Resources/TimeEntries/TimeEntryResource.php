@@ -9,6 +9,7 @@ use App\Filament\Resources\TimeEntries\RelationManagers\AuditsRelationManager;
 use App\Filament\Resources\TimeEntries\Schemas\TimeEntryForm;
 use App\Filament\Resources\TimeEntries\Tables\TimeEntriesTable;
 use App\Models\TimeEntry;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -43,11 +44,22 @@ class TimeEntryResource extends Resource
         return TimeEntriesTable::configure($table);
     }
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->whereIn('user_id', filament()->auth()->user()->visibleUserIds());
-    }
+    // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     return parent::getEloquentQuery()
+    //         ->whereIn('user_id', filament()->auth()->user()->visibleUserIds());
+    // }
+    // public static function getEloquentQuery(): Builder
+    // {
+    //     if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+    //         return parent::getEloquentQuery()
+    //             ->where('user_id', filament()->auth()->user()->id);
+    //     }
+    //     else {
+    //         return parent::getEloquentQuery();
+    //     }
+    // }
 
     public static function getRelations(): array
     {

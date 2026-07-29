@@ -18,7 +18,8 @@ class TimeEntryForm
                 Select::make('user_id')
                     ->label('Benutzer')
                     ->options(fn () => User::query()
-                        ->whereIn('id', filament()->auth()->user()->visibleUserIds())
+                        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
+                        // ->whereIn('id', filament()->auth()->user()->visibleUserIds())
                         ->pluck('name', 'id'))
                     ->searchable()
                     ->required(),

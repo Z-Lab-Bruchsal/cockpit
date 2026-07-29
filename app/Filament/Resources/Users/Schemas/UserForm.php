@@ -33,6 +33,12 @@ class UserForm
                         return GroupForm::configure($schema);
                     })
                     ->multiple(),
+                Select::make('roles')
+                    ->relationship('roles', 'name')
+                    ->label('Rollen')
+                    ->multiple()
+                    ->preload()
+                    ->searchable(),
             ]);
     }
 }

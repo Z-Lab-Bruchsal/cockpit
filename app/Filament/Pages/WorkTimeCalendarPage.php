@@ -42,7 +42,8 @@ class WorkTimeCalendarPage extends Page
                 Select::make('userId')
                     ->label('Benutzer')
                     ->options(fn () => User::query()
-                        ->whereIn('id', filament()->auth()->user()->visibleUserIds())
+                        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
+                        // ->whereIn('id', filament()->auth()->user()->visibleUserIds())
                         ->pluck('name', 'id'))
                     ->placeholder('Alle sichtbaren Benutzer')
                     ->native(false),

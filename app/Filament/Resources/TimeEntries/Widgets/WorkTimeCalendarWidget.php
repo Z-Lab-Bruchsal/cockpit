@@ -23,9 +23,12 @@ class WorkTimeCalendarWidget extends CalendarWidget
         $eventType = $this->pageFilters['eventType'] ?? 'both';
         $userId = $this->pageFilters['userId'] ?? null;
 
-        $visibleUserIds = filament()->auth()->user()->visibleUserIds();
-        $userIds = $userId ? array_intersect($visibleUserIds, [(int) $userId]) : $visibleUserIds;
-
+        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
+        // $visibleUserIds = filament()->auth()->user()->visibleUserIds();
+        // $userIds = $userId ? array_intersect($visibleUserIds, [(int) $userId]) : $visibleUserIds;
+        // Fallback
+        $userIds = [$userId];
+        
         $events = collect();
 
         if (in_array($eventType, ['both', 'times'], true)) {
