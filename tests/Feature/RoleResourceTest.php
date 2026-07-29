@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Group;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,7 +14,6 @@ class RoleResourceTest extends TestCase
     public function test_pages_render_for_an_authenticated_user(): void
     {
         $user = User::factory()->create();
-        $role = Role::factory()->create();
         $group = Group::factory()->create();
         $role->groups()->attach($group);
 

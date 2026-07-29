@@ -95,7 +95,6 @@ To grant a role, either:
   ```bash
   php artisan tinker --execute '
       $user = App\Models\User::where("email", "someone@example.com")->firstOrFail();
-      $role = App\Models\Role::where("name", "zeiterfassung-admin")->firstOrFail();
       $user->roles()->syncWithoutDetaching($role);
   '
   ```
