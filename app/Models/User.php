@@ -9,7 +9,6 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,11 +41,6 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class);
-    }
-
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(Group::class);
@@ -70,36 +64,5 @@ class User extends Authenticatable implements FilamentUser
     public function currentTimeProfile(?Carbon $onDate = null): ?TimeProfile
     {
         return TimeProfileAssignment::currentFor($this, $onDate);
-    }
-
-    public function hasRole(string $role): bool
-    {
-        return in_array($role, $this->roles()->pluck('name')->toArray());
-    }
-
-    /**
-     * IDs of all users visible to this user: themselves, plus every member of
-     * a group that is attached to any role this user holds.
-     *
-     * @return array<int, int>
-     */
-    public function visibleUserIds(): array
-    {
-        $groupIds = $this->roles()->with('groups')->get()
-            ->pluck('groups')
-            ->flatten()
-            ->pluck('id')
-            ->unique();
-
-        return User::query()
-            ->where('id', $this->id)
-            ->orWhereHas('groups', fn (Builder $query) => $query->whereIn('groups.id', $groupIds))
-            ->pluck('id')
-            ->toArray();
-    }
-
-    public function canManageTimeEntriesFor(User $target): bool
-    {
-        return $this->id === $target->id || in_array($target->id, $this->visibleUserIds(), true);
     }
 }

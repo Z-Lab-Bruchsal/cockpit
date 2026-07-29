@@ -34,11 +34,6 @@ class WorkTimeSettingsPage extends Page
      */
     public ?array $data = [];
 
-    public static function canAccess(): bool
-    {
-        return filament()->auth()->user()->hasRole('zeiterfassung-admin');
-    }
-
     public function mount(): void
     {
         $this->form->fill(WorkTimeSetting::current()->attributesToArray());

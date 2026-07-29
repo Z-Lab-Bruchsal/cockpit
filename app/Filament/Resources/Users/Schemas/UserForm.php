@@ -25,11 +25,6 @@ class UserForm
                     ->password()
                     ->required()
                     ->visibleOn(['create']),
-                Select::make('roles')
-                    ->relationship('roles', 'title')
-                    ->label('Rollen')
-                    ->preload()
-                    ->multiple(),
                 Select::make('groups')
                     ->relationship('groups', 'name')
                     ->label('Gruppen')

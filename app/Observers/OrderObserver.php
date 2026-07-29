@@ -5,7 +5,6 @@ namespace App\Observers;
 use App\Mail\OrderArrived;
 use App\Mail\OrderRegistered;
 use App\Models\Order;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -19,10 +18,11 @@ class OrderObserver
     {
         $order->public_uuid = (string) Str::uuid();
         $order->save();
-        $users = Role::where('name', 'ordermanager')->first()->users()->get();
-        foreach ($users as $user) {
-            Mail::to($user)->send(new OrderRegistered($order));
-        }
+        // TODO: Activate again
+        // $users = Role::where('name', 'ordermanager')->first()->users()->get();
+        // foreach ($users as $user) {
+        //     Mail::to($user)->send(new OrderRegistered($order));
+        // }
     }
 
     /**

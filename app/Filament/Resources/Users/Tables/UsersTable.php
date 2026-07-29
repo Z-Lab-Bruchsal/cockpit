@@ -27,10 +27,6 @@ class UsersTable
                     ->hiddenOn(UsersRelationManager::class)
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
-                TextColumn::make('roles.title')
-                    ->label('Rollen')
-                    ->hiddenOn(UsersRelationManager::class)
-                    ->toggleable(),
                 TextColumn::make('groups.name')
                     ->label('Gruppen')
                     ->toggleable(),
