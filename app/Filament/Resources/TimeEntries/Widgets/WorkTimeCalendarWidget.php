@@ -20,14 +20,14 @@ class WorkTimeCalendarWidget extends CalendarWidget
 
     protected function getEvents(FetchInfo $info): Collection|array|Builder
     {
-        $eventType = $this->pageFilters['eventType'] ?? 'both';
-        $userId = $this->pageFilters['userId'] ?? null;
+        // TODO: Filter noch auf nur eigene Times, wenn keine Permissions für Todos und andere User
+        // Evtl. auch feinerer Filter auf die Objekte, die gesehen werden dürfen
+        $eventType = $this->pageFilters['eventType'] ?? 'times';
 
-        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
-        // $visibleUserIds = filament()->auth()->user()->visibleUserIds();
-        // $userIds = $userId ? array_intersect($visibleUserIds, [(int) $userId]) : $visibleUserIds;
-        // Fallback
-        $userIds = [$userId];
+        if(User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+            $userIds = User::all()->pluck('id')->toArray();
+        }
+        else $userIds = [filament()->auth()->user()->id];
         
         $events = collect();
 

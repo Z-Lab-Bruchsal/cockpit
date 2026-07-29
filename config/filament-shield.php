@@ -252,7 +252,10 @@ return [
     |
     */
 
-    'custom_permissions' => [],
+    'custom_permissions' => [
+        'Orders:Export' => 'Export Orders',
+        'Worktimes:ViewForeign' => 'View Foreign Worktime'
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -44,22 +44,16 @@ class TimeEntryResource extends Resource
         return TimeEntriesTable::configure($table);
     }
 
-    // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
-    // public static function getEloquentQuery(): Builder
-    // {
-    //     return parent::getEloquentQuery()
-    //         ->whereIn('user_id', filament()->auth()->user()->visibleUserIds());
-    // }
-    // public static function getEloquentQuery(): Builder
-    // {
-    //     if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
-    //         return parent::getEloquentQuery()
-    //             ->where('user_id', filament()->auth()->user()->id);
-    //     }
-    //     else {
-    //         return parent::getEloquentQuery();
-    //     }
-    // }
+    public static function getEloquentQuery(): Builder
+    {
+        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+            return parent::getEloquentQuery()
+                ->where('user_id', filament()->auth()->user()->id);
+        }
+        else {
+            return parent::getEloquentQuery();
+        }
+    }
 
     public static function getRelations(): array
     {

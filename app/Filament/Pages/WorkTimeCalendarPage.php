@@ -32,21 +32,22 @@ class WorkTimeCalendarPage extends Page
             ->components([
                 Select::make('eventType')
                     ->label('Anzeigen')
-                    ->options([
-                        'both' => 'Zeiten & Todos',
-                        'times' => 'Nur Zeiten',
-                        'todos' => 'Nur Todos',
-                    ])
-                    ->default('both')
-                    ->native(false),
+                    ->options(function() {
+                        return ['both' => 'Zeiten & Todos',
+                            'times' => 'Nur Zeiten',
+                            'todos' => 'Nur Todos'
+                        ];
+                    })
+                    ->hidden(fn() => !User::find(filament()->auth()->user()->id)->can('todo:view')),
                 Select::make('userId')
                     ->label('Benutzer')
-                    ->options(fn () => User::query()
-                        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
-                        // ->whereIn('id', filament()->auth()->user()->visibleUserIds())
-                        ->pluck('name', 'id'))
-                    ->placeholder('Alle sichtbaren Benutzer')
-                    ->native(false),
+                    ->options(function () {
+                        return User::all()->pluck('name', 'id');
+                    })
+                    ->visible(fn () => User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign'))
+                    ->default(filament()->auth()->user()->id)
+                    ->preload()
+                    ->placeholder('Alle sichtbaren Benutzer'),
             ]);
     }
 
