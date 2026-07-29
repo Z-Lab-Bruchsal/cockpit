@@ -49,7 +49,6 @@ class GroupResource extends Resource
     {
         return [
             UsersRelationManager::class,
-            RolesRelationManager::class,
         ];
     }
 
