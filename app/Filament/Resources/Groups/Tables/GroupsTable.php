@@ -24,6 +24,9 @@ class GroupsTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('title')
+                    ->label('Titel')
+                    ->searchable(),
                 TextColumn::make('description')
                     ->searchable(),
             ])

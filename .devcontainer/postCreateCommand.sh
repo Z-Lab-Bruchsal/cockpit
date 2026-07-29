@@ -14,3 +14,5 @@ ${SUDO} apt-get update
 ${SUDO} apt-get -y install plantuml php8.5 php8.5-{cli,zip,sqlite3,xml,pgsql,bcmath,intl,mbstring,curl} composer sqlite3
 composer install
 npm install
+
+git -c --global core.fileMode=false diff

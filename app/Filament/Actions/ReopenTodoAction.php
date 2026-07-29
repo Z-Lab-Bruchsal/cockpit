@@ -34,5 +34,4 @@ class ReopenTodoAction extends Action
                 }
             });
     }
-
 }

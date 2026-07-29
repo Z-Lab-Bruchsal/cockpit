@@ -69,6 +69,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Business Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Storage stays UTC (see "timezone" above). This is the wall-clock
+    | timezone used only for work-time day/week boundary calculations
+    | (break-compliance thresholds, weekly totals), since German labor
+    | law thresholds are inherently local-time concepts.
+    |
+    */
+
+    'business_timezone' => env('APP_BUSINESS_TIMEZONE', 'Europe/Berlin'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
