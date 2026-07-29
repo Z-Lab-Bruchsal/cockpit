@@ -22,7 +22,8 @@
                "jebbs.plantuml",
                "xdebug.php-pack",
                "bmewburn.vscode-intelephense-client",
-               "mehedidracula.php-namespace-resolver"
+               "mehedidracula.php-namespace-resolver",
+               "gruntfuggly.todo-tree"
            ]
        }
    }
