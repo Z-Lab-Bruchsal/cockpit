@@ -26,12 +26,12 @@ class OrdersTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Erstellungsdatum')
+                    ->label('Erstellt')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
-                    ->label('Änderungsdatum')
+                    ->label('Bearbeitet')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

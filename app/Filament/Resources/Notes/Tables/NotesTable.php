@@ -15,10 +15,12 @@ class NotesTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
+                    ->label('Erstellt')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Bearbeitet')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

@@ -15,19 +15,23 @@ class GroupsTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
+                    ->label('Erstellt')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Bearbeitet')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
+                    ->label('Name')
                     ->searchable(),
                 TextColumn::make('title')
                     ->label('Titel')
                     ->searchable(),
                 TextColumn::make('description')
+                    ->label('Beschreibung')
                     ->searchable(),
             ])
             ->filters([

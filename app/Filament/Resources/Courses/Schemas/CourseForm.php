@@ -12,8 +12,10 @@ class CourseForm
         return $schema
             ->components([
                 TextInput::make('name')
+                    ->label('Name')
                     ->required(),
                 TextInput::make('duration')
+                    ->label('Dauer [min]')
                     ->required()
                     ->numeric(),
             ]);

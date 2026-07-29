@@ -59,6 +59,7 @@ class TimeEntriesTable
                     ->label('Erfasst von')
                     ->toggleable(),
                 TextColumn::make('created_at')
+                    ->label('Erstellt')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

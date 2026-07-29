@@ -25,7 +25,7 @@ class TodosTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Erstellungsdatum')
+                    ->label('Erstellt')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

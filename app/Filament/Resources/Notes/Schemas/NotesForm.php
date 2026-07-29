@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Notes\Schemas;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
 
 class NotesForm
 {
@@ -13,7 +14,7 @@ class NotesForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->label('name')
+                    ->label('Name')
                     ->required(),
                 RichEditor::make('content')
                     ->label('Notiz')

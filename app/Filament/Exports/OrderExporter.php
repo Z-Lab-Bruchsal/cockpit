@@ -17,8 +17,8 @@ class OrderExporter extends Exporter
         return [
             ExportColumn::make('id')
                 ->label('ID'),
-            ExportColumn::make('created_at')->label('Erstallungsdatum'),
-            ExportColumn::make('updated_at')->label('Letzte Veränderung'),
+            ExportColumn::make('created_at')->label('Erstellt'),
+            ExportColumn::make('updated_at')->label('Bearbeitet'),
             ExportColumn::make('name')->label('Name'),
             ExportColumn::make('url')->label('URL'),
             ExportColumn::make('count')->label('Anzahl'),
