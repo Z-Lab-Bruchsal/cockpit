@@ -3,9 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use App\Filament\Resources\TimeEntries\Widgets\TimeClockWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;

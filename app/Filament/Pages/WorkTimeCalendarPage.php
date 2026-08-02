@@ -32,13 +32,13 @@ class WorkTimeCalendarPage extends Page
             ->components([
                 Select::make('eventType')
                     ->label('Anzeigen')
-                    ->options(function() {
+                    ->options(function () {
                         return ['both' => 'Zeiten & Todos',
                             'times' => 'Nur Zeiten',
-                            'todos' => 'Nur Todos'
+                            'todos' => 'Nur Todos',
                         ];
                     })
-                    ->hidden(fn() => !User::find(filament()->auth()->user()->id)->can('todo:view')),
+                    ->hidden(fn () => ! User::find(filament()->auth()->user()->id)->can('todo:view')),
                 Select::make('userId')
                     ->label('Benutzer')
                     ->options(function () {

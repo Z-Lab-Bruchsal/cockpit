@@ -254,7 +254,7 @@ return [
 
     'custom_permissions' => [
         'Orders:Export' => 'Export Orders',
-        'Worktimes:ViewForeign' => 'View Foreign Worktime'
+        'Worktimes:ViewForeign' => 'View Foreign Worktime',
     ],
 
     /*

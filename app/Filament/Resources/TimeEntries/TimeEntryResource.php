@@ -46,11 +46,10 @@ class TimeEntryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+        if (! User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
             return parent::getEloquentQuery()
                 ->where('user_id', filament()->auth()->user()->id);
-        }
-        else {
+        } else {
             return parent::getEloquentQuery();
         }
     }

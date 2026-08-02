@@ -17,7 +17,7 @@ class ListOrders extends ListRecords
     {
         return [
             CreateAction::make(),
-            ExportAction::make()->label('exportieren')->exporter(OrderExporter::class)->enableVisibleTableColumnsByDefault()->visible(fn() => User::find(filament()->auth()->user()->id)->can('Orders:Export')),
+            ExportAction::make()->label('exportieren')->exporter(OrderExporter::class)->enableVisibleTableColumnsByDefault()->visible(fn () => User::find(filament()->auth()->user()->id)->can('Orders:Export')),
         ];
     }
 }
