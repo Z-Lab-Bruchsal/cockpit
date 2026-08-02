@@ -24,11 +24,12 @@ class WorkTimeCalendarWidget extends CalendarWidget
         // Evtl. auch feinerer Filter auf die Objekte, die gesehen werden dürfen
         $eventType = $this->pageFilters['eventType'] ?? 'times';
 
-        if(User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+        if (User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
             $userIds = User::all()->pluck('id')->toArray();
+        } else {
+            $userIds = [filament()->auth()->user()->id];
         }
-        else $userIds = [filament()->auth()->user()->id];
-        
+
         $events = collect();
 
         if (in_array($eventType, ['both', 'times'], true)) {
