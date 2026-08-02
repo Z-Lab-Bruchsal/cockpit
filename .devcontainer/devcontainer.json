@@ -19,12 +19,17 @@
    "customizations": {
        "vscode": {
            "extensions": [
-               "jebbs.plantuml",
-               "xdebug.php-pack",
-               "bmewburn.vscode-intelephense-client",
-               "mehedidracula.php-namespace-resolver",
-               "wayou.vscode-todo-highlight"
-           ]
+                "jebbs.plantuml",
+                "xdebug.php-pack",
+                "bmewburn.vscode-intelephense-client",
+                "mehedidracula.php-namespace-resolver",
+               "wayou.vscode-todo-highlight",
+                "onecentlin.laravel-blade",
+                "mhutchie.git-graph",
+                "EditorConfig.EditorConfig",
+                "mikestead.dotenv",
+                "anthropic.claude-code"
+            ]
        }
    }
 }

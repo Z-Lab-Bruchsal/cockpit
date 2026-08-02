@@ -15,4 +15,10 @@ ${SUDO} apt-get -y install plantuml php8.5 php8.5-{cli,zip,sqlite3,xml,pgsql,bcm
 composer install
 npm install
 
-git config --global core.filemode false
+php artisan cache:clear
+php artisan config:clear
+php artisan event:clear
+php artisan route:clear
+php artisan schedule:clear-cache
+php artisan filament:optimize-clear
+php artisan optimize:clear
