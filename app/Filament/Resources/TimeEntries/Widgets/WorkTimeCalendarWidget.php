@@ -106,7 +106,11 @@ class WorkTimeCalendarWidget extends CalendarWidget
      */
     private function todoEvents(FetchInfo $info): Collection
     {
-        $userIds = $this->pageFilters['userIds'];
+        if (count($this->pageFilters['userIds']) == 0) {
+            $userIds = User::all()->pluck('id')->toArray();
+        } else {
+            $userIds = $this->pageFilters['userIds'];
+        }
 
         $groupIds = Group::query()
             ->whereHas('users', fn (Builder $query) => $query->whereIn('users.id', $userIds))
@@ -135,9 +139,11 @@ class WorkTimeCalendarWidget extends CalendarWidget
                         ->title("Fällig: {$todo->name}")
                         ->start($todo->due_date)
                         ->end($todo->due_date)
+                        ->resourceId($todo)
+                        ->url("https://www.google.de")
                         ->allDay()
                         ->backgroundColor('#ef4444')
-                        ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
+                        // ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
                         ->textColor('#ffffff'),
                 );
             }
