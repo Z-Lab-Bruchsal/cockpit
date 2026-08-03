@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\TimeEntries\Widgets;
 
+use App\Filament\Resources\Todos\TodoResource;
 use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
 use App\Services\WorkTime\WorkTimeCalculator;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
+use Guava\Calendar\Enums\CalendarViewType;
 use Guava\Calendar\Filament\CalendarWidget;
 use Guava\Calendar\ValueObjects\CalendarEvent;
 use Guava\Calendar\ValueObjects\FetchInfo;
@@ -18,40 +20,46 @@ class WorkTimeCalendarWidget extends CalendarWidget
 {
     use InteractsWithPageFilters;
 
+    public function getCalendarView(): CalendarViewType
+    {
+        return CalendarViewType::tryFrom($this->pageFilters['calendarView'] ?? '') ?? CalendarViewType::DayGridMonth;
+    }
+
     protected function getEvents(FetchInfo $info): Collection|array|Builder
     {
-        // TODO: Filter noch auf nur eigene Times, wenn keine Permissions für Todos und andere User
-        // Evtl. auch feinerer Filter auf die Objekte, die gesehen werden dürfen
         $eventType = $this->pageFilters['eventType'] ?? 'times';
-
-        if (User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
-            $possibleUsers = User::all()->pluck('id')->toArray();
-            $selectedUsers = $this->pageFilters['userIds'];
-            $userIds = array_intersect($possibleUsers, $selectedUsers);
-
-        } else {
-            $userIds = [filament()->auth()->user()->id];
-        }
 
         $events = collect();
 
-        if (in_array($eventType, ['times'], true)) {
-            $events = $events->merge($this->timeEntryEvents($userIds, $info));
+        if ($eventType == 'times') {
+            $events = $events->merge($this->timeEntryEvents($info));
         }
 
-        if (in_array($eventType, ['todos'], true)) {
-            $events = $events->merge($this->todoEvents($userIds, $info));
+        if ($eventType == 'todos') {
+            $events = $events->merge($this->todoEvents($info));
         }
 
         return $events;
     }
 
     /**
-     * @param  array<int, int>  $userIds
      * @return Collection<int, CalendarEvent>
      */
-    private function timeEntryEvents(array $userIds, FetchInfo $info): Collection
+    private function timeEntryEvents(FetchInfo $info): Collection
     {
+        if (User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+            $possibleUsers = User::all()->pluck('id')->toArray();
+            if (count($this->pageFilters['userIds']) == 0) {
+                $userIds = $possibleUsers;
+            } else {
+                $selectedUsers = $this->pageFilters['userIds'];
+                $userIds = array_intersect($possibleUsers, $selectedUsers);
+            }
+
+        } else {
+            $userIds = [filament()->auth()->user()->id];
+        }
+
         $calculator = app(WorkTimeCalculator::class);
         $events = collect();
 
@@ -94,11 +102,12 @@ class WorkTimeCalendarWidget extends CalendarWidget
     }
 
     /**
-     * @param  array<int, int>  $userIds
      * @return Collection<int, CalendarEvent>
      */
-    private function todoEvents(array $userIds, FetchInfo $info): Collection
+    private function todoEvents(FetchInfo $info): Collection
     {
+        $userIds = $this->pageFilters['userIds'];
+
         $groupIds = Group::query()
             ->whereHas('users', fn (Builder $query) => $query->whereIn('users.id', $userIds))
             ->pluck('id');
@@ -128,6 +137,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
                         ->end($todo->due_date)
                         ->allDay()
                         ->backgroundColor('#ef4444')
+                        ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
                         ->textColor('#ffffff'),
                 );
             }
@@ -135,7 +145,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
             if ($todo->follow_up) {
                 $events->push(
                     CalendarEvent::make()
-                        ->title("Wiedervorlage: {$todo->name}")
+                        ->title("WV: {$todo->name}")
                         ->start($todo->follow_up)
                         ->end($todo->follow_up)
                         ->allDay()
