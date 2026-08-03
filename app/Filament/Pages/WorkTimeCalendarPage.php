@@ -14,7 +14,10 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Guava\Calendar\Enums\CalendarViewType;
+use Override;
 use UnitEnum;
+
+// TODO: Refactor to generic CalendarPage
 
 class WorkTimeCalendarPage extends Page
 {
@@ -29,6 +32,12 @@ class WorkTimeCalendarPage extends Page
     protected static ?string $navigationLabel = 'Kalender';
 
     protected static ?string $title = 'Kalender';
+
+    #[Override]
+    public static function canAccess(): bool
+    {
+        return parent::canAccess() && (User::find(filament()->auth()->user()->id)->can("View:WorkTimeCalendarPage") || User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget"));
+    }
 
     public function filtersForm(Schema $schema): Schema
     {
@@ -82,7 +91,8 @@ class WorkTimeCalendarPage extends Page
         $this->baseUpdatedFilters();
 
         if ($key === 'calendarView') {
-            $this->dispatch('calendar--set', key: 'view', value: $value);
+            $this->dispatch('calendar--set', key: 'view', value: $value)
+                ->to(WorkTimeCalendarWidget::class);
 
             return;
         }

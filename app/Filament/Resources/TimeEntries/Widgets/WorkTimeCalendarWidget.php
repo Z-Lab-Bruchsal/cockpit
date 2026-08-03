@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\TimeEntries\Widgets;
 
+use App\Filament\Resources\TimeEntries\TimeEntryResource;
 use App\Filament\Resources\Todos\TodoResource;
+use App\Filament\Resources\Users\UserResource;
 use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
@@ -20,6 +22,8 @@ class WorkTimeCalendarWidget extends CalendarWidget
 {
     use InteractsWithPageFilters;
 
+    protected bool $eventClickEnabled = true;
+
     public function getCalendarView(): CalendarViewType
     {
         return CalendarViewType::tryFrom($this->pageFilters['calendarView'] ?? '') ?? CalendarViewType::DayGridMonth;
@@ -35,7 +39,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
             $events = $events->merge($this->timeEntryEvents($info));
         }
 
-        if ($eventType == 'todos') {
+        if ($eventType == 'todos' && User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget")) {
             $events = $events->merge($this->todoEvents($info));
         }
 
@@ -72,6 +76,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
             while ($day->lte($end)) {
                 $sessions = $calculator->sessionsForDay($user, $day);
 
+                // TODO: Klickbar machen
                 foreach ($sessions['work'] as $segment) {
                     $events->push(
                         CalendarEvent::make()
@@ -112,6 +117,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
             $userIds = $this->pageFilters['userIds'];
         }
 
+        // TODO: Das hier prüfen
         $groupIds = Group::query()
             ->whereHas('users', fn (Builder $query) => $query->whereIn('users.id', $userIds))
             ->pluck('id');
@@ -139,11 +145,9 @@ class WorkTimeCalendarWidget extends CalendarWidget
                         ->title("Fällig: {$todo->name}")
                         ->start($todo->due_date)
                         ->end($todo->due_date)
-                        ->resourceId($todo)
-                        ->url("https://www.google.de")
                         ->allDay()
                         ->backgroundColor('#ef4444')
-                        // ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
+                        ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
                         ->textColor('#ffffff'),
                 );
             }
@@ -156,6 +160,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
                         ->end($todo->follow_up)
                         ->allDay()
                         ->backgroundColor('#3b82f6')
+                        ->url(TodoResource::getUrl('edit', ['record' => $todo->id]))
                         ->textColor('#ffffff'),
                 );
             }

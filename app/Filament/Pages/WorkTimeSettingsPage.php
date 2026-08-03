@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use App\Models\WorkTimeSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -12,6 +13,7 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Override;
 use UnitEnum;
 
 /**
@@ -20,6 +22,12 @@ use UnitEnum;
 class WorkTimeSettingsPage extends Page
 {
     protected string $view = 'filament.pages.work-time-settings-page';
+
+    #[Override]
+    public static function canAccess(): bool
+    {
+        return parent::canAccess() && User::find(filament()->auth()->user()->id)->can("View:MyOrdersWidget");
+    }
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
