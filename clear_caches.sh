@@ -6,3 +6,5 @@ php artisan route:clear
 php artisan schedule:clear-cache
 php artisan filament:optimize-clear
 php artisan optimize:clear
+
+php artisan filament:assets
