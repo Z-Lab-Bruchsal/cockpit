@@ -30,6 +30,9 @@ class UsersTable
                 TextColumn::make('groups.name')
                     ->label('Gruppen')
                     ->toggleable(),
+                TextColumn::make('roles.name')
+                    ->label('Rollen')
+                    ->toggleable(),
                 TextColumn::make('created_at')
                     ->label('Erstellt')
                     ->dateTime()
