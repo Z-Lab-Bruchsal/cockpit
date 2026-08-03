@@ -25,18 +25,21 @@ class WorkTimeCalendarWidget extends CalendarWidget
         $eventType = $this->pageFilters['eventType'] ?? 'times';
 
         if (User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
-            $userIds = User::all()->pluck('id')->toArray();
+            $possibleUsers = User::all()->pluck('id')->toArray();
+            $selectedUsers = $this->pageFilters['userIds'];
+            $userIds = array_intersect($possibleUsers, $selectedUsers);
+
         } else {
             $userIds = [filament()->auth()->user()->id];
         }
 
         $events = collect();
 
-        if (in_array($eventType, ['both', 'times'], true)) {
+        if (in_array($eventType, ['times'], true)) {
             $events = $events->merge($this->timeEntryEvents($userIds, $info));
         }
 
-        if (in_array($eventType, ['both', 'todos'], true)) {
+        if (in_array($eventType, ['todos'], true)) {
             $events = $events->merge($this->todoEvents($userIds, $info));
         }
 

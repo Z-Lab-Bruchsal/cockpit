@@ -5,11 +5,13 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\TimeEntries\Widgets\WorkTimeCalendarWidget;
 use App\Models\User;
 use BackedEnum;
+
 use Filament\Forms\Components\Select;
 use Filament\Pages\Dashboard\Concerns\HasFiltersForm;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
@@ -32,19 +34,25 @@ class WorkTimeCalendarPage extends Page
             ->components([
                 Select::make('eventType')
                     ->label('Anzeigen')
-                    ->options(function () {
-                        return ['both' => 'Zeiten & Todos',
-                            'times' => 'Nur Zeiten',
-                            'todos' => 'Nur Todos',
-                        ];
-                    })
-                    ->hidden(fn () => ! User::find(filament()->auth()->user()->id)->can('todo:view')),
-                Select::make('userId')
+                   ->options([
+                            'todos' => 'Todos',
+                            'times' => 'Zeiten',
+                        ])
+                    ->live()
+                    ->default('todos')
+                    ->preload()
+                    ->visible(fn () => User::find(filament()->auth()->user()->id)->can('View:Todo')),
+                Select::make('userIds')
                     ->label('Benutzer')
+                    ->multiple()
                     ->options(function () {
                         return User::all()->pluck('name', 'id');
                     })
-                    ->visible(fn () => User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign'))
+                    ->visible(function (Get $get) {
+                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign') && $get('eventType') == 'times') return false;
+                        else return true;
+                    }
+                    )
                     ->default(filament()->auth()->user()->id)
                     ->preload()
                     ->placeholder('Alle sichtbaren Benutzer'),
