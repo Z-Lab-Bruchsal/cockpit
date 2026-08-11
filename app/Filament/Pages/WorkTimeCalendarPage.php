@@ -73,11 +73,13 @@ class WorkTimeCalendarPage extends Page
                         return User::all()->pluck('name', 'id');
                     })
                     ->visible(function (Get $get) {
-                        if (! User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign') && $get('eventType') == 'times') {
+                        if(!User::find(filament()->auth()->user()->id)->can('View:Todo')){
                             return false;
-                        } else {
-                            return true;
                         }
+                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+                            return false;
+                        }
+                        else return true;
                     }
                     )
                     ->default(filament()->auth()->user()->id)
