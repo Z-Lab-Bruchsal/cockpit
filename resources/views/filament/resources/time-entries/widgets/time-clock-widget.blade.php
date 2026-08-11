@@ -1,4 +1,4 @@
-<x-filament-widgets::widget>
+<x-filament-widgets::widget wire:poll.60s>
     <x-filament::section>
         <x-slot name="heading">
             Zeiterfassung
