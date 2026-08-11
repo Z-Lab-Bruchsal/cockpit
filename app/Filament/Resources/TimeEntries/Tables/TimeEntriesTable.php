@@ -9,7 +9,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
-use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -17,6 +16,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
 class TimeEntriesTable
@@ -38,8 +38,7 @@ class TimeEntriesTable
                 TextColumn::make('type')
                     ->label('Art')
                     ->badge()
-                    ->sortable()
-                    ->summarize(Count::make()->label('Anzahl')),
+                    ->sortable(),
                 TextColumn::make('happened_at')
                     ->label('Zeitpunkt')
                     ->dateTime()
@@ -50,7 +49,7 @@ class TimeEntriesTable
                     ->suffix(' min')
                     ->placeholder('—')
                     ->sortable()
-                    ->summarize(Sum::make()->label('Gesamt')->suffix(' min')),
+                    ->summarize(Sum::make()->label('Gesamt')->suffix(' min')->query(fn (QueryBuilder $query) => $query->where('worked_minutes', '>', 0))),
                 TextColumn::make('note')
                     ->label('Notiz')
                     ->searchable()
@@ -75,10 +74,10 @@ class TimeEntriesTable
             ->filters([
                 SelectFilter::make('user_id')
                     ->label('Benutzer')
-                    ->options(fn () => User::query()
-                        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
-                        // ->whereIn('id', filament()->auth()->user()->visibleUserIds())
-                        ->pluck('name', 'id')),
+                    ->options(function () {
+                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) return User::where('id', filament()->auth()->user()->id)->pluck('name','id');
+                        else return User::all()->pluck('name', 'id');
+                    }),
                 SelectFilter::make('type')
                     ->label('Art')
                     ->options(TimeEntryType::class),
