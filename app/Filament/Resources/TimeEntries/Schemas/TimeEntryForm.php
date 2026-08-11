@@ -17,10 +17,10 @@ class TimeEntryForm
             ->components([
                 Select::make('user_id')
                     ->label('Benutzer')
-                    ->options(fn () => User::query()
-                        // TODO: Wieder aktivieren, Filter auf Rolle/Permission Zeitadmin
-                        // ->whereIn('id', filament()->auth()->user()->visibleUserIds())
-                        ->pluck('name', 'id'))
+                    ->options(function () {
+                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) return User::where('id', filament()->auth()->user()->id)->pluck('name','id');
+                        else return User::all()->pluck('name', 'id');
+                    })
                     ->searchable()
                     ->required(),
                 Select::make('type')
