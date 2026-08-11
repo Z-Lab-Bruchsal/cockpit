@@ -1,0 +1,1 @@
+Table TimeEntries filtern nur auf eigene außer man darf fremde sehen
