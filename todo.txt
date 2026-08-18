@@ -1,1 +1,2 @@
 Table TimeEntries filtern nur auf eigene außer man darf fremde sehen
+Tests für Sichtbarkeit Zeiteinträge verschiedener user mit Rollen
