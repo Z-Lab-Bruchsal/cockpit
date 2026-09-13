@@ -5,7 +5,6 @@ namespace App\Services\WorkTime;
 use App\Enums\TimeEntryType;
 use App\Models\TimeEntry;
 use App\Models\User;
-use App\Models\WorkTimeSetting;
 use Illuminate\Support\Carbon;
 
 class WorkTimeCalculator
@@ -92,38 +91,6 @@ class WorkTimeCalculator
         return (int) round($lastEntry->happened_at->diffInMinutes(now()));
     }
 
-    public function qualifyingBreakMinutes(User $user, Carbon $date): int
-    {
-        $minimum = WorkTimeSetting::current()->minimum_qualifying_break_minutes;
-
-        $qualifying = array_filter(
-            $this->sessionsForDay($user, $date)['break'],
-            fn (array $segment) => $segment['start']->diffInMinutes($segment['end']) >= $minimum,
-        );
-
-        return $this->sumMinutes($qualifying);
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function complianceWarnings(User $user, Carbon $date): array
-    {
-        $settings = WorkTimeSetting::current();
-        $worked = $this->workedMinutes($user, $date);
-        $qualifyingBreak = $this->qualifyingBreakMinutes($user, $date);
-
-        $warnings = [];
-
-        if ($worked > $settings->threshold_2_hours * 60 && $qualifyingBreak < $settings->break_2_minutes) {
-            $warnings[] = "{$settings->break_2_minutes}-Minuten-Pause fehlt (mehr als {$settings->threshold_2_hours} Stunden gearbeitet).";
-        } elseif ($worked > $settings->threshold_1_hours * 60 && $qualifyingBreak < $settings->break_1_minutes) {
-            $warnings[] = "{$settings->break_1_minutes}-Minuten-Pause fehlt (mehr als {$settings->threshold_1_hours} Stunden gearbeitet).";
-        }
-
-        return $warnings;
-    }
-
     public function weeklyWorkedMinutes(User $user, Carbon $weekStart): int
     {
         $minutes = 0;
@@ -133,24 +100,6 @@ class WorkTimeCalculator
         }
 
         return $minutes;
-    }
-
-    public function weeklyTargetMinutes(User $user, Carbon $weekStart): int
-    {
-        $minutes = 0;
-
-        for ($i = 0; $i < 7; $i++) {
-            $day = $weekStart->copy()->addDays($i);
-            $profile = $user->currentTimeProfile($day);
-            $minutes += $profile ? (int) round(((float) $profile->weekly_hours * 60) / 7) : 0;
-        }
-
-        return $minutes;
-    }
-
-    public function weeklyBalanceMinutes(User $user, Carbon $weekStart): int
-    {
-        return $this->weeklyWorkedMinutes($user, $weekStart) - $this->weeklyTargetMinutes($user, $weekStart);
     }
 
     /**
