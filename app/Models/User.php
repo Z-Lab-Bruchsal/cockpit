@@ -59,13 +59,4 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(TimeEntry::class);
     }
 
-    public function timeProfileAssignments(): HasMany
-    {
-        return $this->hasMany(TimeProfileAssignment::class);
-    }
-
-    public function currentTimeProfile(?Carbon $onDate = null): ?TimeProfile
-    {
-        return TimeProfileAssignment::currentFor($this, $onDate);
-    }
 }

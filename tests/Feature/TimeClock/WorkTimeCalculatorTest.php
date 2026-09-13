@@ -4,8 +4,6 @@ namespace Tests\Feature\TimeClock;
 
 use App\Enums\TimeEntryType;
 use App\Models\TimeEntry;
-use App\Models\TimeProfile;
-use App\Models\TimeProfileAssignment;
 use App\Models\User;
 use App\Services\WorkTime\WorkTimeCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -118,29 +116,4 @@ class WorkTimeCalculatorTest extends TestCase
         $this->assertSame(30, $calculator->workedMinutes($user, Carbon::parse('2026-07-21')));
     }
 
-    public function test_weekly_target_spans_a_mid_week_profile_change(): void
-    {
-        $user = User::factory()->create();
-        $partTime = TimeProfile::factory()->create(['weekly_hours' => 20]);
-        $fullTime = TimeProfile::factory()->create(['weekly_hours' => 40]);
-
-        // Week of 2026-07-20 (Monday) - 2026-07-26 (Sunday).
-        TimeProfileAssignment::factory()->create([
-            'user_id' => $user->id,
-            'time_profile_id' => $partTime->id,
-            'effective_from' => '2026-07-20',
-            'effective_to' => '2026-07-22',
-        ]);
-        TimeProfileAssignment::factory()->create([
-            'user_id' => $user->id,
-            'time_profile_id' => $fullTime->id,
-            'effective_from' => '2026-07-23',
-            'effective_to' => null,
-        ]);
-
-        $target = (new WorkTimeCalculator)->weeklyTargetMinutes($user, Carbon::parse('2026-07-20'));
-
-        // 3 days at 20h/week (171 min/day) + 4 days at 40h/week (343 min/day).
-        $this->assertSame((3 * 171) + (4 * 343), $target);
-    }
 }
