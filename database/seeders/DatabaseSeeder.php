@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\ShieldSeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -19,5 +20,9 @@ class DatabaseSeeder extends Seeder
         DB::table('orderstatuses')->insert(['name' => 'bestellt']);
         DB::table('orderstatuses')->insert(['name' => 'angekommen']);
         DB::table('orderstatuses')->insert(['name' => 'genommen']);
-    }
+
+        $this->call([
+            ShieldSeeder::class,
+        ]);
+ }
 }
