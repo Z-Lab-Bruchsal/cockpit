@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password'])]
@@ -54,9 +53,8 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Todo::class);
     }
 
-    public function timeEntries(): HasMany
+    public function bookings(): HasMany
     {
-        return $this->hasMany(TimeEntry::class);
+        return $this->hasMany(Booking::class);
     }
-
 }

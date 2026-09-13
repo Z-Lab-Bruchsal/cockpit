@@ -3,7 +3,6 @@
 namespace Tests\Feature\TimeClock;
 
 use App\Enums\TimeClockState;
-use App\Enums\TimeEntryType;
 use App\Models\User;
 use App\Services\WorkTime\TimeClockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,12 +23,6 @@ class ClockStateMachineTest extends TestCase
         $service->clockIn($user, $user);
         $this->assertSame(TimeClockState::Working, $service->currentState($user));
 
-        $service->startBreak($user, $user);
-        $this->assertSame(TimeClockState::OnBreak, $service->currentState($user));
-
-        $service->endBreak($user, $user);
-        $this->assertSame(TimeClockState::Working, $service->currentState($user));
-
         $service->clockOut($user, $user);
         $this->assertSame(TimeClockState::NotClockedIn, $service->currentState($user));
     }
@@ -40,23 +33,29 @@ class ClockStateMachineTest extends TestCase
         $service = new TimeClockService;
 
         $this->expectException(RuntimeException::class);
-        $service->startBreak($user, $user);
+        $service->clockOut($user, $user);
     }
 
-    public function test_clock_out_while_on_break_inserts_implicit_break_end(): void
+    public function test_clocking_in_records_a_booking_with_a_start_time(): void
     {
         $user = User::factory()->create();
         $service = new TimeClockService;
 
-        $service->clockIn($user, $user);
-        $service->startBreak($user, $user);
-        $service->clockOut($user, $user);
+        $booking = $service->clockIn($user, $user);
 
-        $types = $user->fresh()->timeEntries()->orderBy('id')->pluck('type');
+        $this->assertNotNull($booking->start_at);
+        $this->assertNull($booking->end_at);
+    }
 
-        $this->assertSame(
-            [TimeEntryType::Come, TimeEntryType::BreakStart, TimeEntryType::BreakEnd, TimeEntryType::Go],
-            $types->all(),
-        );
+    public function test_clocking_out_sets_the_end_time_on_the_open_booking(): void
+    {
+        $user = User::factory()->create();
+        $service = new TimeClockService;
+
+        $opened = $service->clockIn($user, $user);
+        $closed = $service->clockOut($user, $user);
+
+        $this->assertSame($opened->id, $closed->id);
+        $this->assertNotNull($closed->fresh()->end_at);
     }
 }

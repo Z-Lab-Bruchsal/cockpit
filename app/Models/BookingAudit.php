@@ -6,8 +6,8 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['time_entry_id', 'action', 'field', 'old_value', 'new_value', 'changed_by_user_id', 'changed_at'])]
-class TimeEntryAudit extends Model
+#[Fillable(['booking_id', 'action', 'field', 'old_value', 'new_value', 'changed_by_user_id', 'changed_at'])]
+class BookingAudit extends Model
 {
     protected function casts(): array
     {
@@ -16,9 +16,9 @@ class TimeEntryAudit extends Model
         ];
     }
 
-    public function timeEntry(): BelongsTo
+    public function booking(): BelongsTo
     {
-        return $this->belongsTo(TimeEntry::class);
+        return $this->belongsTo(Booking::class);
     }
 
     public function changedBy(): BelongsTo

@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\Tables;
+namespace App\Filament\Resources\Bookings\Tables;
 
-use App\Enums\TimeEntryType;
-use App\Models\TimeEntry;
+use App\Models\Booking;
 use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -19,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
-class TimeEntriesTable
+class BookingsTable
 {
     /**
      * @var array<int, string>
@@ -29,19 +28,20 @@ class TimeEntriesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->defaultSort('happened_at', 'desc')
+            ->defaultSort('start_at', 'desc')
             ->columns([
                 TextColumn::make('user.name')
                     ->label('Benutzer')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('type')
-                    ->label('Art')
-                    ->badge()
-                    ->sortable(),
-                TextColumn::make('happened_at')
-                    ->label('Zeitpunkt')
+                TextColumn::make('start_at')
+                    ->label('Von')
                     ->dateTime()
+                    ->sortable(),
+                TextColumn::make('end_at')
+                    ->label('Bis')
+                    ->dateTime()
+                    ->placeholder('läuft noch')
                     ->sortable(),
                 TextColumn::make('worked_minutes')
                     ->label('Gearbeitet')
@@ -64,23 +64,23 @@ class TimeEntriesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->groups([
-                Group::make('happened_at')
+                Group::make('start_at')
                     ->label('Zeitraum')
-                    ->getKeyFromRecordUsing(fn (TimeEntry $record): string => self::periodKeyFor($record->happened_at))
-                    ->getTitleFromRecordUsing(fn (TimeEntry $record): string => self::periodLabel(self::periodKeyFor($record->happened_at)))
-                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('happened_at', $direction))
+                    ->getKeyFromRecordUsing(fn (Booking $record): string => self::periodKeyFor($record->start_at))
+                    ->getTitleFromRecordUsing(fn (Booking $record): string => self::periodLabel(self::periodKeyFor($record->start_at)))
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('start_at', $direction))
                     ->collapsible(),
             ])
             ->filters([
                 SelectFilter::make('user_id')
                     ->label('Benutzer')
                     ->options(function () {
-                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) return User::where('id', filament()->auth()->user()->id)->pluck('name','id');
-                        else return User::all()->pluck('name', 'id');
+                        if (! User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+                            return User::where('id', filament()->auth()->user()->id)->pluck('name', 'id');
+                        } else {
+                            return User::all()->pluck('name', 'id');
+                        }
                     }),
-                SelectFilter::make('type')
-                    ->label('Art')
-                    ->options(TimeEntryType::class),
                 Filter::make('period')
                     ->label('Zeitraum')
                     ->schema([
@@ -101,7 +101,7 @@ class TimeEntriesTable
 
                         [$start, $end] = self::periodRangeUtc($data['value']);
 
-                        return $query->whereBetween('happened_at', [$start, $end]);
+                        return $query->whereBetween('start_at', [$start, $end]);
                     })
                     ->indicateUsing(fn (array $data): ?string => filled($data['value'] ?? null)
                         ? 'Zeitraum: '.self::periodLabel($data['value'])
@@ -136,10 +136,10 @@ class TimeEntriesTable
         return [$start->clone()->setTimezone('UTC'), $end->clone()->setTimezone('UTC')];
     }
 
-    private static function periodKeyFor(Carbon $happenedAt): string
+    private static function periodKeyFor(Carbon $startAt): string
     {
         $timezone = config('app.business_timezone');
-        $local = $happenedAt->copy()->setTimezone($timezone);
+        $local = $startAt->copy()->setTimezone($timezone);
         $now = Carbon::now($timezone);
 
         if ($local->isSameDay($now)) {

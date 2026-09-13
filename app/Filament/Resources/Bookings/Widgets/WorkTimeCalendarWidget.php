@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\Widgets;
+namespace App\Filament\Resources\Bookings\Widgets;
 
-use App\Filament\Resources\TimeEntries\TimeEntryResource;
 use App\Filament\Resources\Todos\TodoResource;
-use App\Filament\Resources\Users\UserResource;
+use App\Models\Booking;
 use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
-use App\Services\WorkTime\WorkTimeCalculator;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Guava\Calendar\Enums\CalendarViewType;
 use Guava\Calendar\Filament\CalendarWidget;
@@ -36,10 +34,10 @@ class WorkTimeCalendarWidget extends CalendarWidget
         $events = collect();
 
         if ($eventType == 'times') {
-            $events = $events->merge($this->timeEntryEvents($info));
+            $events = $events->merge($this->bookingEvents($info));
         }
 
-        if ($eventType == 'todos' && User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget")) {
+        if ($eventType == 'todos' && User::find(filament()->auth()->user()->id)->can('View:MyTodosWidget')) {
             $events = $events->merge($this->todoEvents($info));
         }
 
@@ -49,7 +47,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
     /**
      * @return Collection<int, CalendarEvent>
      */
-    private function timeEntryEvents(FetchInfo $info): Collection
+    private function bookingEvents(FetchInfo $info): Collection
     {
         if (User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
             $possibleUsers = User::all()->pluck('id')->toArray();
@@ -64,43 +62,31 @@ class WorkTimeCalendarWidget extends CalendarWidget
             $userIds = [filament()->auth()->user()->id];
         }
 
-        $calculator = app(WorkTimeCalculator::class);
+        $start = Carbon::parse($info->start);
+        $end = Carbon::parse($info->end);
+
+        $bookings = Booking::query()
+            ->whereIn('user_id', $userIds)
+            ->where('start_at', '<', $end)
+            ->where(fn (Builder $query) => $query
+                ->whereNull('end_at')
+                ->orWhere('end_at', '>', $start))
+            ->with('user')
+            ->get();
+
         $events = collect();
 
-        $users = User::query()->whereIn('id', $userIds)->get();
+        foreach ($bookings as $booking) {
+            $bookingEnd = $booking->end_at ?? Carbon::now();
 
-        foreach ($users as $user) {
-            $day = Carbon::parse($info->start)->startOfDay();
-            $end = Carbon::parse($info->end);
-
-            while ($day->lte($end)) {
-                $sessions = $calculator->sessionsForDay($user, $day);
-
-                // TODO: Klickbar machen
-                foreach ($sessions['work'] as $segment) {
-                    $events->push(
-                        CalendarEvent::make()
-                            ->title("{$user->name}: Arbeit {$segment['start']->format('H:i')}–{$segment['end']->format('H:i')}")
-                            ->start($segment['start'])
-                            ->end($segment['end'])
-                            ->backgroundColor('#22c55e')
-                            ->textColor('#ffffff'),
-                    );
-                }
-
-                foreach ($sessions['break'] as $segment) {
-                    $events->push(
-                        CalendarEvent::make()
-                            ->title("{$user->name}: Pause {$segment['start']->format('H:i')}–{$segment['end']->format('H:i')}")
-                            ->start($segment['start'])
-                            ->end($segment['end'])
-                            ->backgroundColor('#f59e0b')
-                            ->textColor('#ffffff'),
-                    );
-                }
-
-                $day->addDay();
-            }
+            $events->push(
+                CalendarEvent::make($booking)
+                    ->title("{$booking->user->name}: Arbeit {$booking->start_at->format('H:i')}–".($booking->end_at ? $booking->end_at->format('H:i') : 'läuft'))
+                    ->start($booking->start_at)
+                    ->end($bookingEnd)
+                    ->backgroundColor('#22c55e')
+                    ->textColor('#ffffff'),
+            );
         }
 
         return $events;

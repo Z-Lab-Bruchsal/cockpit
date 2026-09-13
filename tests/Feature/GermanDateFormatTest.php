@@ -2,9 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Enums\TimeEntryType;
-use App\Filament\Resources\TimeEntries\Pages\ListTimeEntries;
-use App\Models\TimeEntry;
+use App\Filament\Resources\Bookings\Pages\ListBookings;
+use App\Models\Booking;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -35,16 +34,15 @@ class GermanDateFormatTest extends TestCase
     public function test_table_column_renders_datetimes_in_german_format(): void
     {
         $user = User::factory()->create();
-        TimeEntry::create([
+        Booking::create([
             'user_id' => $user->id,
-            'type' => TimeEntryType::Come,
-            'happened_at' => '2026-03-05 14:30:00',
+            'start_at' => '2026-03-05 14:30:00',
             'recorded_by_user_id' => $user->id,
         ]);
 
         $this->actingAs($user);
 
-        Livewire::test(ListTimeEntries::class)
+        Livewire::test(ListBookings::class)
             ->assertSee('05.03.2026 14:30');
     }
 }

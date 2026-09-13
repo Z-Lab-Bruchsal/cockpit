@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\Widgets;
+namespace App\Filament\Resources\Bookings\Widgets;
 
 use App\Enums\TimeClockState;
 use App\Services\WorkTime\TimeClockService;
@@ -20,7 +20,7 @@ class TimeClockWidget extends Widget implements HasActions, HasSchemas
     use InteractsWithActions;
     use InteractsWithSchemas;
 
-    protected string $view = 'filament.resources.time-entries.widgets.time-clock-widget';
+    protected string $view = 'filament.resources.bookings.widgets.time-clock-widget';
 
     protected int|string|array $columnSpan = 1;
 
@@ -50,30 +50,12 @@ class TimeClockWidget extends Widget implements HasActions, HasSchemas
             ->action(fn () => $this->recordAndRefresh('clockIn'));
     }
 
-    public function startBreakAction(): Action
-    {
-        return Action::make('startBreak')
-            ->label('Pause')
-            ->color('warning')
-            ->visible(fn (): bool => $this->getState() === TimeClockState::Working)
-            ->action(fn () => $this->recordAndRefresh('startBreak'));
-    }
-
-    public function endBreakAction(): Action
-    {
-        return Action::make('endBreak')
-            ->label('Pause beenden')
-            ->color('warning')
-            ->visible(fn (): bool => $this->getState() === TimeClockState::OnBreak)
-            ->action(fn () => $this->recordAndRefresh('endBreak'));
-    }
-
     public function clockOutAction(): Action
     {
         return Action::make('clockOut')
             ->label('Gehen')
             ->color('danger')
-            ->visible(fn (): bool => in_array($this->getState(), [TimeClockState::Working, TimeClockState::OnBreak], true))
+            ->visible(fn (): bool => $this->getState() === TimeClockState::Working)
             ->action(fn () => $this->recordAndRefresh('clockOut'));
     }
 

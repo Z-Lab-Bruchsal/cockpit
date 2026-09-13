@@ -2,15 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Enums\TimeEntryType;
-use App\Models\TimeEntry;
+use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<TimeEntry>
+ * @extends Factory<Booking>
  */
-class TimeEntryFactory extends Factory
+class BookingFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -23,8 +22,8 @@ class TimeEntryFactory extends Factory
 
         return [
             'user_id' => $user->id,
-            'type' => fake()->randomElement(TimeEntryType::cases()),
-            'happened_at' => now(),
+            'start_at' => now(),
+            'end_at' => null,
             'recorded_by_user_id' => $user->id,
         ];
     }

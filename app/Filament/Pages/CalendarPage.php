@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\TimeEntries\Widgets\WorkTimeCalendarWidget;
+use App\Filament\Resources\Bookings\Widgets\WorkTimeCalendarWidget;
 use App\Models\User;
 use BackedEnum;
 use Filament\Forms\Components\Select;
@@ -33,7 +33,7 @@ class CalendarPage extends Page
     #[Override]
     public static function canAccess(): bool
     {
-        return parent::canAccess() && (User::find(filament()->auth()->user()->id)->can("View:CalendarPage") || User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget"));
+        return parent::canAccess() && (User::find(filament()->auth()->user()->id)->can('View:CalendarPage') || User::find(filament()->auth()->user()->id)->can('View:MyTodosWidget'));
     }
 
     public function filtersForm(Schema $schema): Schema
@@ -70,13 +70,14 @@ class CalendarPage extends Page
                         return User::all()->pluck('name', 'id');
                     })
                     ->visible(function (Get $get) {
-                        if(!User::find(filament()->auth()->user()->id)->can('View:Todo')){
+                        if (! User::find(filament()->auth()->user()->id)->can('View:Todo')) {
                             return false;
                         }
-                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+                        if (! User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
                             return false;
+                        } else {
+                            return true;
                         }
-                        else return true;
                     }
                     )
                     ->default(filament()->auth()->user()->id)

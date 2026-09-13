@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries;
+namespace App\Filament\Resources\Bookings;
 
-use App\Filament\Resources\TimeEntries\Pages\CreateTimeEntry;
-use App\Filament\Resources\TimeEntries\Pages\EditTimeEntry;
-use App\Filament\Resources\TimeEntries\Pages\ListTimeEntries;
-use App\Filament\Resources\TimeEntries\RelationManagers\AuditsRelationManager;
-use App\Filament\Resources\TimeEntries\Schemas\TimeEntryForm;
-use App\Filament\Resources\TimeEntries\Tables\TimeEntriesTable;
-use App\Models\TimeEntry;
+use App\Filament\Resources\Bookings\Pages\CreateBooking;
+use App\Filament\Resources\Bookings\Pages\EditBooking;
+use App\Filament\Resources\Bookings\Pages\ListBookings;
+use App\Filament\Resources\Bookings\RelationManagers\AuditsRelationManager;
+use App\Filament\Resources\Bookings\Schemas\BookingForm;
+use App\Filament\Resources\Bookings\Tables\BookingsTable;
+use App\Models\Booking;
 use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -18,30 +18,30 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class TimeEntryResource extends Resource
+class BookingResource extends Resource
 {
-    protected static ?string $model = TimeEntry::class;
+    protected static ?string $model = Booking::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     protected static string|UnitEnum|null $navigationGroup = 'Zeiterfassung';
 
-    protected static ?string $navigationLabel = 'Zeiten';
+    protected static ?string $navigationLabel = 'Buchungen';
 
-    protected static ?string $pluralLabel = 'Zeiten';
+    protected static ?string $pluralLabel = 'Buchungen';
 
-    protected static ?string $pluralModelLabel = 'Zeiten';
+    protected static ?string $pluralModelLabel = 'Buchungen';
 
-    protected static ?string $modelLabel = 'Zeiteintrag';
+    protected static ?string $modelLabel = 'Buchung';
 
     public static function form(Schema $schema): Schema
     {
-        return TimeEntryForm::configure($schema);
+        return BookingForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return TimeEntriesTable::configure($table);
+        return BookingsTable::configure($table);
     }
 
     public static function getEloquentQuery(): Builder
@@ -64,9 +64,9 @@ class TimeEntryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListTimeEntries::route('/'),
-            'create' => CreateTimeEntry::route('/create'),
-            'edit' => EditTimeEntry::route('/{record}/edit'),
+            'index' => ListBookings::route('/'),
+            'create' => CreateBooking::route('/create'),
+            'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
 }

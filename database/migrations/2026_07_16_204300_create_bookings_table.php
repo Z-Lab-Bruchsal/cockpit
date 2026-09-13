@@ -7,27 +7,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('time_entries', function (Blueprint $table) {
+        Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->foreignIdFor(User::class);
-            $table->string('type');
-            $table->dateTime('happened_at');
+            $table->dateTime('start_at');
+            $table->dateTime('end_at')->nullable();
+            $table->unsignedInteger('worked_minutes')->nullable();
             $table->string('note')->nullable();
             $table->foreignIdFor(User::class, 'recorded_by_user_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('time_entries');
+        Schema::dropIfExists('bookings');
     }
 };

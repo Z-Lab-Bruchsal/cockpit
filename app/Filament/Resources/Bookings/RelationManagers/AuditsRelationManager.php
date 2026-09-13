@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\RelationManagers;
+namespace App\Filament\Resources\Bookings\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;

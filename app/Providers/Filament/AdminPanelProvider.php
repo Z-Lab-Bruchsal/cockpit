@@ -2,8 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
-use App\Filament\Resources\TimeEntries\Widgets\TimeClockWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\FontProviders\LocalFontProvider;

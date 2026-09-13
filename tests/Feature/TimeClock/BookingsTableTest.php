@@ -2,10 +2,9 @@
 
 namespace Tests\Feature\TimeClock;
 
-use App\Enums\TimeEntryType;
-use App\Filament\Resources\TimeEntries\Pages\ListTimeEntries;
-use App\Filament\Resources\TimeEntries\Tables\TimeEntriesTable;
-use App\Models\TimeEntry;
+use App\Filament\Resources\Bookings\Pages\ListBookings;
+use App\Filament\Resources\Bookings\Tables\BookingsTable;
+use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -13,7 +12,7 @@ use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
 
-class TimeEntriesTableTest extends TestCase
+class BookingsTableTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -32,12 +31,12 @@ class TimeEntriesTableTest extends TestCase
         parent::tearDown();
     }
 
-    private function periodKeyFor(Carbon $happenedAt): string
+    private function periodKeyFor(Carbon $startAt): string
     {
-        $method = new ReflectionMethod(TimeEntriesTable::class, 'periodKeyFor');
+        $method = new ReflectionMethod(BookingsTable::class, 'periodKeyFor');
         $method->setAccessible(true);
 
-        return $method->invoke(null, $happenedAt);
+        return $method->invoke(null, $startAt);
     }
 
     public function test_period_key_buckets_are_computed_correctly(): void
@@ -59,25 +58,23 @@ class TimeEntriesTableTest extends TestCase
         $user = User::factory()->create();
         $timezone = config('app.business_timezone');
 
-        $todayEntry = TimeEntry::create([
+        $todayBooking = Booking::create([
             'user_id' => $user->id,
-            'type' => TimeEntryType::Come,
-            'happened_at' => Carbon::parse('2026-07-16 08:00:00', $timezone)->setTimezone('UTC'),
+            'start_at' => Carbon::parse('2026-07-16 08:00:00', $timezone)->setTimezone('UTC'),
             'recorded_by_user_id' => $user->id,
         ]);
-        $lastMonthEntry = TimeEntry::create([
+        $lastMonthBooking = Booking::create([
             'user_id' => $user->id,
-            'type' => TimeEntryType::Come,
-            'happened_at' => Carbon::parse('2026-06-15 08:00:00', $timezone)->setTimezone('UTC'),
+            'start_at' => Carbon::parse('2026-06-15 08:00:00', $timezone)->setTimezone('UTC'),
             'recorded_by_user_id' => $user->id,
         ]);
 
         $this->actingAs($user);
 
-        Livewire::test(ListTimeEntries::class)
+        Livewire::test(ListBookings::class)
             ->filterTable('period', ['value' => 'today'])
-            ->assertCanSeeTableRecords([$todayEntry])
-            ->assertCanNotSeeTableRecords([$lastMonthEntry]);
+            ->assertCanSeeTableRecords([$todayBooking])
+            ->assertCanNotSeeTableRecords([$lastMonthBooking]);
     }
 
     public function test_table_groups_entries_by_period_and_shows_todays_group(): void
@@ -85,16 +82,15 @@ class TimeEntriesTableTest extends TestCase
         $user = User::factory()->create();
         $timezone = config('app.business_timezone');
 
-        TimeEntry::create([
+        Booking::create([
             'user_id' => $user->id,
-            'type' => TimeEntryType::Come,
-            'happened_at' => Carbon::parse('2026-07-16 08:00:00', $timezone)->setTimezone('UTC'),
+            'start_at' => Carbon::parse('2026-07-16 08:00:00', $timezone)->setTimezone('UTC'),
             'recorded_by_user_id' => $user->id,
         ]);
 
         $this->actingAs($user);
 
-        Livewire::test(ListTimeEntries::class)
+        Livewire::test(ListBookings::class)
             ->assertSee('Heute');
     }
 }

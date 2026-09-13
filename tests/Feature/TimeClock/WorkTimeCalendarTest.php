@@ -2,9 +2,8 @@
 
 namespace Tests\Feature\TimeClock;
 
-use App\Enums\TimeEntryType;
-use App\Filament\Resources\TimeEntries\Widgets\WorkTimeCalendarWidget;
-use App\Models\TimeEntry;
+use App\Filament\Resources\Bookings\Widgets\WorkTimeCalendarWidget;
+use App\Models\Booking;
 use App\Models\Todo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,23 +18,17 @@ class WorkTimeCalendarTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get('/work-time-calendar-page')->assertOk();
+        $this->actingAs($user)->get('/calendar-page')->assertOk();
     }
 
-    public function test_calendar_widget_returns_time_entry_and_todo_events(): void
+    public function test_calendar_widget_returns_booking_and_todo_events(): void
     {
         $user = User::factory()->create();
 
-        TimeEntry::create([
+        Booking::create([
             'user_id' => $user->id,
-            'type' => TimeEntryType::Come,
-            'happened_at' => '2026-07-20 08:00:00',
-            'recorded_by_user_id' => $user->id,
-        ]);
-        TimeEntry::create([
-            'user_id' => $user->id,
-            'type' => TimeEntryType::Go,
-            'happened_at' => '2026-07-20 16:00:00',
+            'start_at' => '2026-07-20 08:00:00',
+            'end_at' => '2026-07-20 16:00:00',
             'recorded_by_user_id' => $user->id,
         ]);
 

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\Pages;
+namespace App\Filament\Resources\Bookings\Pages;
 
-use App\Filament\Resources\TimeEntries\TimeEntryResource;
+use App\Filament\Resources\Bookings\BookingResource;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateTimeEntry extends CreateRecord
+class CreateBooking extends CreateRecord
 {
-    protected static string $resource = TimeEntryResource::class;
+    protected static string $resource = BookingResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

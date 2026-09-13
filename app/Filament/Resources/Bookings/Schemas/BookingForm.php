@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\TimeEntries\Schemas;
+namespace App\Filament\Resources\Bookings\Schemas;
 
-use App\Enums\TimeEntryType;
 use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
-class TimeEntryForm
+class BookingForm
 {
     public static function configure(Schema $schema): Schema
     {
@@ -18,19 +17,22 @@ class TimeEntryForm
                 Select::make('user_id')
                     ->label('Benutzer')
                     ->options(function () {
-                        if(!User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) return User::where('id', filament()->auth()->user()->id)->pluck('name','id');
-                        else return User::all()->pluck('name', 'id');
+                        if (! User::find(filament()->auth()->user()->id)->can('Worktimes:ViewForeign')) {
+                            return User::where('id', filament()->auth()->user()->id)->pluck('name', 'id');
+                        } else {
+                            return User::all()->pluck('name', 'id');
+                        }
                     })
                     ->searchable()
                     ->required(),
-                Select::make('type')
-                    ->label('Art')
-                    ->options(TimeEntryType::class)
-                    ->required(),
-                DateTimePicker::make('happened_at')
-                    ->label('Zeitpunkt')
+                DateTimePicker::make('start_at')
+                    ->label('Von')
                     ->seconds(false)
                     ->required(),
+                DateTimePicker::make('end_at')
+                    ->label('Bis')
+                    ->seconds(false)
+                    ->after('start_at'),
                 TextInput::make('note')
                     ->label('Notiz'),
             ]);
