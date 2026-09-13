@@ -15,11 +15,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Guava\Calendar\Enums\CalendarViewType;
 use Override;
-use UnitEnum;
 
-// TODO: Refactor to generic CalendarPage
-
-class WorkTimeCalendarPage extends Page
+class CalendarPage extends Page
 {
     use HasFiltersForm {
         updatedFilters as protected baseUpdatedFilters;
@@ -27,16 +24,16 @@ class WorkTimeCalendarPage extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Zeiterfassung';
-
     protected static ?string $navigationLabel = 'Kalender';
+
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $title = 'Kalender';
 
     #[Override]
     public static function canAccess(): bool
     {
-        return parent::canAccess() && (User::find(filament()->auth()->user()->id)->can("View:WorkTimeCalendarPage") || User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget"));
+        return parent::canAccess() && (User::find(filament()->auth()->user()->id)->can("View:CalendarPage") || User::find(filament()->auth()->user()->id)->can("View:MyTodosWidget"));
     }
 
     public function filtersForm(Schema $schema): Schema
@@ -56,16 +53,16 @@ class WorkTimeCalendarPage extends Page
                     ])
                     ->live()
                     ->default(CalendarViewType::DayGridMonth),
-                Select::make('eventType')
-                    ->label('Anzeigen')
-                    ->options([
-                        'todos' => 'Todos',
-                        'times' => 'Zeiten',
-                    ])
-                    ->live()
-                    ->default('todos')
-                    ->preload()
-                    ->visible(fn () => User::find(filament()->auth()->user()->id)->can('View:Todo')),
+                // Select::make('eventType')
+                //     ->label('Anzeigen')
+                //     ->options([
+                //         'todos' => 'Todos',
+                //         'times' => 'Zeiten',
+                //     ])
+                //     ->live()
+                //     ->default('todos')
+                //     ->preload()
+                //     ->visible(fn () => User::find(filament()->auth()->user()->id)->can('View:Todo')),
                 Select::make('userIds')
                     ->label('Benutzer')
                     ->multiple()
