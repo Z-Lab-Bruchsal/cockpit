@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         intl \
         zip \
         bcmath \
+        gd \
         pcntl \
         opcache \
     && a2enmod rewrite \
