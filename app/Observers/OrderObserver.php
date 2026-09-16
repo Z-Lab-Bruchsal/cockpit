@@ -18,11 +18,12 @@ class OrderObserver
     {
         $order->public_uuid = (string) Str::uuid();
         $order->save();
-        // TODO: Activate again
-        // $users = Role::where('name', 'ordermanager')->first()->users()->get();
-        // foreach ($users as $user) {
-        //     Mail::to($user)->send(new OrderRegistered($order));
-        // }
+        $users = User::all();
+        foreach ($users as $user) {
+            if($user->hasAnyPermission(['Orders:GetNotifications'])) {
+                Mail::to($user)->send(new OrderRegistered($order));
+            }
+        }
     }
 
     /**

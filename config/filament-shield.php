@@ -254,6 +254,7 @@ return [
 
     'custom_permissions' => [
         'Orders:Export' => 'Export Orders',
+        'Orders:GetNotifications' => 'Get Order Notifications',
         'Worktimes:ViewForeign' => 'View Foreign Worktime',
         'Worktimes:SupervisorReport' => 'View All-Users Worktime Report',
     ],
