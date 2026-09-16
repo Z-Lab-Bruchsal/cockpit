@@ -10,6 +10,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
@@ -56,7 +57,8 @@ class BookingsTable
                     ->toggleable(),
                 TextColumn::make('recordedBy.name')
                     ->label('Erfasst von')
-                    ->toggleable(),
+                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Erstellt')
                     ->dateTime()
@@ -80,7 +82,8 @@ class BookingsTable
                         } else {
                             return User::all()->pluck('name', 'id');
                         }
-                    }),
+                    })
+                    ->default(filament()->auth()->user()->id),
                 Filter::make('period')
                     ->label('Zeitraum')
                     ->schema([
@@ -92,6 +95,7 @@ class BookingsTable
                                 'this_week' => 'Diese Woche',
                                 'this_month' => 'Diesen Monat',
                             ])
+                            ->default('this_week')
                             ->native(false),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -106,7 +110,7 @@ class BookingsTable
                     ->indicateUsing(fn (array $data): ?string => filled($data['value'] ?? null)
                         ? 'Zeitraum: '.self::periodLabel($data['value'])
                         : null),
-            ])
+            ])->filtersLayout(FiltersLayout::AfterContent)
             ->recordActions([
                 EditAction::make(),
             ])
