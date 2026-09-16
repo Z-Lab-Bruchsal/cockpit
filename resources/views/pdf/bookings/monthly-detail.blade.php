@@ -37,11 +37,12 @@
             </tr>
         </tfoot>
     </table>
-
+<!--
     <table class="signatures">
         <tr>
             <td>Datum, Unterschrift Mitarbeiter</td>
             <td>Datum, Unterschrift Vorgesetzter</td>
         </tr>
     </table>
+-->
 @endsection
