@@ -29,7 +29,7 @@ class WorkTimeCalendarWidget extends CalendarWidget
 
     protected function getEvents(FetchInfo $info): Collection|array|Builder
     {
-        $eventType = $this->pageFilters['eventType'] ?? 'times';
+        $eventType = $this->pageFilters['eventType'] ?? 'todos';
 
         $events = collect();
 
