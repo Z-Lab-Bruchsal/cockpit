@@ -19,7 +19,7 @@ class OrderForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->label('Name')->inlineLabel()
+                    ->label('Produktname')->inlineLabel()
                     ->required()
                     ->columnSpan(1),
                 TextInput::make('count')
