@@ -25,18 +25,8 @@ class OrdersTable
     {
         return $table
             ->columns([
-                TextColumn::make('created_at')
-                    ->label('Erstellt')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->label('Bearbeitet')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label('Produktname')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('url')
@@ -58,7 +48,17 @@ class OrdersTable
                     ->numeric()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
-            ])->striped()
+                TextColumn::make('created_at')
+                    ->label('Erstellt')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->label('Bearbeitet')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
+            ])->striped()->defaultSort('upated_at', 'desc')
             ->groups([
                 Group::make('orderstatus.name')->label('Bestellstatus'),
                 Group::make('user.name')->label('Bestellt von'),
