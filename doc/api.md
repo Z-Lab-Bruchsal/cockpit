@@ -14,7 +14,7 @@ subject: Text
 text: text
 
 # Todo Cockpit:
-* Terminals als Objekte
+* Terminals als Objekte, Zugangsdaten pro Terminal
 * der nächste Chip gehört user X
 * Liste aller unbekannter Chips mit Zeitstempel "last seen"
 * Wer hat wann an welchem Terminal gestochen?
