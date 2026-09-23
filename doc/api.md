@@ -5,6 +5,7 @@
 Das Terminal meldet sich per BASIC-Authentication am Server an
 
 http://cockpit.z-lab-bruchsal.de/api/book/[ID_CHIP]
+
 http://cockpit.z-lab-bruchsal.de/api/bookinginfo/[ID_CHIP]
 
 Antwort: JSON mit 3 Feldern:
