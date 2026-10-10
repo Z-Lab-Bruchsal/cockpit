@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings\Pages;
 
+use App\Enums\BookingSource;
 use App\Filament\Resources\Bookings\BookingResource;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -12,6 +13,7 @@ class CreateBooking extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['recorded_by_user_id'] = filament()->auth()->user()->id;
+        $data['source'] = BookingSource::WebManual;
 
         return $data;
     }

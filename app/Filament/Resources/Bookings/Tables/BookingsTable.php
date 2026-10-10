@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings\Tables;
 
+use App\Enums\BookingSource;
 use App\Models\Booking;
 use App\Models\User;
 use Filament\Actions\BulkActionGroup;
@@ -55,6 +56,14 @@ class BookingsTable
                     ->label('Notiz')
                     ->searchable()
                     ->toggleable(),
+                TextColumn::make('source')
+                    ->label('Quelle')
+                    ->badge()
+                    ->toggleable(),
+                TextColumn::make('terminal.name')
+                    ->label('Terminal')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('recordedBy.name')
                     ->label('Erfasst von')
                     ->toggleable()
@@ -84,6 +93,9 @@ class BookingsTable
                         }
                     })
                     ->default(filament()->auth()->user()->id),
+                SelectFilter::make('source')
+                    ->label('Quelle')
+                    ->options(BookingSource::class),
                 Filter::make('period')
                     ->label('Zeitraum')
                     ->schema([

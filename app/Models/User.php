@@ -57,4 +57,9 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function chips(): HasMany
+    {
+        return $this->hasMany(Chip::class);
+    }
 }

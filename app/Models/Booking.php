@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingSource;
 use App\Observers\BookingObserver;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'start_at', 'end_at', 'note', 'recorded_by_user_id', 'worked_minutes'])]
+#[Fillable(['user_id', 'start_at', 'end_at', 'note', 'recorded_by_user_id', 'worked_minutes', 'source', 'terminal_id'])]
 #[ObservedBy([BookingObserver::class])]
 class Booking extends Model
 {
@@ -23,6 +24,7 @@ class Booking extends Model
         return [
             'start_at' => 'datetime',
             'end_at' => 'datetime',
+            'source' => BookingSource::class,
         ];
     }
 
@@ -34,6 +36,11 @@ class Booking extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+
+    public function terminal(): BelongsTo
+    {
+        return $this->belongsTo(Terminal::class);
     }
 
     public function audits(): HasMany

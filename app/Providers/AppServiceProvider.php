@@ -6,6 +6,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('terminal', function (Request $request): Limit {
+            return Limit::perMinute(60)->by($request->attributes->get('terminal')?->id ?? $request->ip());
+        });
+
         Table::configureUsing(function (Table $table): void {
             $table
                 ->reorderableColumns()
