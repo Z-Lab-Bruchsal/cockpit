@@ -1,2 +1,0 @@
-Tests für Sichtbarkeit Zeiteinträge verschiedener user mit Rollen
-Im Kalender auch die Zeitbuchungen anzeigen
