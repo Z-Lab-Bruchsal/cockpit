@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Courses\Schemas;
 
 use App\Enums\CourseAudience;
+use App\Enums\SchoolCourseFormat;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
 use Filament\Forms\Components\RichEditor;
@@ -10,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -111,10 +113,12 @@ class CourseForm
                                     ->required()
                                     ->numeric()
                                     ->minValue(1)
-                                    ->default(10),
+                                    ->default(10)
+                                    ->visible(fn (Get $get): bool => static::isForKids($get('audience'))),
                                 Toggle::make('default_waitlist_enabled')
                                     ->label('Warteliste (Vorschlag)')
-                                    ->default(true),
+                                    ->default(true)
+                                    ->visible(fn (Get $get): bool => static::isForKids($get('audience'))),
                                 Select::make('responsible_user_id')
                                     ->label('Kursverantwortliche*r')
                                     ->relationship('responsibleUser', 'name')
@@ -131,7 +135,8 @@ class CourseForm
                                     ->maxValue(336)
                                     ->suffix('Stunden')
                                     ->placeholder(fn (): string => 'Standard: '.CompanySetting::current()->waitlist_offer_hours)
-                                    ->helperText('Leer = Einstellung aus den Firmeninfos.'),
+                                    ->helperText('Leer = Einstellung aus den Firmeninfos.')
+                                    ->visible(fn (Get $get): bool => static::isForKids($get('audience'))),
                                 Toggle::make('is_published')
                                     ->label('Auf der Homepage veröffentlicht'),
                                 TextInput::make('slug')
@@ -143,6 +148,24 @@ class CourseForm
                                     ->unique(ignoreRecord: true),
                             ])
                             ->columns(2),
+                        Tab::make('Schulklassen')
+                            ->icon(Heroicon::OutlinedAcademicCap)
+                            ->schema([
+                                Select::make('school_format')
+                                    ->label('Ort')
+                                    ->options(SchoolCourseFormat::class)
+                                    ->default(SchoolCourseFormat::AtZLab)
+                                    ->required()
+                                    ->helperText('Bei „Schule wählt“ entscheidet die Lehrkraft bei der Buchung.')
+                                    ->columnSpanFull(),
+                                Section::make('Erinnerungen und Fristen')
+                                    ->description('Leer = Einstellung aus den Firmeninfos. Pro Durchführung überschreibbar.')
+                                    ->schema(SchoolClassSettingsFields::overrides(fn (string $field): string => 'Standard: '.SchoolClassSettingsFields::inheritedValue(null, $field)))
+                                    ->columns(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2)
+                            ->visible(fn (Get $get): bool => ! static::isForKids($get('audience'))),
                     ])
                     ->columnSpanFull(),
             ]);

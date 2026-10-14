@@ -7,7 +7,7 @@ use Filament\Support\Contracts\HasLabel;
 
 /**
  * State of a single seat. Held, Pending and Offered occupy a seat until their expires_at,
- * Confirmed and AwaitingApproval occupy it permanently, Waitlisted does not occupy a seat.
+ * Confirmed, AwaitingApproval and Requested occupy it permanently, Waitlisted does not occupy a seat.
  */
 enum EnrollmentStatus: string implements HasColor, HasLabel
 {
@@ -19,6 +19,8 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
     case Waitlisted = 'waitlisted';
     /** Moved up from the waitlist, waiting for the parents to accept the seat. */
     case Offered = 'offered';
+    /** School class slot waiting for the course lead's approval; occupies the slot. */
+    case Requested = 'requested';
     case Cancelled = 'cancelled';
     case Expired = 'expired';
 
@@ -31,6 +33,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
             self::AwaitingApproval => 'Wartet auf Freigabe',
             self::Waitlisted => 'Warteliste',
             self::Offered => 'Nachrücker – Platz angeboten',
+            self::Requested => 'Angefragt',
             self::Cancelled => 'Storniert',
             self::Expired => 'Verfallen',
         };
@@ -39,7 +42,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
     public function getColor(): string
     {
         return match ($this) {
-            self::Held, self::Pending, self::Offered, self::AwaitingApproval => 'warning',
+            self::Held, self::Pending, self::Offered, self::AwaitingApproval, self::Requested => 'warning',
             self::Confirmed => 'success',
             self::Waitlisted => 'info',
             self::Cancelled => 'danger',
@@ -52,7 +55,7 @@ enum EnrollmentStatus: string implements HasColor, HasLabel
      */
     public static function permanentlyOccupying(): array
     {
-        return [self::Confirmed, self::AwaitingApproval];
+        return [self::Confirmed, self::AwaitingApproval, self::Requested];
     }
 
     /**

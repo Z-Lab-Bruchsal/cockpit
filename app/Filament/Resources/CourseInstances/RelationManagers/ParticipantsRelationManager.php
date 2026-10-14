@@ -5,7 +5,9 @@ namespace App\Filament\Resources\CourseInstances\RelationManagers;
 use App\Enums\EnrollmentStatus;
 use App\Exceptions\ReservationException;
 use App\Filament\Resources\Registrations\Actions\ApproveRegistrationAction;
+use App\Filament\Resources\Registrations\Actions\ApproveSchoolRequestAction;
 use App\Filament\Resources\Registrations\Actions\DeclineRegistrationAction;
+use App\Filament\Resources\Registrations\Actions\DeclineSchoolRequestAction;
 use App\Filament\Resources\Registrations\RegistrationResource;
 use App\Models\CourseInstance;
 use App\Models\Enrollment;
@@ -82,6 +84,7 @@ class ParticipantsRelationManager extends RelationManager
                         EnrollmentStatus::Waitlisted->value,
                         EnrollmentStatus::Offered->value,
                         EnrollmentStatus::AwaitingApproval->value,
+                        EnrollmentStatus::Requested->value,
                     ]),
             ])
             ->headerActions([
@@ -124,6 +127,8 @@ class ParticipantsRelationManager extends RelationManager
                     ->label('Anmeldung öffnen')
                     ->icon(Heroicon::OutlinedClipboardDocumentCheck)
                     ->url(fn (Enrollment $record): string => RegistrationResource::getUrl('view', ['record' => $record->registration_id])),
+                ApproveSchoolRequestAction::make(),
+                DeclineSchoolRequestAction::make(),
                 ApproveRegistrationAction::make(),
                 DeclineRegistrationAction::make(),
                 Action::make('confirmFromWaitlist')

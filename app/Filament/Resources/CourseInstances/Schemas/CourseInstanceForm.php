@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CourseInstances\Schemas;
 
 use App\Enums\CourseInstanceStatus;
+use App\Filament\Resources\Courses\Schemas\SchoolClassSettingsFields;
 use App\Models\CompanySetting;
 use App\Models\Course;
 use Filament\Forms\Components\DateTimePicker;
@@ -75,16 +76,24 @@ class CourseInstanceForm
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
+                Section::make('Schulklassen: Erinnerungen und Fristen')
+                    ->description('Jede Durchführung ist ein Termin für genau eine Klasse. Leer = Einstellung vom Kurs bzw. aus den Firmeninfos.')
+                    ->schema(SchoolClassSettingsFields::overrides(fn (string $field, Get $get): string => 'vom Kurs: '.SchoolClassSettingsFields::inheritedValue(Course::find($get('course_id')), $field)))
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())
+                    ->columnSpanFull(),
                 Section::make('Plätze & Anmeldung')
                     ->schema([
                         TextInput::make('capacity')
                             ->label('Plätze')
+                            ->hidden(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())
                             ->numeric()
                             ->minValue(1)
                             ->required()
                             ->default(fn (): ?int => Course::find(request()->integer('course'))?->default_capacity ?? 10),
                         Toggle::make('waitlist_enabled')
                             ->label('Warteliste')
+                            ->hidden(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())
                             ->default(fn (): bool => Course::find(request()->integer('course'))?->default_waitlist_enabled ?? true)
                             ->live(),
                         TextInput::make('waitlist_limit')
@@ -92,7 +101,7 @@ class CourseInstanceForm
                             ->helperText('Leer = unbegrenzt')
                             ->numeric()
                             ->minValue(1)
-                            ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled')),
+                            ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled') && ! Course::find($get('course_id'))?->isForSchoolClasses()),
                         TextInput::make('waitlist_offer_hours')
                             ->label('Frist für Nachrücker')
                             ->numeric()
@@ -101,7 +110,7 @@ class CourseInstanceForm
                             ->maxValue(336)
                             ->suffix('Stunden')
                             ->placeholder(fn (Get $get): string => 'vom Kurs: '.(Course::find($get('course_id'))?->waitlist_offer_hours ?? CompanySetting::current()->waitlist_offer_hours))
-                            ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled')),
+                            ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled') && ! Course::find($get('course_id'))?->isForSchoolClasses()),
                         DateTimePicker::make('registration_opens_at')
                             ->label('Anmeldung ab')
                             ->helperText('Leer = sofort')

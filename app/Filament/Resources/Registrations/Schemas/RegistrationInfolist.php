@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Registrations\Schemas;
 
 use App\Filament\Resources\Contacts\ContactResource;
 use App\Filament\Resources\CourseInstances\CourseInstanceResource;
+use App\Models\CourseInstanceNote;
 use App\Models\Enrollment;
 use App\Models\Registration;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -77,7 +78,75 @@ class RegistrationInfolist
                     ])
                     ->columns(3)
                     ->columnSpanFull(),
+                Section::make('Schulklasse')
+                    ->schema([
+                        TextEntry::make('school.name')
+                            ->label('Schule')
+                            ->url(fn (Registration $record): ?string => $record->school_id ? ContactResource::getUrl('edit', ['record' => $record->school_id]) : null),
+                        TextEntry::make('school_address')
+                            ->label('Adresse der Schule')
+                            ->state(fn (Registration $record): ?string => $record->school?->addressLine()),
+                        TextEntry::make('school.email')
+                            ->label('Funktionsadresse')
+                            ->copyable(),
+                        TextEntry::make('venue')
+                            ->label('Ort')
+                            ->badge(),
+                        TextEntry::make('class_name')
+                            ->label('Klasse')
+                            ->state(fn (Registration $record): string => $record->schoolClass()['class_name']),
+                        TextEntry::make('students')
+                            ->label('Schüler*innen')
+                            ->state(fn (Registration $record): int => $record->schoolClass()['students']),
+                        TextEntry::make('teacher')
+                            ->label('Lehrkraft')
+                            ->state(fn (Registration $record): string => $record->schoolClass()['teacher_name']),
+                        TextEntry::make('teacher_confirmed_at')
+                            ->label('Teilnahme bestätigt')
+                            ->dateTime()
+                            ->placeholder('noch nicht'),
+                        TextEntry::make('staff_remind_at')
+                            ->label('Erinnerung an Kursverantwortliche*n')
+                            ->dateTime()
+                            ->placeholder('—')
+                            ->helperText(fn (Registration $record): ?string => $record->staff_reminded_at ? 'verschickt am '.$record->staff_reminded_at->format('d.m.Y H:i') : null),
+                        TextEntry::make('replacesRegistration.courseInstance.firstDate.starts_at')
+                            ->label('Verschiebung von')
+                            ->dateTime()
+                            ->visible(fn (Registration $record): bool => $record->replaces_registration_id !== null),
+                        TextEntry::make('teacher_remark')
+                            ->label('Anmerkung der Lehrkraft')
+                            ->state(fn (Registration $record): ?string => $record->school_class_data['teacher_remark'] ?? null)
+                            ->placeholder('—')
+                            ->columnSpanFull(),
+                        TextEntry::make('decision_note')
+                            ->label('Nachricht bei der Entscheidung')
+                            ->placeholder('—')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->visible(fn (Registration $record): bool => $record->isSchoolBooking())
+                    ->columnSpanFull(),
+                Section::make('Notizen zur Durchführung')
+                    ->schema([
+                        RepeatableEntry::make('courseInstance.internalNotes')
+                            ->hiddenLabel()
+                            ->schema([
+                                TextEntry::make('body')
+                                    ->hiddenLabel()
+                                    ->columnSpan(3),
+                                TextEntry::make('created_at')
+                                    ->hiddenLabel()
+                                    ->dateTime()
+                                    ->helperText(fn (CourseInstanceNote $record): ?string => $record->user?->name),
+                            ])
+                            ->columns(4)
+                            ->placeholder('Noch keine Notizen.'),
+                    ])
+                    ->visible(fn (Registration $record): bool => $record->isSchoolBooking())
+                    ->columnSpanFull(),
                 Section::make('Kinder')
+                    ->visible(fn (Registration $record): bool => ! $record->isSchoolBooking())
                     ->schema([
                         RepeatableEntry::make('enrollments')
                             ->hiddenLabel()

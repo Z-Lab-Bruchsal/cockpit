@@ -3,6 +3,7 @@
 namespace App\View\Components\Homepage;
 
 use App\Models\CompanySetting;
+use App\Models\Contact;
 use App\Models\Section;
 use App\Services\Registrations\CartManager;
 use Closure;
@@ -26,6 +27,10 @@ class Layout extends Component
 
     public int $cartCount;
 
+    public string $cartUrl;
+
+    public bool $isSchoolContact;
+
     public function __construct(public ?string $title = null)
     {
         $this->settings = CompanySetting::current();
@@ -37,9 +42,21 @@ class Layout extends Component
             ->where('show_in_navigation', true)
             ->get();
 
-        $this->isLoggedIn = Auth::guard('contact')->check();
-        $this->accountUrl = route($this->isLoggedIn ? 'homepage.account' : 'homepage.login');
-        $this->cartCount = app(CartManager::class)->current()?->heldRegistrations()->count() ?? 0;
+        /** @var Contact|null $contact */
+        $contact = Auth::guard('contact')->user();
+        $this->isLoggedIn = $contact !== null;
+        $this->isSchoolContact = (bool) $contact?->canBookForSchool();
+        $this->accountUrl = route(match (true) {
+            $this->isSchoolContact => 'homepage.schools.account',
+            $this->isLoggedIn => 'homepage.account',
+            default => 'homepage.login',
+        });
+
+        $heldRegistrations = app(CartManager::class)->current()?->heldRegistrations()->with('courseInstance.course')->get();
+        $this->cartCount = $heldRegistrations?->count() ?? 0;
+        $this->cartUrl = route($heldRegistrations?->contains(fn ($registration): bool => (bool) $registration->courseInstance?->course?->isForSchoolClasses())
+            ? 'homepage.schools.cart'
+            : 'homepage.cart');
     }
 
     public function pageTitle(): string

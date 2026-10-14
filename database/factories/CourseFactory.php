@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\CourseAudience;
+use App\Enums\SchoolCourseFormat;
 use App\Models\Course;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -43,6 +44,9 @@ class CourseFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'audience' => CourseAudience::SchoolClass,
+            'school_format' => SchoolCourseFormat::AtZLab,
+            'min_age' => null,
+            'max_age' => null,
             'default_capacity' => 1,
             'default_waitlist_enabled' => false,
         ]);

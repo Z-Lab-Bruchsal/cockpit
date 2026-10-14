@@ -3,6 +3,7 @@
 namespace App\Services\Registrations;
 
 use App\Enums\ContactType;
+use App\Enums\CourseAudience;
 use App\Enums\CourseAvailability;
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationSource;
@@ -61,6 +62,15 @@ class CourseReservationService
 
             if ($cart->heldRegistrations()->where('course_instance_id', $instance->id)->exists()) {
                 throw new ReservationException('Dieser Kurs liegt schon in deinem Warenkorb.');
+            }
+
+            // School class slots and kids' courses are checked out with different forms, so they never share a cart.
+            $isSchoolSlot = $instance->course->isForSchoolClasses();
+
+            if ($cart->heldRegistrations()->whereHas('courseInstance.course', fn ($courses) => $isSchoolSlot
+                ? $courses->where('audience', '!=', CourseAudience::SchoolClass)
+                : $courses->where('audience', CourseAudience::SchoolClass))->exists()) {
+                throw new ReservationException('Termine für Schulklassen und Kurse für Kinder können nicht zusammen gebucht werden. Bitte schließe zuerst die Buchung im Warenkorb ab.');
             }
 
             $expiresAt = now()->addMinutes(CompanySetting::current()->hold_minutes);

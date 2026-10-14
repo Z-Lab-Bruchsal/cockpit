@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Homepage;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contact;
 use App\Services\Contacts\MagicLinkService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ class ContactAuthController extends Controller
     public function showLoginForm(Request $request): View|RedirectResponse
     {
         if (Auth::guard('contact')->check()) {
-            return redirect()->route('homepage.account');
+            return redirect()->route($this->accountRouteFor(Auth::guard('contact')->user()));
         }
 
         return view('homepage.auth.login', ['redirectTo' => $request->query('weiter')]);
@@ -60,8 +61,8 @@ class ContactAuthController extends Controller
         Auth::guard('contact')->login($contact, remember: true);
         $request->session()->regenerate();
 
-        return redirect($this->magicLinks->redirectFor($token) ?? route('homepage.account'))
-            ->with('status', 'Du bist jetzt angemeldet.');
+        return redirect($this->magicLinks->redirectFor($token) ?? route($this->accountRouteFor($contact)))
+            ->with('status', $contact->canBookForSchool() ? 'Sie sind jetzt angemeldet.' : 'Du bist jetzt angemeldet.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -72,8 +73,17 @@ class ContactAuthController extends Controller
         return redirect()->route('homepage.index');
     }
 
-    public function account(): View
+    public function account(Request $request): View|RedirectResponse
     {
+        if ($request->user('contact')?->canBookForSchool()) {
+            return redirect()->route('homepage.schools.account');
+        }
+
         return view('homepage.account');
+    }
+
+    protected function accountRouteFor(?Contact $contact): string
+    {
+        return $contact?->canBookForSchool() ? 'homepage.schools.account' : 'homepage.account';
     }
 }

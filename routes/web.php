@@ -8,8 +8,10 @@ use App\Http\Controllers\Homepage\CourseController;
 use App\Http\Controllers\Homepage\EmailChangeController;
 use App\Http\Controllers\Homepage\HomepageController;
 use App\Http\Controllers\Homepage\RegistrationController;
+use App\Http\Controllers\Homepage\SchoolController;
 use App\Http\Controllers\Homepage\UnsubscribeController;
 use App\Http\Controllers\OrderController;
+use App\Http\Middleware\EnsureSchoolContact;
 use App\Models\Section;
 use Illuminate\Support\Facades\Route;
 
@@ -78,6 +80,46 @@ Route::name('homepage.')->group(function (): void {
     Route::get('/konto', [ContactAuthController::class, 'account'])
         ->middleware('auth:contact')
         ->name('account');
+
+    Route::prefix('schulen')->name('schools.')->group(function (): void {
+        Route::get('/', [SchoolController::class, 'index'])->name('index');
+        Route::get('/registrieren', [SchoolController::class, 'showRegistration'])->name('register');
+        Route::post('/registrieren', [SchoolController::class, 'register'])
+            ->middleware('throttle:magic-link')
+            ->name('register.send');
+        Route::get('/kalender', [SchoolController::class, 'calendar'])->name('calendar');
+        Route::get('/kalender/events', [SchoolController::class, 'events'])
+            ->middleware('throttle:60,1')
+            ->name('calendar.events');
+        Route::get('/termine', [SchoolController::class, 'slots'])->name('slots');
+
+        // Link from the teacher's mails: works without login, protected by the signature.
+        Route::middleware('signed')->group(function (): void {
+            Route::get('/termin/{registration}', [SchoolController::class, 'visit'])->name('visit');
+            Route::post('/termin/{registration}/bestaetigen', [SchoolController::class, 'confirmVisit'])
+                ->middleware('throttle:10,1')
+                ->name('visit.confirm');
+            Route::post('/termin/{registration}/stornieren', [SchoolController::class, 'cancelVisit'])
+                ->middleware('throttle:10,1')
+                ->name('visit.cancel');
+        });
+
+        Route::middleware(EnsureSchoolContact::class)->group(function (): void {
+            Route::get('/konto', [SchoolController::class, 'account'])->name('account');
+            Route::post('/warenkorb/termin/{instance}', [SchoolController::class, 'addToCart'])
+                ->middleware('throttle:20,1')
+                ->name('cart.add');
+            Route::get('/warenkorb', [SchoolController::class, 'cart'])->name('cart');
+            Route::get('/warenkorb/abgeschlossen', [SchoolController::class, 'done'])->name('cart.done');
+            Route::post('/buchungen/{registration}/stornieren', [SchoolController::class, 'cancel'])
+                ->middleware('throttle:10,1')
+                ->name('cancel');
+            Route::get('/buchungen/{registration}/verschieben', [SchoolController::class, 'showReschedule'])->name('reschedule');
+            Route::post('/buchungen/{registration}/verschieben/{instance}', [SchoolController::class, 'reschedule'])
+                ->middleware('throttle:20,1')
+                ->name('reschedule.hold');
+        });
+    });
 
     // Must stay the last homepage route: standalone sections like /impressum.
     Route::get('/{slug}', [HomepageController::class, 'section'])

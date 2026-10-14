@@ -8,13 +8,48 @@
         @if (session('decided'))
             <div class="rounded-2xl border border-green-200 bg-green-50 p-5 text-green-900" role="status">
                 <p class="font-semibold">Erledigt – die Anmeldung wurde {{ session('decided') }}.</p>
-                <p class="mt-1 text-sm">Die Familie wurde per E-Mail informiert.</p>
+                <p class="mt-1 text-sm">{{ $registration->isSchoolBooking() ? 'Die Schule' : 'Die Familie' }} wurde per E-Mail informiert.</p>
             </div>
         @elseif (! $isOpen)
             <div class="rounded-2xl bg-gray-50 p-5 text-gray-700">
                 <p class="font-semibold">Hier ist nichts mehr zu entscheiden.</p>
                 <p class="mt-1 text-sm">Die Anfrage wurde bereits bearbeitet oder die Anmeldung wurde storniert.</p>
             </div>
+        @elseif ($registration->awaitsSchoolDecision())
+            @php($class = $registration->schoolClass())
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ $decision === 'ablehnen' ? 'Anfrage ablehnen' : 'Termin bestätigen' }}</h1>
+            <p class="mt-3 text-gray-600">
+                Die <strong>{{ $registration->school?->name }}</strong> möchte <strong>{{ $instance->displayTitle() }}</strong> am {{ $instance->dates->first()?->formattedRange() }} buchen.
+                @if ($registration->replacesRegistration)
+                    Das ist eine Verschiebung vom {{ $registration->replacesRegistration->courseInstance->dates->first()?->formattedRange() }} – der alte Termin wird erst mit der Bestätigung storniert.
+                @endif
+            </p>
+
+            <dl class="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-2xl border border-gray-200 bg-white p-5 text-sm">
+                <dt class="font-medium text-gray-500">Ort</dt>
+                <dd>{{ $registration->venue?->getLabel() }}@if (filled($registration->visitAddress())): {{ $registration->visitAddress() }}@endif</dd>
+                <dt class="font-medium text-gray-500">Klasse</dt>
+                <dd>{{ $class['class_name'] }}, {{ $class['students'] }} Schüler*innen</dd>
+                <dt class="font-medium text-gray-500">Lehrkraft</dt>
+                <dd>{{ $class['teacher_name'] }}@if ($class['teacher_phone']), {{ $class['teacher_phone'] }}@endif</dd>
+                @if ($class['topic'])
+                    <dt class="font-medium text-gray-500">Anmerkung</dt>
+                    <dd>{{ $class['topic'] }}</dd>
+                @endif
+            </dl>
+
+            <form method="POST" action="{{ $decideUrl }}" class="mt-8 flex flex-col gap-4">
+                @csrf
+                <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+                    Nachricht an die Schule <span class="font-normal text-gray-500">(optional)</span>
+                    <textarea name="note" rows="3" class="rounded-lg border-gray-300"></textarea>
+                </label>
+                <button type="submit" @class([
+                    'w-full rounded-lg px-4 py-3 font-semibold text-white',
+                    'bg-green-600 hover:bg-green-700' => $decision === 'freigeben',
+                    'bg-red-600 hover:bg-red-700' => $decision === 'ablehnen',
+                ])>{{ $decision === 'ablehnen' ? 'Jetzt ablehnen' : 'Jetzt bestätigen' }}</button>
+            </form>
         @else
             <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ $decision === 'ablehnen' ? 'Anfrage ablehnen' : 'Anmeldung freigeben' }}</h1>
             <p class="mt-3 text-gray-600">

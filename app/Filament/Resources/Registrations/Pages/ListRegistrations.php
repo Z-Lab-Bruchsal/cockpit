@@ -22,8 +22,10 @@ class ListRegistrations extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', [RegistrationStatus::Confirmed, RegistrationStatus::PendingConfirmation, RegistrationStatus::Requested, RegistrationStatus::AwaitingApproval])),
             'approval' => Tab::make('Freigabe nötig')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where(fn (Builder $query) => $query
-                    ->where('status', RegistrationStatus::AwaitingApproval)
+                    ->whereIn('status', [RegistrationStatus::AwaitingApproval, RegistrationStatus::Requested])
                     ->orWhere(fn (Builder $waitlist) => $waitlist->whereNotNull('approval_requested_at')->whereNull('approval_decided_at')))),
+            'schools' => Tab::make('Schulklassen')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereNotNull('school_id')->where('status', '!=', RegistrationStatus::Held)),
             'pending' => Tab::make('Warten auf Bestätigung')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', RegistrationStatus::PendingConfirmation)),
             'all' => Tab::make('Alle')

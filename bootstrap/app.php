@@ -27,4 +27,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('app:send-break-compliance-warnings')->dailyAt('21:00');
         $schedule->command('app:expire-reservations')->everyMinute()->withoutOverlapping();
         $schedule->command('app:send-course-digests')->everyFifteenMinutes()->withoutOverlapping();
+        $schedule->command('app:send-school-reminders')->hourly()->withoutOverlapping();
     })->create();

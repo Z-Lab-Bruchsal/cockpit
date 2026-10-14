@@ -239,11 +239,15 @@ Im Kalender erscheinen Plätze von anderen als „im Warenkorb eines anderen Nut
 - **Versand:** Die Sammelmail ist `ShouldQueue`. Auf dem Server `QUEUE_CONNECTION=database` setzen und einen Queue-Worker laufen lassen.
 
 ## Phase 6: Schulklassen
-- Kurse mit `audience=SchoolClass`: Jede Durchführung ist ein reservierbarer Slot, Kapazität 1 Klasse, keine Warteliste.
-- Action „Schulen informieren“ (auf Kurs oder Durchführung, auch als Bulk) schickt `SchoolCalendarMail` an alle Schul-Kontakte (Auswahl möglich). Die Mail enthält einen persönlichen Magic-Link, der direkt eingeloggt auf `/schulen/kalender` führt.
-- Schulkalender (FullCalendar) zeigt freie Slots, „im Warenkorb eines anderen Nutzers“ sowie „angefragt/reserviert“. Freie Slots können in den Warenkorb (Hold).
-- Checkout mit Klasse, Schüleranzahl, Lehrkraft und Nachricht setzt die Anmeldung auf Requested. Requested zählt als belegt, kein DOI nötig, weil die Schule eingeloggt ist.
-- Im Cockpit setzen die Aktionen Bestätigen bzw. Ablehnen (mit Notiz) den Status Confirmed bzw. Declined und schicken eine Mail an die Schule. Bei Ablehnung wird der Slot wieder frei.
+- Kurse mit `audience=SchoolClass`: Jede Durchführung ist ein reservierbarer Slot, Kapazität 1 Klasse, keine Warteliste (im Model erzwungen).
+- Ort pro Kurs (`school_format`, enum `SchoolCourseFormat`): nur Z-LAB, nur Schule, beides (Lehrkraft wählt, `registrations.venue`).
+- Konten: Schule (`ContactType::School`, Funktionsadresse, Anschrift Pflicht) registriert sich unter `/schulen/registrieren` und lädt Lehrkräfte ein (`ContactType::Teacher`, `contacts.school_id`). Login per Magic-Link (`MagicLinkService::issueToken`). Middleware `EnsureSchoolContact`.
+- Schulkalender `/schulen/kalender` und Liste `/schulen/termine` zeigen frei / im Warenkorb / angefragt / vergeben (`SchoolSlotState`), ohne Namen anderer Schulen. Freie Slots können in den Warenkorb; kein gemischter Warenkorb mit Kinderkursen.
+- Checkout (`SchoolCheckout`) mit Klasse, Schülerzahl, Lehrkraft, Telefon, Thema und ggf. Ort setzt die Anmeldung auf Requested (`EnrollmentStatus::Requested` belegt den Slot). Kein DOI.
+- Kursverantwortliche entscheiden per signiertem Link oder im Cockpit (Bestätigen/Ablehnen mit Nachricht). Bei Ablehnung wird der Slot frei.
+- Erinnerungen (`app:send-school-reminders`, stündlich), Kette Durchführung → Kurs → Firmeninfos: Lehrkraft (mit Anfahrtsskizze bei Z-LAB, Bestätigungslink), Kursverantwortliche (alle Daten, im Cockpit verschiebbar, Notizen `course_instance_notes`).
+- Stornieren/Verschieben bis zur Frist; beim Verschieben bleibt der alte Termin bis zur Bestätigung des neuen (`replaces_registration_id`). Kursverantwortliche werden immer informiert.
+- Nicht umgesetzt: Aktion „Schulen informieren“ (Rundmail mit Kalenderlink an alle Schulen).
 
 ---
 

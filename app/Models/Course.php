@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CourseAudience;
 use App\Enums\CourseInstanceStatus;
+use App\Enums\SchoolCourseFormat;
 use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +39,11 @@ class Course extends Model
         'is_published',
         'responsible_user_id',
         'waitlist_offer_hours',
+        'school_format',
+        'school_reminders_enabled',
+        'teacher_reminder_days',
+        'staff_reminder_days',
+        'school_reschedule_deadline_days',
     ];
 
     protected static function booted(): void
@@ -56,6 +62,8 @@ class Course extends Model
     {
         return [
             'audience' => CourseAudience::class,
+            'school_format' => SchoolCourseFormat::class,
+            'school_reminders_enabled' => 'boolean',
             'default_waitlist_enabled' => 'boolean',
             'is_published' => 'boolean',
             'next_starts_at' => 'datetime',
@@ -134,6 +142,19 @@ class Course extends Model
             ->orderBy('next_starts_at')
             ->orderBy('name')
             ->with(['interests', 'template', 'upcomingInstances.firstDate']);
+    }
+
+    public function isForSchoolClasses(): bool
+    {
+        return $this->audience === CourseAudience::SchoolClass;
+    }
+
+    /**
+     * Where the school visit takes place; school class courses without a setting take place in the Z-LAB.
+     */
+    public function effectiveSchoolFormat(): SchoolCourseFormat
+    {
+        return $this->school_format ?? SchoolCourseFormat::AtZLab;
     }
 
     public function effectiveTemplate(): CourseTemplate

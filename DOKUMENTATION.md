@@ -1,6 +1,6 @@
 # Z-LAB Cockpit & Homepage – Dokumentation
 
-Stand: 14.10.2026 · Phasen 1–5 des [Plans](PLAN.md) sind umgesetzt, Phase 6 (Schulklassen reservieren Termine) steht noch aus.
+Stand: 14.10.2026 · Phasen 1–6 des [Plans](PLAN.md) sind umgesetzt.
 
 ## Überblick
 
@@ -9,8 +9,9 @@ Eine Anwendung, zwei Seiten: Das **Cockpit** unter `/cockpit` ist für das Team,
 | Wer | Wo | Was |
 | --- | --- | --- |
 | Team | `/cockpit` (Login mit Benutzerkonto) | Homepage-Inhalte, Kurse, Durchführungen, Anmeldungen, Freigaben, Anwesenheit, Kontakte, Einstellungen |
-| Kursverantwortliche | Mail + `/cockpit` | Freigaben für Geschwister und Warteliste entscheiden |
+| Kursverantwortliche | Mail + `/cockpit` | Freigaben für Geschwister und Warteliste entscheiden, Schulanfragen bestätigen, Erinnerungen zu Schulbesuchen |
 | Eltern | `/` | Kurse ansehen, Kinder anmelden, optional Konto unter `/konto` |
+| Schulen und Lehrkräfte | `/schulen` | Schulkonto, Lehrkräfte einladen, Termine für Klassen anfragen, stornieren, verschieben |
 | Alle Besucher | `/kurse`, `/kalender`, `/kontaktformular` | Kursliste, Kalender, Kontakt |
 
 ## Homepage pflegen
@@ -162,14 +163,39 @@ Neue Kurse werden pro Familie gesammelt. Ist eine Weile kein weiterer passender 
 
 Abgesagte oder vergangene Kurse fallen vor dem Versand heraus.
 
+## Schulklassen
+
+Kurse mit der Zielgruppe **Schulklassen** werden von Schulen gebucht. Jede Durchführung ist ein Termin für **genau eine Klasse**, ohne Warteliste (Plätze und Warteliste werden automatisch gesetzt).
+
+**Ort pro Kurs** (Kurs → Reiter „Schulklassen“): nur im Z-LAB, nur in der Schule, oder beides – dann wählt die Lehrkraft bei der Buchung. Findet der Kurs in der Schule statt, gilt die Adresse der Schule.
+
+**Konten:**
+- Die Schule registriert sich unter `/schulen/registrieren` mit Name, Anschrift und einer **Funktionsadresse** (z. B. Sekretariat). Erst nach Bestätigung des Links kann sie sich anmelden.
+- Im Schulkonto (`/schulen/konto`) lädt die Schule ihre **Lehrkräfte** ein. Jede Lehrkraft bekommt ein eigenes Unterkonto (Einladungslink 7 Tage gültig). Eine Adresse, die schon zu einem anderen Konto gehört (z. B. Eltern), wird abgelehnt – bitte die dienstliche Adresse nehmen.
+- Das Schulkonto sieht alle Buchungen der Schule, eine Lehrkraft nur ihre eigenen. Mails an die Lehrkraft gehen in Kopie an die Funktionsadresse.
+- Anmelden geht wie bei Eltern per Link unter `/anmelden`; Schulen und Lehrkräfte landen danach im Schulkonto.
+
+**Buchen:** Unter `/schulen/kalender` und `/schulen/termine` stehen alle Termine mit Status frei / im Warenkorb einer anderen Schule / angefragt / vergeben (ohne Namen anderer Schulen). Freie Termine kommen in den Warenkorb (gleiche Reservierungszeit wie bei Eltern). Beim Absenden werden Klasse, Schülerzahl, Lehrkraft, Telefon, Thema/Anmerkung und ggf. der Ort abgefragt. Termine für Schulklassen und Kurse für Kinder können nicht im selben Warenkorb liegen.
+
+**Freigabe:** Jede Buchung ist zunächst eine **Anfrage**, die den Termin blockiert. Die Kursverantwortlichen bekommen eine Mail mit „Bestätigen“/„Ablehnen“ (optional mit Nachricht an die Schule) oder entscheiden im Cockpit. Bei Ablehnung wird der Termin wieder frei.
+
+**Erinnerungen** (Befehl `app:send-school-reminders`, stündlich):
+- an die **Lehrkraft** X Tage vor dem ersten Termin: „wir kommen zu Ihnen“ bzw. „Sie kommen zu uns“, Bitte, Schülerzahl und Thema zu prüfen, Link zum **Bestätigen** der Teilnahme (dort lässt sich die Schülerzahl korrigieren und eine Nachricht hinterlassen). Bei Besuchen im Z-LAB hängt die **Anfahrtsskizze** an (Firmeninfos → Schulklassen).
+- an die **Kursverantwortlichen** Y Tage vorher, mit allen Daten zu Kurs, Schule und Ansprechpartner sowie den Notizen. Im Cockpit an der Anmeldung: **„Erinnerung verschieben“** (neuer Zeitpunkt, optional mit Notiz) und **„Notiz hinzufügen“**. Alle Notizen stehen an der Durchführung im Reiter „Notizen“.
+- Bestätigt die Lehrkraft oder ändert sie etwas, bekommen die Kursverantwortlichen eine Mail.
+- Einstellungen: Firmeninfos → Schulklassen (Standard), pro Kurs und pro Durchführung überschreibbar: Erinnerungen an/aus, Tage für Lehrkraft und Kursverantwortliche, Frist zum Stornieren/Verschieben.
+
+**Stornieren und Verschieben:** Bis zur Frist (Tage vor dem ersten Termin) kann die Schule im Schulkonto oder über den Link in der Mail selbst stornieren oder auf einen anderen freien Termin desselben Kurses verschieben. Beim Verschieben bleibt der alte Termin bestehen, bis die Kursverantwortlichen den neuen bestätigen; bei Ablehnung bleibt alles beim Alten. Die Kursverantwortlichen werden jedes Mal informiert. Nach der Frist geht es nur noch telefonisch.
+
 ## Aufgaben im Cockpit
 
 | Wo | Was |
 | --- | --- |
-| Kurse und Kinder → Anmeldungen | Tabs Aktiv, Freigabe nötig (Zähler in der Navigation), Warten auf Bestätigung, Alle. Aktionen: Bestätigen (ohne Mail-Link, z. B. nach Anruf), Freigeben, Ablehnen, Stornieren (wahlweise mit Info-Mail an die Eltern) |
+| Kurse und Kinder → Anmeldungen | Tabs Aktiv, Freigabe nötig (Zähler in der Navigation, inkl. Schulanfragen), Schulklassen, Warten auf Bestätigung, Alle. Schulanfragen: Bestätigen/Ablehnen mit Nachricht, Erinnerung verschieben, Notiz hinzufügen. Aktionen: Bestätigen (ohne Mail-Link, z. B. nach Anruf), Freigeben, Ablehnen, Stornieren (wahlweise mit Info-Mail an die Eltern) |
 | Durchführung → Teilnehmende | Belegung, Kind direkt anmelden (auch überbuchen), von der Warteliste aufnehmen, Freigabe entscheiden, abmelden |
+| Durchführung → Notizen | interne Notizen, z. B. aus Gesprächen mit der Schule (Anfahrt, Besonderheiten); erscheinen in der Erinnerungsmail |
 | Durchführung → Anwesenheit | Raster Kind × Termin zum Abhaken, „Alle anwesend“ für einen Termin; gespeichert wird, wer wann abgehakt hat |
-| Kontakte → Kontakte | Eltern und Schulen, Kinder zuordnen, „Anmeldelink senden“, Einwilligung und Mail-Einstellungen |
+| Kontakte → Kontakte | Eltern, Schulen und Lehrkräfte (Tabs), bei Schulen die eingeladenen Lehrkräfte, Kinder zuordnen, „Anmeldelink senden“, Einwilligung und Mail-Einstellungen |
 | Kontakte → Kinder | Alter, Interessen, Eltern; Kurshistorie mit Anwesenheit (z. B. 4 / 5) |
 | Kalender | zeigt zusätzlich alle Kurstermine |
 
@@ -184,7 +210,7 @@ Wer was im Cockpit darf, wird über Rollen und Berechtigungen gesteuert (Shield)
 | `php artisan migrate` | neue Tabellen und Felder |
 | `npm install && npm run build` | Homepage-Assets, FullCalendar |
 | `php artisan storage:link` | hochgeladene Bilder auf Homepage und in Mails |
-| Cron `* * * * * php artisan schedule:run` | Reservierungen verfallen lassen und Warteliste nachrücken (jede Minute), Sammelmails (alle 15 Minuten), bestehende Erinnerungen |
+| Cron `* * * * * php artisan schedule:run` | Reservierungen verfallen lassen und Warteliste nachrücken (jede Minute), Sammelmails (alle 15 Minuten), Erinnerungen zu Schulbesuchen (stündlich), bestehende Erinnerungen |
 | `QUEUE_CONNECTION=database` + `php artisan queue:work` | Sammelmails werden über die Queue verschickt |
 | echter Mailversand (`MAIL_MAILER`), korrekte `APP_URL` | ohne Mails keine verbindliche Gast-Anmeldung; Links und Logo in Mails |
 | `php artisan db:seed --class=HomepageSeeder` (optional) | Startinhalte, Kurse und Interessen des Z-LAB |
@@ -195,3 +221,4 @@ Wer was im Cockpit darf, wird über Rollen und Berechtigungen gesteuert (Shield)
 - Kachel- und Kursbilder hochladen.
 - Platzzahlen und Ferienkurs-Zeiten im Seeder prüfen.
 - Bei allen Kursen eine verantwortliche Person eintragen.
+- Anfahrtsskizze unter Firmeninfos → Schulklassen hochladen und bei Schulkursen den Ort festlegen.

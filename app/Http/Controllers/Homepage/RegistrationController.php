@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Homepage;
 
+use App\Enums\CourseAudience;
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
 use App\Exceptions\ReservationException;
@@ -28,7 +29,7 @@ class RegistrationController extends Controller
             'seats' => ['required', 'integer', 'min:1', 'max:'.CompanySetting::current()->max_seats_per_registration],
         ]);
 
-        abort_unless($instance->course?->is_published, 404);
+        abort_unless($instance->course?->is_published && ! $instance->course->isForSchoolClasses(), 404);
 
         try {
             $registration = $this->reservations->hold($instance, (int) $validated['seats'], $this->carts->currentOrCreate());
@@ -67,8 +68,13 @@ class RegistrationController extends Controller
         return redirect()->route('homepage.cart');
     }
 
-    public function cart(): View
+    public function cart(): View|RedirectResponse
     {
+        // School slots are checked out with the school form.
+        if ($this->carts->current()?->heldRegistrations()->whereHas('courseInstance.course', fn ($courses) => $courses->where('audience', CourseAudience::SchoolClass))->exists()) {
+            return redirect()->route('homepage.schools.cart');
+        }
+
         return view('homepage.registrations.cart');
     }
 

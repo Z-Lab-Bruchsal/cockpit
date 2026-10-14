@@ -43,6 +43,20 @@ class ContactFactory extends Factory
             'type' => ContactType::School,
             'name' => fake()->city().' Grundschule',
             'contact_person' => fake()->name(),
+            'street' => fake()->streetAddress(),
+            'zip' => fake()->postcode(),
+            'city' => fake()->city(),
+        ]);
+    }
+
+    /**
+     * Teacher sub-account of the given school, or of a new one.
+     */
+    public function teacher(?Contact $school = null): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'type' => ContactType::Teacher,
+            'school_id' => $school?->id ?? Contact::factory()->school(),
         ]);
     }
 }

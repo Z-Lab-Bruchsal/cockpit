@@ -31,12 +31,19 @@ class ContactForm
                             ->label(fn (Get $get): string => static::isSchool($get('type')) ? 'Name der Schule' : 'Name')
                             ->required()
                             ->maxLength(255),
+                        Select::make('school_id')
+                            ->label('Schule')
+                            ->relationship('school', 'name', fn ($query) => $query->schools()->orderBy('name'))
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->visible(fn (Get $get): bool => static::typeOf($get('type')) === ContactType::Teacher),
                         TextInput::make('contact_person')
                             ->label('Ansprechperson')
                             ->maxLength(255)
                             ->visible(fn (Get $get): bool => static::isSchool($get('type'))),
                         TextInput::make('email')
-                            ->label('E-Mail')
+                            ->label(fn (Get $get): string => static::isSchool($get('type')) ? 'Funktionsadresse' : 'E-Mail')
                             ->email()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
@@ -108,6 +115,11 @@ class ContactForm
 
     protected static function isSchool(mixed $type): bool
     {
-        return ($type instanceof ContactType ? $type : ContactType::tryFrom((string) $type)) === ContactType::School;
+        return static::typeOf($type) === ContactType::School;
+    }
+
+    protected static function typeOf(mixed $type): ?ContactType
+    {
+        return $type instanceof ContactType ? $type : ContactType::tryFrom((string) $type);
     }
 }

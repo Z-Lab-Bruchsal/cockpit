@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Courses\Schemas\SchoolClassSettingsFields;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
 use App\Models\Section as SectionModel;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -249,6 +251,34 @@ class CompanySettingsPage extends Page
                                     ->required(),
                             ])
                             ->columns(2),
+                        Tab::make('Schulklassen')
+                            ->icon(Heroicon::OutlinedAcademicCap)
+                            ->schema([
+                                Toggle::make('school_reminders_enabled')
+                                    ->label('Erinnerungsmails verschicken')
+                                    ->helperText('An die Lehrkraft (mit Bitte um Bestätigung) und an die Kursverantwortlichen. Pro Kurs und Durchführung überschreibbar.')
+                                    ->columnSpanFull(),
+                                SchoolClassSettingsFields::days('teacher_reminder_days', 'Erinnerung an die Lehrkraft')
+                                    ->helperText('Tage vor dem ersten Termin')
+                                    ->required(),
+                                SchoolClassSettingsFields::days('staff_reminder_days', 'Erinnerung an Kursverantwortliche*n')
+                                    ->helperText('Tage vor dem ersten Termin; im Cockpit verschiebbar')
+                                    ->required(),
+                                SchoolClassSettingsFields::days('school_reschedule_deadline_days', 'Stornieren/Verschieben durch die Schule bis')
+                                    ->helperText('Tage vor dem ersten Termin; danach nur noch telefonisch')
+                                    ->required(),
+                                FileUpload::make('directions_document_path')
+                                    ->label('Anfahrtsskizze')
+                                    ->helperText('Wird an die Erinnerungsmail angehängt, wenn die Klasse ins Z-LAB kommt. PDF oder Bild, max. 5 MB.')
+                                    ->disk('local')
+                                    ->directory('company')
+                                    ->visibility('private')
+                                    ->acceptedFileTypes(['application/pdf', 'image/png', 'image/jpeg'])
+                                    ->maxSize(5120)
+                                    ->downloadable()
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(3),
                     ])
                     ->columnSpanFull(),
             ])

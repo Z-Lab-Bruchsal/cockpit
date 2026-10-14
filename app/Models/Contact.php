@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -17,10 +18,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
- * Parent or school. A contact does not need an account: it is also created for guest bookings.
+ * Parent, school or teacher. A contact does not need an account: it is also created for guest bookings.
+ * A school account uses the school's function address; teachers are sub-accounts invited by the school.
  * Logging in happens passwordless via magic link (guard "contact").
  */
-#[Fillable(['type', 'name', 'email', 'phone', 'street', 'zip', 'city', 'contact_person', 'notes', 'email_verified_at', 'interest_mails_consent_at', 'last_login_at', 'digest_hours', 'max_course_mails_per_week'])]
+#[Fillable(['type', 'school_id', 'name', 'email', 'phone', 'street', 'zip', 'city', 'contact_person', 'notes', 'email_verified_at', 'interest_mails_consent_at', 'last_login_at', 'digest_hours', 'max_course_mails_per_week'])]
 #[Hidden(['remember_token', 'unsubscribe_token'])]
 class Contact extends Authenticatable
 {
@@ -116,6 +118,62 @@ class Contact extends Authenticatable
         return $this->hasMany(Registration::class);
     }
 
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class, 'school_id');
+    }
+
+    public function teachers(): HasMany
+    {
+        return $this->hasMany(Contact::class, 'school_id')->orderBy('name');
+    }
+
+    /**
+     * Bookings made for this school, by the school account itself or by its teachers.
+     */
+    public function schoolRegistrations(): HasMany
+    {
+        return $this->hasMany(Registration::class, 'school_id');
+    }
+
+    public function isSchool(): bool
+    {
+        return $this->type === ContactType::School;
+    }
+
+    public function isTeacher(): bool
+    {
+        return $this->type === ContactType::Teacher;
+    }
+
+    /**
+     * May book school class courses: the school account or one of its teachers.
+     */
+    public function canBookForSchool(): bool
+    {
+        return $this->isSchool() || ($this->isTeacher() && $this->school_id !== null);
+    }
+
+    /**
+     * The school this contact acts for: itself for a school account, the school for a teacher.
+     */
+    public function schoolAccount(): ?Contact
+    {
+        return match (true) {
+            $this->isSchool() => $this,
+            $this->isTeacher() => $this->school,
+            default => null,
+        };
+    }
+
+    /**
+     * e.g. "Hauptstraße 1, 76646 Bruchsal".
+     */
+    public function addressLine(): string
+    {
+        return collect([$this->street, trim($this->zip.' '.$this->city)])->filter()->implode(', ');
+    }
+
     public function emailChanges(): HasMany
     {
         return $this->hasMany(ContactEmailChange::class);
@@ -145,6 +203,14 @@ class Contact extends Authenticatable
     public function scopeSchools(Builder $query): void
     {
         $query->where('type', ContactType::School);
+    }
+
+    /**
+     * @param  Builder<Contact>  $query
+     */
+    public function scopeTeachers(Builder $query): void
+    {
+        $query->where('type', ContactType::Teacher);
     }
 
     public function hasVerifiedEmail(): bool

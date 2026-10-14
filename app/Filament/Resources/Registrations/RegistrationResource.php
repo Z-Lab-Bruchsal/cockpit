@@ -34,7 +34,7 @@ class RegistrationResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $needsDecision = static::getModel()::query()
-            ->where('status', RegistrationStatus::AwaitingApproval)
+            ->whereIn('status', [RegistrationStatus::AwaitingApproval, RegistrationStatus::Requested])
             ->orWhere(fn ($query) => $query->whereNotNull('approval_requested_at')->whereNull('approval_decided_at'))
             ->count();
 

@@ -25,22 +25,33 @@ class MagicLinkService
     {
         $email = Str::lower(trim($email));
         $contact = Contact::findByEmail($email);
-        $plainToken = Str::random(64);
-
-        ContactLoginToken::query()->create([
-            'contact_id' => $contact?->id,
-            'email' => $email,
-            'name' => filled($name) ? Str::limit(trim($name), 255, '') : null,
-            'token_hash' => ContactLoginToken::hash($plainToken),
-            'redirect_to' => $this->safeRedirect($redirectTo),
-            'expires_at' => now()->addMinutes(self::LIFETIME_MINUTES),
-        ]);
+        $plainToken = $this->issueToken($email, $contact, $name, $redirectTo);
 
         Mail::to($email)->send(new ContactMagicLinkMail(
             url: route('homepage.login.confirm', $plainToken),
             isNewContact: $contact === null,
             name: $contact?->name ?? $name,
         ));
+    }
+
+    /**
+     * Stores a new single-use token and returns it in plain text for the link.
+     * Tokens for an existing contact log in exactly that contact, e.g. a school or an invited teacher.
+     */
+    public function issueToken(string $email, ?Contact $contact = null, ?string $name = null, ?string $redirectTo = null, int $lifetimeMinutes = self::LIFETIME_MINUTES): string
+    {
+        $plainToken = Str::random(64);
+
+        ContactLoginToken::query()->create([
+            'contact_id' => $contact?->id,
+            'email' => Str::lower(trim($email)),
+            'name' => filled($name) ? Str::limit(trim($name), 255, '') : null,
+            'token_hash' => ContactLoginToken::hash($plainToken),
+            'redirect_to' => $this->safeRedirect($redirectTo),
+            'expires_at' => now()->addMinutes($lifetimeMinutes),
+        ]);
+
+        return $plainToken;
     }
 
     /**

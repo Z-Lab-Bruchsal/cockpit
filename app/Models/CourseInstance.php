@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CourseAvailability;
 use App\Enums\CourseInstanceStatus;
 use App\Enums\EnrollmentStatus;
+use App\Enums\SchoolVenue;
 use Database\Factories\CourseInstanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
-#[Fillable(['course_id', 'title', 'capacity', 'waitlist_enabled', 'waitlist_limit', 'status', 'registration_opens_at', 'registration_closes_at', 'location', 'notes', 'responsible_user_id', 'waitlist_offer_hours'])]
+#[Fillable(['course_id', 'title', 'capacity', 'waitlist_enabled', 'waitlist_limit', 'status', 'registration_opens_at', 'registration_closes_at', 'location', 'notes', 'responsible_user_id', 'waitlist_offer_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days'])]
 class CourseInstance extends Model
 {
     /** @use HasFactory<CourseInstanceFactory> */
@@ -31,7 +32,20 @@ class CourseInstance extends Model
             'waitlist_enabled' => 'boolean',
             'registration_opens_at' => 'datetime',
             'registration_closes_at' => 'datetime',
+            'school_reminders_enabled' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // A school class course is booked by exactly one class at a time and has no waitlist.
+        static::saving(function (CourseInstance $instance): void {
+            if ($instance->course?->isForSchoolClasses()) {
+                $instance->capacity = 1;
+                $instance->waitlist_enabled = false;
+                $instance->waitlist_limit = null;
+            }
+        });
     }
 
     public function course(): BelongsTo
@@ -78,9 +92,72 @@ class CourseInstance extends Model
             ?? CompanySetting::current()->waitlist_offer_hours;
     }
 
+    /**
+     * Whether teacher and staff reminders are sent for school visits: instance, else course, else company setting.
+     */
+    public function schoolRemindersEnabled(): bool
+    {
+        return $this->school_reminders_enabled
+            ?? $this->course?->school_reminders_enabled
+            ?? CompanySetting::current()->school_reminders_enabled;
+    }
+
+    /**
+     * Days before the first date the teacher is reminded: instance, else course, else company setting.
+     */
+    public function teacherReminderDays(): int
+    {
+        return $this->teacher_reminder_days
+            ?? $this->course?->teacher_reminder_days
+            ?? CompanySetting::current()->teacher_reminder_days;
+    }
+
+    /**
+     * Days before the first date the course lead is reminded: instance, else course, else company setting.
+     */
+    public function staffReminderDays(): int
+    {
+        return $this->staff_reminder_days
+            ?? $this->course?->staff_reminder_days
+            ?? CompanySetting::current()->staff_reminder_days;
+    }
+
+    public function rescheduleDeadlineDays(): int
+    {
+        return $this->school_reschedule_deadline_days
+            ?? $this->course?->school_reschedule_deadline_days
+            ?? CompanySetting::current()->school_reschedule_deadline_days;
+    }
+
+    /**
+     * Until when a school may cancel or move its booking on its own.
+     */
+    public function rescheduleDeadline(): ?Carbon
+    {
+        return $this->firstDate?->starts_at->copy()->subDays($this->rescheduleDeadlineDays());
+    }
+
+    public function canStillBeRescheduled(): bool
+    {
+        return $this->rescheduleDeadline()?->isFuture() ?? false;
+    }
+
+    /**
+     * @return list<SchoolVenue>
+     */
+    public function allowedVenues(): array
+    {
+        return $this->course?->effectiveSchoolFormat()->venues() ?? [SchoolVenue::ZLab];
+    }
+
     public function registrations(): HasMany
     {
         return $this->hasMany(Registration::class);
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(CourseInstanceNote::class)->latest('id');
     }
 
     public function notifications(): HasMany

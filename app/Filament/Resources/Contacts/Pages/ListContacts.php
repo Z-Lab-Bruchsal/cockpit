@@ -31,6 +31,8 @@ class ListContacts extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('type', ContactType::Parent)),
             'schools' => Tab::make('Schulen')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('type', ContactType::School)),
+            'teachers' => Tab::make('Lehrkräfte')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('type', ContactType::Teacher)),
         ];
     }
 }
