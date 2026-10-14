@@ -6,6 +6,7 @@ use App\Filament\Resources\Bookings\Pages\ListBookings;
 use App\Filament\Resources\Bookings\Tables\BookingsTable;
 use App\Models\Booking;
 use App\Models\User;
+use Database\Seeders\ShieldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -19,6 +20,8 @@ class BookingsTableTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(ShieldSeeder::class);
 
         // Thursday, so this_week/this_month boundaries are unambiguous.
         Carbon::setTestNow(Carbon::parse('2026-07-16 12:00:00', config('app.business_timezone')));
@@ -56,6 +59,7 @@ class BookingsTableTest extends TestCase
     public function test_period_filter_narrows_to_today(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('Z-Lab-Crew');
         $timezone = config('app.business_timezone');
 
         $todayBooking = Booking::create([
@@ -80,6 +84,7 @@ class BookingsTableTest extends TestCase
     public function test_table_groups_entries_by_period_and_shows_todays_group(): void
     {
         $user = User::factory()->create();
+        $user->assignRole('Z-Lab-Crew');
         $timezone = config('app.business_timezone');
 
         Booking::create([

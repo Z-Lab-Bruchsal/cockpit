@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
 use App\Models\Booking;
 use App\Models\User;
+use Database\Seeders\ShieldSeeder;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,11 @@ class GermanDateFormatTest extends TestCase
 
     public function test_table_column_renders_datetimes_in_german_format(): void
     {
+        // The bookings table shows the current week by default.
+        $this->travelTo('2026-03-05 16:00:00');
+        $this->seed(ShieldSeeder::class);
         $user = User::factory()->create();
+        $user->assignRole('Z-Lab-Crew');
         Booking::create([
             'user_id' => $user->id,
             'start_at' => '2026-03-05 14:30:00',
