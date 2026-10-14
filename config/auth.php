@@ -70,7 +70,7 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => 'filament-oauth2',
             'model' => env('AUTH_MODEL', User::class),
         ],
 

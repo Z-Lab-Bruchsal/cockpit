@@ -42,4 +42,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Indicate that the user was created by the OAuth2-Server (SSO).
+     */
+    public function sso(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'oauth_subject' => fake()->uuid(),
+        ]);
+    }
 }

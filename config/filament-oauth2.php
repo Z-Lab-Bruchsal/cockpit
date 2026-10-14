@@ -14,4 +14,8 @@ return [
     'scopes' => env('OAUTH2_SCOPES', 'profile email openid'),
     'updateRoles' => env('OAUTH2_UPDATE_ROLES', false),
     'verifySsl' => env('OAUTH2_VERIFY_SSL', true),
+    // Column of the user model storing the subject ("sub" claim) of users created/linked by OAuth2
+    'subjectColumn' => 'oauth_subject',
+    // Keep the Filament login form for local users and offer OAuth2 login as additional action
+    'allowLocalLogin' => env('OAUTH2_ALLOW_LOCAL_LOGIN', false),
 ];

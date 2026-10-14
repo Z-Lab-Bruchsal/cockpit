@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ee27705da45b404c9feb8d3af59fb12",
+    "content-hash": "54115abacc8ba81dc5155f91bed052ef",
     "packages": [
         {
             "name": "alexandergabriel/filament-oauth2",
-            "version": "v1.1.0",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/AlexanderGabriel/filament-oauth2.git",
-                "reference": "f785e8a45e48e9cf4a1e99a7639a5cb62ba60386"
+                "reference": "e2832289e9416218953a0c2b9e392e42e1f5f504"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/AlexanderGabriel/filament-oauth2/zipball/f785e8a45e48e9cf4a1e99a7639a5cb62ba60386",
-                "reference": "f785e8a45e48e9cf4a1e99a7639a5cb62ba60386",
+                "url": "https://api.github.com/repos/AlexanderGabriel/filament-oauth2/zipball/e2832289e9416218953a0c2b9e392e42e1f5f504",
+                "reference": "e2832289e9416218953a0c2b9e392e42e1f5f504",
                 "shasum": ""
             },
             "require": {
@@ -83,7 +83,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-14T17:19:57+00:00"
+            "time": "2026-10-14T17:50:11+00:00"
         },
         {
             "name": "anourvalar/eloquent-serialize",
