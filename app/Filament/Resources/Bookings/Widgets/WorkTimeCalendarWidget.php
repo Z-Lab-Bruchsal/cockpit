@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Bookings\Widgets;
 
+use App\Enums\CourseInstanceStatus;
+use App\Filament\Resources\CourseInstances\CourseInstanceResource;
 use App\Filament\Resources\Todos\TodoResource;
 use App\Models\Booking;
+use App\Models\CourseDate;
 use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
@@ -41,7 +44,31 @@ class WorkTimeCalendarWidget extends CalendarWidget
             $events = $events->merge($this->todoEvents($info));
         }
 
+        if (User::find(filament()->auth()->user()->id)->can('ViewAny:CourseInstance')) {
+            $events = $events->merge($this->courseDateEvents($info));
+        }
+
         return $events;
+    }
+
+    /**
+     * @return Collection<int, CalendarEvent>
+     */
+    private function courseDateEvents(FetchInfo $info): Collection
+    {
+        return CourseDate::query()
+            ->where('starts_at', '<', Carbon::parse($info->end))
+            ->where('ends_at', '>', Carbon::parse($info->start))
+            ->whereHas('courseInstance', fn (Builder $query) => $query->where('status', '!=', CourseInstanceStatus::Cancelled))
+            ->with('courseInstance.course')
+            ->get()
+            ->map(fn (CourseDate $date): CalendarEvent => CalendarEvent::make($date)
+                ->title('Kurs: '.$date->courseInstance->displayTitle())
+                ->start($date->starts_at)
+                ->end($date->ends_at)
+                ->backgroundColor($date->courseInstance->status === CourseInstanceStatus::Published ? '#f59e0b' : '#9ca3af')
+                ->textColor('#111827')
+                ->url(CourseInstanceResource::getUrl('edit', ['record' => $date->course_instance_id])));
     }
 
     /**

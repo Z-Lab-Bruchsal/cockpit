@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
 use App\Models\Section as SectionModel;
 use App\Models\User;
@@ -87,6 +88,9 @@ class CompanySettingsPage extends Page
                                     ->disk('public')
                                     ->directory('company')
                                     ->visibility('public')
+                                    ->columnSpanFull(),
+                                ContentBlocks::altText('logo_alt', 'logo_path')
+                                    ->helperText('z. B. „Logo Z-LAB“')
                                     ->columnSpanFull(),
                             ])
                             ->columns(3),

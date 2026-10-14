@@ -41,7 +41,20 @@ Achtung Namenskonflikt: `Booking` ist schon die Zeiterfassung. Buchungen heißen
 
 **Offen vor dem Livegang:** `php artisan storage:link`, Rechte `*:Section` den Rollen zuweisen, Impressum prüfen, Datenschutzerklärung erstellen, Kachelbilder hochladen.
 
-## Phase 2: Kursmodell + öffentliche Anzeige
+## Phase 2: Kursmodell + öffentliche Anzeige ✅ erledigt
+
+**Umgesetzt mit diesen Abweichungen vom ursprünglichen Plan:**
+- Die Live-Vorschau der Visitenkarte im Kursformular gibt es nicht, weil das Homepage-CSS im Cockpit nicht geladen wird. Stattdessen hat die Kurstabelle die Aktion „Ansehen“, die die Seite auf der Homepage öffnet.
+- Die Überführung von `course_kid` verschiebe ich nach Phase 4, weil `enrollments` erst dort entsteht. Der alte `KidsRelationManager` bleibt bis dahin.
+- Anmeldung: Solange der Buchungs-Flow fehlt, zeigt die Durchführung einen Hinweis mit Telefon und E-Mail (`x-homepage.course-registration-hint`). Phase 4 ersetzt diese Stelle.
+- `CourseInstance::takenSeats()` gibt 0 zurück, bis es in Phase 4 Anmeldungen gibt.
+- Zusätzlich gebaut:
+  - Enum `CourseAvailability`: Plätze frei, wenige Plätze, Warteliste, ausgebucht, noch nicht offen, geschlossen, abgesagt, jeweils mit Farbe.
+  - Kurstermine erscheinen im Cockpit-Kalender.
+  - Die Kopfzeile verlinkt fest auf „Kurse“ und „Kalender“.
+  - `CourseSeeder` mit den Herbstkursen 2026 von der Website.
+  - Slugs werden mit deutscher Umschrift erzeugt (ö → oe).
+
 
 **Interessen** (`interests`: `name`, `slug`, `color`, `sort`, `is_active`)
 - `InterestResource`, konfigurierbare Liste.
@@ -87,7 +100,7 @@ Achtung Namenskonflikt: `Booking` ist schon die Zeiterfassung. Buchungen heißen
 - JSON-Endpunkt `/kalender/events?start&end&audience` liefert die Termine mit Status-Farbe: frei / wenige Plätze / ausgebucht / Warteliste / „wird gerade reserviert“ / angefragt.
 - Beide Ansichten gibt es zusätzlich als Inhaltsblöcke für die Bereiche (`ContentBlocks`).
 
-**Migration Altbestand**
+**Migration Altbestand** (→ verschoben nach Phase 4)
 - Vorhandene `course_kid`-Zeilen werden in eine Durchführung „Altbestand“ je Kurs und Datum mit bestätigten Enrollments überführt.
 - Danach wird `course_kid` gelöscht und `Kid::courses()` / `Course::kids()` werden ersetzt. Der bestehende `KidsRelationManager` wird durch den Enrollment-RelationManager ersetzt.
 

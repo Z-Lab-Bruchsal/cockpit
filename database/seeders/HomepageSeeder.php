@@ -16,6 +16,7 @@ class HomepageSeeder extends Seeder
     public function run(): void
     {
         $this->seedCompanySettings();
+        $this->call(CourseSeeder::class);
 
         $this->seedChildrenAndParents();
         $this->seedSchools();
@@ -86,6 +87,8 @@ class HomepageSeeder extends Seeder
             'teaser' => 'Datenanalyse, Lasercutter, Löten, elektronische Grußkarten und vieles mehr.',
             'content' => [
                 $this->text('<p>In unseren Nachmittagskursen lernen Kinder und Jugendliche in kleinen Gruppen über mehrere Termine hinweg ein Thema richtig kennen – zum Beispiel Datenanalyse, den Umgang mit dem Lasercutter, Löten für Anfänger oder elektronische Grußkarten. Dazu kommen Ferienkurse wie Nähen oder Astrofotografie.</p><p>Die Kurse sind kostenlos, die Plätze aber begrenzt. Ist ein Kurs voll, kommst du auf die Warteliste.</p>'),
+                ['type' => 'course_list', 'data' => ['interest_ids' => [], 'audience' => 'kids', 'limit' => 6, 'show_all_link' => true]],
+                ['type' => 'course_calendar', 'data' => ['audience' => 'kids']],
             ],
         ]);
 

@@ -16,7 +16,7 @@
             'aspect-[4/3] overflow-hidden bg-gray-100',
             'sm:aspect-auto sm:w-1/3' => $layout === \App\Enums\SectionLayout::FullWidth,
         ])>
-            <img src="{{ Storage::disk('public')->url($section->tile_image_path) }}" alt="" loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105">
+            <img src="{{ Storage::disk('public')->url($section->tile_image_path) }}" alt="{{ $section->tile_image_alt }}" loading="lazy" class="size-full object-cover transition duration-300 group-hover:scale-105">
         </div>
     @endif
     <div class="flex grow flex-col gap-2 p-5">

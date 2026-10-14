@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+@plugin '@tailwindcss/forms';
 
 @source '../views/homepage/**/*.blade.php';
 @source '../views/components/homepage/**/*.blade.php';
@@ -29,4 +30,36 @@ html {
 
 [x-cloak] {
     display: none !important;
+}
+
+/* FullCalendar: use the homepage brand color for buttons and today's highlight. */
+.course-calendar {
+    --fc-button-bg-color: var(--color-brand);
+    --fc-button-border-color: var(--color-brand);
+    --fc-button-text-color: var(--color-brand-contrast);
+    --fc-button-hover-bg-color: var(--color-brand);
+    --fc-button-hover-border-color: var(--color-brand);
+    --fc-button-active-bg-color: var(--color-brand);
+    --fc-button-active-border-color: var(--color-brand);
+    --fc-today-bg-color: color-mix(in oklab, var(--color-brand) 12%, transparent);
+    font-size: 0.875rem;
+}
+
+.course-calendar .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.course-calendar .fc-toolbar-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.course-calendar .fc-button:hover {
+    opacity: 0.9;
+}
+
+.course-calendar a.fc-event,
+.course-calendar .fc-list-event {
+    cursor: pointer;
 }

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Courses;
 use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Courses\Pages\EditCourse;
 use App\Filament\Resources\Courses\Pages\ListCourses;
+use App\Filament\Resources\Courses\RelationManagers\InstancesRelationManager;
 use App\Filament\Resources\Courses\RelationManagers\KidsRelationManager;
 use App\Filament\Resources\Courses\Schemas\CourseForm;
 use App\Filament\Resources\Courses\Tables\CoursesTable;
@@ -23,6 +24,8 @@ class CourseResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBox;
 
     protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -49,6 +52,7 @@ class CourseResource extends Resource
     public static function getRelations(): array
     {
         return [
+            InstancesRelationManager::class,
             KidsRelationManager::class,
         ];
     }

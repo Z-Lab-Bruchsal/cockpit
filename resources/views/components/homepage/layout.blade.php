@@ -16,7 +16,7 @@
         <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
             <a href="{{ route('homepage.index') }}" class="flex min-w-0 items-center gap-3">
                 @if ($settings->logo_path)
-                    <img src="{{ Storage::disk('public')->url($settings->logo_path) }}" alt="" class="h-9 w-auto">
+                    <img src="{{ Storage::disk('public')->url($settings->logo_path) }}" alt="{{ $settings->logo_alt }}" class="h-9 w-auto">
                 @endif
                 <span class="truncate text-lg font-semibold">{{ $settings->homepageTitle() }}</span>
             </a>
@@ -28,6 +28,14 @@
                         'bg-brand/10 text-gray-900' => request()->is($item->slug),
                     ])>{{ $item->title }}</a>
                 @endforeach
+                <a href="{{ route('homepage.courses.index') }}" @class([
+                    'rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100',
+                    'bg-brand/10 text-gray-900' => request()->routeIs('homepage.courses.*'),
+                ])>Kurse</a>
+                <a href="{{ route('homepage.calendar') }}" @class([
+                    'rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100',
+                    'bg-brand/10 text-gray-900' => request()->routeIs('homepage.calendar'),
+                ])>Kalender</a>
             </nav>
 
             <button type="button" class="rounded-md p-2 hover:bg-gray-100 md:hidden" @click="open = !open" :aria-expanded="open" aria-label="Menü">
@@ -41,6 +49,8 @@
                 @foreach ($navigation as $item)
                     <li><a href="{{ $item->url() }}" class="block py-3 font-medium" @click="open = false">{{ $item->title }}</a></li>
                 @endforeach
+                <li><a href="{{ route('homepage.courses.index') }}" class="block py-3 font-medium">Kurse</a></li>
+                <li><a href="{{ route('homepage.calendar') }}" class="block py-3 font-medium">Kalender</a></li>
             </ul>
         </nav>
     </header>

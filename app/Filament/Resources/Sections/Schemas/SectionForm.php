@@ -30,7 +30,7 @@ class SectionForm
                             ->live(onBlur: true)
                             ->afterStateUpdated(function (Get $get, Set $set, ?string $state, ?Section $record): void {
                                 if ($record === null && blank($get('slug'))) {
-                                    $set('slug', Str::slug($state ?? ''));
+                                    $set('slug', Str::slug($state ?? '', language: 'de'));
                                 }
                             }),
                         TextInput::make('slug')
@@ -79,6 +79,7 @@ class SectionForm
                             ->maxLength(300),
                         ContentBlocks::imageUpload('tile_image_path')
                             ->label('Kachelbild'),
+                        ContentBlocks::altText('tile_image_alt', 'tile_image_path'),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),

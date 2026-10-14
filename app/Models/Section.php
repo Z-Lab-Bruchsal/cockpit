@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'layout', 'content'])]
+#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'layout', 'content'])]
 class Section extends Model
 {
     /** @use HasFactory<SectionFactory> */

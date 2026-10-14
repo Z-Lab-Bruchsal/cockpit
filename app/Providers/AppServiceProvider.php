@@ -3,11 +3,14 @@
 namespace App\Providers;
 
 use App\Models\CompanySetting;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -45,7 +48,16 @@ class AppServiceProvider extends ServiceProvider
                 ->defaultPaginationPageOption(50)
                 ->defaultDateDisplayFormat('d.m.Y')
                 ->defaultDateTimeDisplayFormat('d.m.Y H:i')
-                ->defaultTimeDisplayFormat('H:i');
+                ->defaultTimeDisplayFormat('H:i')
+                // Row actions as icon buttons in front of the columns, with their label as tooltip.
+                ->recordActionsPosition(RecordActionsPosition::BeforeColumns)
+                ->modifyUngroupedRecordActionsUsing(function (Action $action): void {
+                    $action->iconButton();
+
+                    if (blank($action->getTooltip())) {
+                        $action->tooltip(fn (Action $action): string|Htmlable|null => $action->getLabel());
+                    }
+                });
         });
         Column::configureUsing(function (Column $column): void {
             $column->toggleable();

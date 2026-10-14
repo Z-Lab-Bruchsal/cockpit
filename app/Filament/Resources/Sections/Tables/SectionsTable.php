@@ -70,13 +70,13 @@ class SectionsTable
                     }),
             ])
             ->recordActions([
-                Action::make('view')
-                    ->label('Ansehen')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                EditAction::make(),
+                Action::make('viewOnHomepage')
+                    ->label('Auf der Homepage ansehen')
+                    ->icon(Heroicon::OutlinedGlobeAlt)
                     ->url(fn (Section $record): string => $record->url())
                     ->openUrlInNewTab()
                     ->visible(fn (Section $record): bool => $record->isPubliclyVisible()),
-                EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

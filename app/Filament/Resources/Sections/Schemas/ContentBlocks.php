@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\Sections\Schemas;
 
+use App\Enums\CourseAudience;
+use App\Models\Interest;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Support\Icons\Heroicon;
 
 /**
@@ -49,9 +52,7 @@ class ContentBlocks
                     static::imageUpload('image')
                         ->label('Bild')
                         ->required(),
-                    TextInput::make('alt')
-                        ->label('Alternativtext')
-                        ->maxLength(255),
+                    static::altText('alt', 'image'),
                     TextInput::make('caption')
                         ->label('Bildunterschrift')
                         ->maxLength(255),
@@ -67,9 +68,7 @@ class ContentBlocks
                     static::imageUpload('image')
                         ->label('Bild')
                         ->required(),
-                    TextInput::make('alt')
-                        ->label('Alternativtext')
-                        ->maxLength(255),
+                    static::altText('alt', 'image'),
                     Select::make('image_position')
                         ->label('Bildposition')
                         ->options([
@@ -102,6 +101,39 @@ class ContentBlocks
                         ->maxLength(500),
                 ])
                 ->columns(2),
+            Block::make('course_list')
+                ->label('Kursliste')
+                ->icon(Heroicon::OutlinedAcademicCap)
+                ->schema([
+                    Select::make('interest_ids')
+                        ->label('Nur Kurse mit diesen Interessen')
+                        ->placeholder('Alle')
+                        ->options(fn (): array => Interest::query()->active()->pluck('name', 'id')->all())
+                        ->multiple(),
+                    Select::make('audience')
+                        ->label('Zielgruppe')
+                        ->placeholder('Alle')
+                        ->options(CourseAudience::class),
+                    TextInput::make('limit')
+                        ->label('Max. Anzahl')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(48)
+                        ->default(6),
+                    Toggle::make('show_all_link')
+                        ->label('Link „Alle Kurse“ anzeigen')
+                        ->default(true),
+                ])
+                ->columns(2),
+            Block::make('course_calendar')
+                ->label('Kurskalender')
+                ->icon(Heroicon::OutlinedCalendarDays)
+                ->schema([
+                    Select::make('audience')
+                        ->label('Zielgruppe')
+                        ->placeholder('Alle')
+                        ->options(CourseAudience::class),
+                ]),
             Block::make('contact')
                 ->label('Kontakt / Adresse')
                 ->icon(Heroicon::OutlinedMapPin)
@@ -121,6 +153,19 @@ class ContentBlocks
                 ['bulletList', 'orderedList', 'blockquote'],
                 ['undo', 'redo'],
             ]);
+    }
+
+    /**
+     * Alternative text for an image, required as soon as the image is set.
+     */
+    public static function altText(string $name, string $imageField): TextInput
+    {
+        return TextInput::make($name)
+            ->label('Alternativtext')
+            ->helperText('Beschreibt das Bild für Screenreader und Suchmaschinen, z. B. „Kinder löten an einer Platine“.')
+            ->requiredWith($imageField)
+            ->validationMessages(['required_with' => 'Bitte einen Alternativtext für das Bild angeben.'])
+            ->maxLength(255);
     }
 
     public static function imageUpload(string $name): FileUpload
