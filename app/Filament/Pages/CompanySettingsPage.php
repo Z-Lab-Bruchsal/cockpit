@@ -202,6 +202,36 @@ class CompanySettingsPage extends Page
                                     ->minValue(1)
                                     ->maxValue(336)
                                     ->required(),
+                                Section::make('Buchungsgrenzen')
+                                    ->description('Verhindert, dass sich einzelne Familien sehr viele Kurse auf einmal sichern. Anmeldungen im Cockpit sind ausgenommen.')
+                                    ->schema([
+                                        TextInput::make('booking_limit_per_hour')
+                                            ->label('Max. Kurse pro Kind und Stunde')
+                                            ->helperText('Gezählt werden die letzten 60 Minuten. 0 = keine Begrenzung')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(0)
+                                            ->maxValue(50)
+                                            ->required(),
+                                        TextInput::make('booking_limit_per_day')
+                                            ->label('Max. Kurse pro Kind in 24 Stunden')
+                                            ->helperText('Gezählt werden die letzten 24 Stunden. 0 = keine Begrenzung')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->required(),
+                                        TextInput::make('max_seats_per_registration')
+                                            ->label('Max. Kinder pro Anmeldung')
+                                            ->helperText('Auswahl „Anzahl Kinder“ auf der Kursseite')
+                                            ->numeric()
+                                            ->integer()
+                                            ->minValue(1)
+                                            ->maxValue(20)
+                                            ->required(),
+                                    ])
+                                    ->columns(3)
+                                    ->columnSpanFull(),
                                 TextInput::make('waitlist_offer_hours')
                                     ->label('Frist für Nachrücker [h]')
                                     ->helperText('So lange hat eine Familie Zeit, einen frei gewordenen Platz anzunehmen. Pro Kurs und Durchführung überschreibbar.')

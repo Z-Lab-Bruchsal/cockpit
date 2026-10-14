@@ -18,11 +18,10 @@ class CartManager
 
     protected const COOKIE_MINUTES = 60 * 24 * 30;
 
-    public function __construct(protected Request $request) {}
-
     public function current(): ?Cart
     {
-        $plainToken = $this->request->cookie(self::COOKIE);
+        // Resolved per call: controllers holding this service may outlive a single request.
+        $plainToken = $this->request()->cookie(self::COOKIE);
 
         if (! is_string($plainToken) || $plainToken === '') {
             return null;
@@ -51,6 +50,11 @@ class CartManager
             'token_hash' => Cart::hashToken($plainToken),
             'contact_id' => $this->loggedInContact()?->id,
         ]);
+    }
+
+    protected function request(): Request
+    {
+        return request();
     }
 
     protected function loggedInContact(): ?Contact

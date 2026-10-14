@@ -173,6 +173,8 @@ class Checkout extends Component
     protected function validateKidsFitCourses(): bool
     {
         $isValid = true;
+        $countsInCart = [];
+        $reservations = app(CourseReservationService::class);
 
         foreach ($this->registrations as $registration) {
             $course = $registration->courseInstance->course;
@@ -190,6 +192,16 @@ class Checkout extends Component
                 }
 
                 $seen[] = $identity;
+
+                $limitKey = $ownKid !== null ? 'id:'.$ownKid->id : 'name:'.mb_strtolower(trim($kid['name'])).'|'.$kid['birthdate'];
+                $countsInCart[$limitKey] = ($countsInCart[$limitKey] ?? 0) + 1;
+
+                $limitMessage = $reservations->bookingLimitMessage($ownKid?->id, $ownKid?->name ?? $kid['name'], $ownKid?->exactBirthdate()?->toDateString() ?? $kid['birthdate'], $countsInCart[$limitKey]);
+
+                if ($limitMessage !== null) {
+                    $this->addError($key.($ownKid ? '.kid_id' : '.name'), $limitMessage);
+                    $isValid = false;
+                }
 
                 $age = $ownKid?->age($firstDate) ?? (filled($kid['birthdate']) ? (int) floor(Carbon::parse($kid['birthdate'])->diffInYears($firstDate ?? now())) : null);
 

@@ -6,6 +6,10 @@
             <p class="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('status') }}</p>
         @endif
 
+        @if (session('booking_limit_warning'))
+            <p class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">{{ session('booking_limit_warning') }}</p>
+        @endif
+
         <livewire:homepage.checkout />
     </div>
 </x-homepage.layout>

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours'])]
+#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours', 'booking_limit_per_hour', 'booking_limit_per_day', 'max_seats_per_registration'])]
 class CompanySetting extends Model
 {
     /**
@@ -31,6 +31,9 @@ class CompanySetting extends Model
         'hold_minutes' => 15,
         'confirmation_hours' => 48,
         'waitlist_offer_hours' => 48,
+        'booking_limit_per_hour' => 2,
+        'booking_limit_per_day' => 4,
+        'max_seats_per_registration' => 5,
     ];
 
     /**
@@ -55,6 +58,51 @@ class CompanySetting extends Model
     public function appTitle(): string
     {
         return $this->app_title ?: ($this->name ?: config('app.name'));
+    }
+
+    public function hasBookingLimit(): bool
+    {
+        return $this->booking_limit_per_hour > 0 || $this->booking_limit_per_day > 0;
+    }
+
+    /**
+     * Active booking limits per child, each counted over a rolling window (last 60 minutes, last 24 hours).
+     *
+     * @return list<array{limit: int, minutes: int, text: string}>
+     */
+    public function bookingLimits(): array
+    {
+        return array_values(array_filter([
+            $this->booking_limit_per_hour > 0
+                ? ['limit' => $this->booking_limit_per_hour, 'minutes' => 60, 'text' => static::coursesText($this->booking_limit_per_hour).' pro Stunde']
+                : null,
+            $this->booking_limit_per_day > 0
+                ? ['limit' => $this->booking_limit_per_day, 'minutes' => 1440, 'text' => static::coursesText($this->booking_limit_per_day).' in 24 Stunden']
+                : null,
+        ]));
+    }
+
+    /**
+     * The smallest active limit, i.e. how many courses one child can book in a single checkout.
+     */
+    public function strictestBookingLimit(): ?int
+    {
+        $limits = array_column($this->bookingLimits(), 'limit');
+
+        return $limits === [] ? null : min($limits);
+    }
+
+    /**
+     * e.g. "höchstens 2 Kurse pro Stunde und 4 Kurse in 24 Stunden".
+     */
+    public function bookingLimitText(): string
+    {
+        return 'höchstens '.implode(' und ', array_column($this->bookingLimits(), 'text'));
+    }
+
+    protected static function coursesText(int $count): string
+    {
+        return $count === 1 ? '1 Kurs' : "{$count} Kurse";
     }
 
     /**

@@ -4,7 +4,7 @@
     $cart = app(\App\Services\Registrations\CartManager::class)->current();
     $isInCart = $cart?->heldRegistrations()->where('course_instance_id', $instance->id)->exists() ?? false;
     $freeSeats = $instance->freeSeats();
-    $maxSeats = \App\Services\Registrations\CourseReservationService::MAX_SEATS_PER_REGISTRATION;
+    $maxSeats = \App\Models\CompanySetting::current()->max_seats_per_registration;
     $errorBag = $errors->getBag('instance'.$instance->id);
 @endphp
 
@@ -29,6 +29,7 @@
             {{ $availability === \App\Enums\CourseAvailability::Waitlist ? 'Auf die Warteliste' : 'Anmeldung beginnen' }}
         </button>
     </form>
+    <x-homepage.booking-limit-hint class="mt-2" />
     @if ($availability === \App\Enums\CourseAvailability::Waitlist)
         <p class="mt-2 text-sm text-gray-600">Wird ein Platz frei, bekommst du eine E-Mail und hast dann {{ $instance->waitlistOfferHours() }} Stunden Zeit, ihn anzunehmen.</p>
     @elseif ($freeSeats < $maxSeats)

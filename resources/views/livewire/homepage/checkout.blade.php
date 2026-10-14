@@ -83,7 +83,10 @@
                     </article>
                 @endforeach
 
-                <a href="{{ route('homepage.courses.index') }}" class="self-start text-sm font-semibold text-brand hover:underline">+ Weiteren Kurs hinzufügen</a>
+                <div class="flex flex-col gap-1">
+                    <a href="{{ route('homepage.courses.index') }}" class="self-start text-sm font-semibold text-brand hover:underline">+ Weiteren Kurs hinzufügen</a>
+                    <x-homepage.booking-limit-hint class="text-xs text-gray-500" />
+                </div>
             </section>
 
             {{-- Contact --}}

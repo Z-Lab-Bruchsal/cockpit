@@ -22,6 +22,8 @@ use App\Models\CourseInstance;
 use App\Models\Enrollment;
 use App\Models\Kid;
 use App\Models\Registration;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -37,8 +39,6 @@ use Illuminate\Support\Str;
  */
 class CourseReservationService
 {
-    public const MAX_SEATS_PER_REGISTRATION = 5;
-
     /**
      * Holds seats in the cart. Siblings are never split up: if some but not enough seats are free,
      * all seats are held and the registration needs the course lead's approval after confirmation.
@@ -46,8 +46,10 @@ class CourseReservationService
      */
     public function hold(CourseInstance $instance, int $seats, Cart $cart): Registration
     {
-        if ($seats < 1 || $seats > self::MAX_SEATS_PER_REGISTRATION) {
-            throw new ReservationException('Bitte wähle zwischen 1 und '.self::MAX_SEATS_PER_REGISTRATION.' Plätzen.');
+        $maxSeats = CompanySetting::current()->max_seats_per_registration;
+
+        if ($seats < 1 || $seats > $maxSeats) {
+            throw new ReservationException("Bitte wähle zwischen 1 und {$maxSeats} Plätzen.");
         }
 
         return DB::transaction(function () use ($instance, $seats, $cart): Registration {
@@ -133,6 +135,8 @@ class CourseReservationService
                 throw new ReservationException('Deine Reservierung ist abgelaufen. Bitte lege die Kurse erneut in den Warenkorb.');
             }
 
+            $this->ensureBookingLimit($registrations, $kidsByRegistration, $loggedInContact);
+
             foreach ($registrations as $registration) {
                 $kids = array_values($kidsByRegistration[$registration->id] ?? []);
                 $activeEnrollments = $registration->enrollments->filter(fn (Enrollment $enrollment): bool => in_array($enrollment->status, [EnrollmentStatus::Held, EnrollmentStatus::Waitlisted], true))->values();
@@ -188,6 +192,118 @@ class CourseReservationService
         ));
 
         return $registrations->map->fresh();
+    }
+
+    /**
+     * Checkout times of the child's homepage registrations since the given moment, oldest first.
+     * A child is recognised by its record or, for guests, by name and birthdate.
+     *
+     * @param  list<int>  $exceptRegistrationIds
+     * @return Collection<int, Carbon>
+     */
+    public function bookingTimesForKid(Carbon $since, ?int $kidId, ?string $name, ?string $birthdate, array $exceptRegistrationIds = []): Collection
+    {
+        $name = Str::lower(trim((string) $name));
+
+        if ($kidId === null && ($name === '' || blank($birthdate))) {
+            return collect();
+        }
+
+        return Registration::query()
+            ->where('source', RegistrationSource::Homepage)
+            ->where('checked_out_at', '>=', $since)
+            ->whereNotIn('id', $exceptRegistrationIds)
+            ->whereHas('enrollments', fn ($query) => $query->where(fn ($query) => $query
+                ->when($kidId !== null, fn ($query) => $query->orWhere('kid_id', $kidId))
+                ->when($name !== '' && filled($birthdate), fn ($query) => $query->orWhere(fn ($byName) => $byName
+                    ->whereRaw('lower(kid_name) = ?', [$name])
+                    ->whereDate('kid_birthdate', Carbon::parse($birthdate)->toDateString())))))
+            ->orderBy('checked_out_at')
+            ->pluck('checked_out_at')
+            ->map(fn ($checkedOutAt): Carbon => Carbon::parse($checkedOutAt))
+            ->values();
+    }
+
+    /**
+     * Checks the booking limits for one child with the given number of courses in the cart.
+     *
+     * @param  list<int>  $exceptRegistrationIds
+     * @return string|null message for parents (including how long to wait), or null if the booking is allowed
+     */
+    public function bookingLimitMessage(?int $kidId, ?string $name, ?string $birthdate, int $coursesInCart, array $exceptRegistrationIds = []): ?string
+    {
+        foreach (CompanySetting::current()->bookingLimits() as $limit) {
+            $displayName = filled($name) ? trim($name) : 'dieses Kind';
+            $prefix = "Für {$displayName} sind höchstens {$limit['text']} möglich, damit alle Kinder eine Chance haben.";
+
+            if ($coursesInCart > $limit['limit']) {
+                $tooMany = $coursesInCart - $limit['limit'];
+
+                return $prefix.' Bitte entferne '.($tooMany === 1 ? 'einen Kurs' : "{$tooMany} Kurse").' aus dem Warenkorb.';
+            }
+
+            $times = $this->bookingTimesForKid(now()->subMinutes($limit['minutes']), $kidId, $name, $birthdate, $exceptRegistrationIds);
+            $mustExpire = $times->count() + $coursesInCart - $limit['limit'];
+
+            if ($mustExpire > 0) {
+                $availableAt = $times->get($mustExpire - 1)->copy()->addMinutes($limit['minutes']);
+
+                return $prefix.' Weitere Kurse kannst du '.static::waitingText($availableAt).' buchen.';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * e.g. "in 23 Minuten (ab 14:35 Uhr)" or "in 5 Stunden 10 Minuten (ab morgen 09:10 Uhr)".
+     */
+    public static function waitingText(Carbon $availableAt): string
+    {
+        $availableAt = $availableAt->copy()->ceilMinute();
+        $duration = now()->locale('de')->diffForHumans($availableAt, syntax: CarbonInterface::DIFF_ABSOLUTE, parts: 2, options: CarbonInterface::ROUND);
+        $day = match (true) {
+            $availableAt->isToday() => '',
+            $availableAt->isTomorrow() => 'morgen ',
+            default => $availableAt->locale('de')->isoFormat('dd, DD.MM. '),
+        };
+
+        return "in {$duration} (ab {$day}{$availableAt->format('H:i')} Uhr)";
+    }
+
+    /**
+     * Enforces the limits of courses per child and hour / 24 hours from the company settings.
+     *
+     * @param  Collection<int, Registration>  $registrations
+     * @param  array<int, list<array{kid_id?: ?int, name?: ?string, birthdate?: ?string}>>  $kidsByRegistration
+     */
+    protected function ensureBookingLimit(Collection $registrations, array $kidsByRegistration, ?Contact $loggedInContact): void
+    {
+        if (! CompanySetting::current()->hasBookingLimit()) {
+            return;
+        }
+
+        $inThisCheckout = [];
+
+        foreach ($registrations as $registration) {
+            foreach ($kidsByRegistration[$registration->id] ?? [] as $kid) {
+                $ownKid = isset($kid['kid_id']) && $loggedInContact !== null ? $loggedInContact->kids()->find($kid['kid_id']) : null;
+                $name = $ownKid?->name ?? ($kid['name'] ?? null);
+                $birthdate = $ownKid?->exactBirthdate()?->toDateString() ?? ($kid['birthdate'] ?? null);
+                $key = $ownKid !== null ? 'id:'.$ownKid->id : 'name:'.Str::lower(trim((string) $name)).'|'.$birthdate;
+
+                $inThisCheckout[$key] ??= ['count' => 0, 'name' => (string) $name, 'kid_id' => $ownKid?->id, 'birthdate' => $birthdate];
+                $inThisCheckout[$key]['count']++;
+            }
+        }
+
+        foreach ($inThisCheckout as $kid) {
+            $message = $this->bookingLimitMessage($kid['kid_id'], $kid['name'], $kid['birthdate'], $kid['count'], $registrations->pluck('id')->all());
+
+            if ($message !== null) {
+                throw new ReservationException($message);
+            }
+        }
     }
 
     /**

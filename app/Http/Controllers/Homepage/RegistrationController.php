@@ -6,6 +6,7 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
 use App\Exceptions\ReservationException;
 use App\Http\Controllers\Controller;
+use App\Models\CompanySetting;
 use App\Models\CourseInstance;
 use App\Models\Registration;
 use App\Services\Registrations\CartManager;
@@ -24,7 +25,7 @@ class RegistrationController extends Controller
     public function addToCart(Request $request, CourseInstance $instance): RedirectResponse
     {
         $validated = $request->validate([
-            'seats' => ['required', 'integer', 'min:1', 'max:'.CourseReservationService::MAX_SEATS_PER_REGISTRATION],
+            'seats' => ['required', 'integer', 'min:1', 'max:'.CompanySetting::current()->max_seats_per_registration],
         ]);
 
         abort_unless($instance->course?->is_published, 404);
@@ -37,11 +38,22 @@ class RegistrationController extends Controller
                 ->withErrors(['seats' => $exception->getMessage()], 'instance'.$instance->id);
         }
 
-        return redirect()->route('homepage.cart')->with('status', match (true) {
+        $settings = CompanySetting::current();
+        $coursesInCart = $registration->cart->heldRegistrations()->count();
+
+        $status = match (true) {
             $registration->isOnWaitlist() => 'Der Kurs ist ausgebucht – du kommst auf die Warteliste.',
             $registration->needs_approval => 'Die Plätze sind für dich reserviert. Weil nicht mehr genug Plätze für alle Geschwister frei sind, prüfen wir die Anmeldung nach dem Absenden.',
             default => 'Die Plätze sind für dich reserviert.',
-        });
+        };
+
+        $redirect = redirect()->route('homepage.cart')->with('status', $status);
+
+        if ($settings->strictestBookingLimit() !== null && $coursesInCart > $settings->strictestBookingLimit()) {
+            $redirect->with('booking_limit_warning', "Du hast jetzt {$coursesInCart} Kurse im Warenkorb. Pro Kind sind aber {$settings->bookingLimitText()} möglich – bei Geschwistern ist das kein Problem, sonst entferne bitte einen Kurs.");
+        }
+
+        return $redirect;
     }
 
     public function removeFromCart(Registration $registration): RedirectResponse
