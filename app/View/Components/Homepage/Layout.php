@@ -7,6 +7,7 @@ use App\Models\Section;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Component;
 
 class Layout extends Component
@@ -18,6 +19,10 @@ class Layout extends Component
      */
     public Collection $navigation;
 
+    public bool $isLoggedIn;
+
+    public string $accountUrl;
+
     public function __construct(public ?string $title = null)
     {
         $this->settings = CompanySetting::current();
@@ -28,6 +33,9 @@ class Layout extends Component
             ->where('is_standalone', false)
             ->where('show_in_navigation', true)
             ->get();
+
+        $this->isLoggedIn = Auth::guard('contact')->check();
+        $this->accountUrl = route($this->isLoggedIn ? 'homepage.account' : 'homepage.login');
     }
 
     public function pageTitle(): string

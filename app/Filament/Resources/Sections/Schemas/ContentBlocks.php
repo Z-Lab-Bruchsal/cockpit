@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Sections\Schemas;
 
+use App\Enums\ContactFormTopic;
 use App\Enums\CourseAudience;
 use App\Models\Interest;
 use Filament\Forms\Components\Builder;
@@ -133,6 +134,17 @@ class ContentBlocks
                         ->label('Zielgruppe')
                         ->placeholder('Alle')
                         ->options(CourseAudience::class),
+                ]),
+            Block::make('contact_form')
+                ->label('Kontaktformular')
+                ->icon(Heroicon::OutlinedEnvelope)
+                ->schema([
+                    static::richEditor('intro')
+                        ->label('Einleitung'),
+                    Select::make('topic')
+                        ->label('Vorausgewähltes Anliegen')
+                        ->options(ContactFormTopic::class)
+                        ->placeholder('Allgemeine Frage'),
                 ]),
             Block::make('contact')
                 ->label('Kontakt / Adresse')

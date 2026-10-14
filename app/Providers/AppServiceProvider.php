@@ -14,6 +14,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +32,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         CompanySetting::applyToConfig();
+
+        // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
+        RateLimiter::for('magic-link', function (Request $request): array {
+            return [
+                Limit::perMinutes(10, 3)->by('magic-link-email:'.Str::lower((string) $request->input('email'))),
+                Limit::perMinute(10)->by('magic-link-ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('contact-form', fn (Request $request): Limit => Limit::perHour(5)->by('contact-form:'.$request->ip()));
 
         RateLimiter::for('terminal', function (Request $request): Limit {
             return Limit::perMinute(60)->by($request->attributes->get('terminal')?->id ?? $request->ip());

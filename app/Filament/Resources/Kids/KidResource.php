@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Kids;
 use App\Filament\Resources\Kids\Pages\CreateKid;
 use App\Filament\Resources\Kids\Pages\EditKid;
 use App\Filament\Resources\Kids\Pages\ListKids;
+use App\Filament\Resources\Kids\RelationManagers\ContactsRelationManager;
 use App\Filament\Resources\Kids\RelationManagers\CoursesRelationManager;
 use App\Filament\Resources\Kids\Schemas\KidForm;
 use App\Filament\Resources\Kids\Tables\KidsTable;
@@ -22,7 +23,9 @@ class KidResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserCircle;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
+    protected static string|UnitEnum|null $navigationGroup = 'Kontakte';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -49,6 +52,7 @@ class KidResource extends Resource
     public static function getRelations(): array
     {
         return [
+            ContactsRelationManager::class,
             CoursesRelationManager::class,
         ];
     }

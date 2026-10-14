@@ -36,6 +36,10 @@
                     'rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100',
                     'bg-brand/10 text-gray-900' => request()->routeIs('homepage.calendar'),
                 ])>Kalender</a>
+                <a href="{{ $accountUrl }}" @class([
+                    'ml-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-100',
+                    'bg-brand/10 text-gray-900' => request()->routeIs('homepage.account', 'homepage.login'),
+                ])>{{ $isLoggedIn ? 'Mein Konto' : 'Anmelden' }}</a>
             </nav>
 
             <button type="button" class="rounded-md p-2 hover:bg-gray-100 md:hidden" @click="open = !open" :aria-expanded="open" aria-label="Menü">
@@ -51,6 +55,7 @@
                 @endforeach
                 <li><a href="{{ route('homepage.courses.index') }}" class="block py-3 font-medium">Kurse</a></li>
                 <li><a href="{{ route('homepage.calendar') }}" class="block py-3 font-medium">Kalender</a></li>
+                <li class="border-t border-gray-200"><a href="{{ $accountUrl }}" class="block py-3 font-medium">{{ $isLoggedIn ? 'Mein Konto' : 'Anmelden' }}</a></li>
             </ul>
         </nav>
     </header>

@@ -104,7 +104,22 @@ Achtung Namenskonflikt: `Booking` ist schon die Zeiterfassung. Buchungen heißen
 - Vorhandene `course_kid`-Zeilen werden in eine Durchführung „Altbestand“ je Kurs und Datum mit bestätigten Enrollments überführt.
 - Danach wird `course_kid` gelöscht und `Kid::courses()` / `Course::kids()` werden ersetzt. Der bestehende `KidsRelationManager` wird durch den Enrollment-RelationManager ersetzt.
 
-## Phase 3: Kontakte, Kinder, Magic-Link-Konten
+## Phase 3: Kontakte, Kinder, Magic-Link-Konten ✅ erledigt
+
+**Umgesetzt mit diesen Abweichungen bzw. Ergänzungen:**
+- **Bestätigungsseite:** Der Magic-Link führt zuerst auf `GET /login/{token}` mit dem Button „Jetzt anmelden“, erst `POST` verbraucht den Token. Sonst würden Mail-Scanner, die Links vorab öffnen, den einmaligen Link verbrauchen.
+- **Registrierung:** Für eine unbekannte Adresse entsteht der Kontakt erst, wenn der Link eingelöst wird. Das optionale Namensfeld wird dafür im Token gespeichert. So erzeugen Anfragen keine Spam-Kontakte.
+- **Schutz:** Rate-Limit `magic-link` (3 je Adresse in 10 Minuten, 10 je IP pro Minute), Honeypot und eine neutrale Antwort, die nicht verrät, ob die Adresse bekannt ist. Weiterleitungen sind nur auf lokale Pfade erlaubt.
+- **Konto (`/konto`, Livewire `Homepage\Account`):** Daten pflegen, Einwilligung für Kursinfos geben, Kinder mit Geburtsdatum und Interessen anlegen, bearbeiten und entfernen. Ein Kind wird nur gelöscht, wenn es niemandem sonst zugeordnet ist und keine Kurshistorie hat.
+- **E-Mail ändern im Frontend:** Erst bestätigt die alte Adresse, dann die neue (`/email-aendern/{token}`, Bestätigung per Button, 24 Stunden gültig). Bei jeder Änderung, auch im Cockpit, geht ein Hinweis an die alte Adresse (Hook `Contact::updated`). Wird die Adresse im Cockpit geändert, gilt sie danach als unbestätigt.
+- **Datenschutz Geburtsdatum:** Im Cockpit ist nur das Alter sichtbar. `birthdate` ist am Model für die Serialisierung versteckt, weil es sonst im Livewire-Snapshot landen würde. Ein im Cockpit eingegebenes Alter speichert ein geschätztes Geburtsdatum (`birthdate_estimated`). Eltern sehen dann ein leeres Feld und den Hinweis, das genaue Datum einzutragen.
+- Das Konto löschen geht weiterhin nur per Nachricht an das Z-LAB.
+- **Kontaktformular** `/kontaktformular`, auch als Inhaltsblock: Es schickt eine Mail an die Kontakt-E-Mail aus den Firmeninfos, mit Reply-To auf den Absender. Das Anliegen kann per `?anliegen=` vorausgewählt werden. Verlinkt ist es bei „Kein Zugriff mehr auf die alte E-Mail-Adresse“ (Konto, Anmeldeseite, abgelaufener Link) und bei „Konto löschen“. Geschützt durch Honeypot, 5 Nachrichten pro Stunde und IP und eine Datenschutz-Checkbox.
+- **Mail-Branding:** Veröffentlichte Mail-Vorlagen (`resources/views/vendor/mail/`) mit Logo bzw. Homepage-Titel im Kopf und einer deutschen Fußzeile mit Adresse, Kontakt und Impressum-Link. Gilt für alle Mails.
+- **Navigation:** Die Kinder sind in die Navigationsgruppe „Kontakte“ umgezogen.
+- **Cockpit-Aktion „Anmeldelink senden“** am Kontakt.
+- Die Magic-Link-Mail geht mit dem Homepage-Titel als Absendername raus.
+
 
 **Kontakte** (`contacts`, Model `Contact` extends Authenticatable)
 - Felder: `type` (enum `ContactType`: Parent, School), `name`, `email` (unique), `phone`, `street`, `zip`, `city`, `contact_person` (Schulen), `notes`, `email_verified_at`, `interest_mails_consent_at` (Einwilligung, DSGVO), `unsubscribe_token`.

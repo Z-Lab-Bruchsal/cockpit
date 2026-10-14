@@ -13,7 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Guests on protected homepage pages (e.g. /konto) go to the magic link form; the cockpit has its own login.
+        $middleware->redirectGuestsTo(fn () => route('homepage.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

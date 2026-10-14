@@ -269,6 +269,10 @@ class HomepageSeeder extends Seeder
                         'intro' => '<p>Du hast Fragen zu unseren Kursen oder möchtest einen Schnuppertermin vereinbaren? Ruf uns an oder schreib uns.</p><p><strong>So findest du uns:</strong> Das Z-LAB befindet sich im Triwo Technopark, Gebäude 5137c (Hubwerk01). Vom Bahnhof Bruchsal erreichst du uns gut zu Fuß.</p>',
                     ],
                 ],
+                [
+                    'type' => 'contact_form',
+                    'data' => ['intro' => '<h2>Schreib uns</h2>', 'topic' => null],
+                ],
             ],
         ]);
     }
