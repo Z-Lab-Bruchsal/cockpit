@@ -4,7 +4,6 @@ set -e
 cd /var/www/html
 
 mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
 
 if [ -n "$DB_DATABASE" ] && [ "$DB_CONNECTION" = "sqlite" ]; then
     mkdir -p "$(dirname "$DB_DATABASE")"
@@ -19,5 +18,9 @@ if [ "$1" = "apache2-foreground" ]; then
     php artisan migrate --force
     php artisan storage:link || true
 fi
+
+# After the artisan calls above, so files they create as root (e.g. the
+# log file) remain writable for Apache.
+chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"

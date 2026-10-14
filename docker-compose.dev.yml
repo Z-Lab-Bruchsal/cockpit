@@ -1,0 +1,57 @@
+# Development stack: runs the app straight from the working copy instead of
+# a prebuilt application image. Only the PHP/Apache runtime (Dockerfile
+# target "dev") is built; code, vendor/ and public/build come from the
+# bind mount. Composer dependencies and frontend assets are installed by
+# one-off services before the web server starts.
+#
+#   HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f docker-compose.dev.yml up --build
+#
+# auth.json (Filament composer credentials) is only needed if vendor/ has
+# to be (re)installed.
+x-runtime: &runtime
+  image: z-lab-cockpit:dev
+  env_file: .env
+  volumes:
+    - .:/var/www/html
+
+services:
+  composer:
+    <<: *runtime
+    build:
+      context: .
+      target: dev
+      args:
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
+    user: www-data
+    entrypoint: []
+    environment:
+      COMPOSER_HOME: /tmp/composer
+    command: ["composer", "install", "--no-interaction", "--no-progress"]
+
+  assets:
+    image: node:22-alpine
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /app
+    environment:
+      npm_config_cache: /tmp/.npm
+    volumes:
+      - .:/app
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && npm run build"]
+
+  app:
+    <<: *runtime
+    pull_policy: never
+    depends_on:
+      composer:
+        condition: service_completed_successfully
+      assets:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PORT:-8000}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

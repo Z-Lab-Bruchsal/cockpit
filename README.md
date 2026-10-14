@@ -66,11 +66,15 @@ A production-style `docker-compose.yml` is included, with separate `app` (web), 
 docker compose up --build
 ```
 
-The web service is published on `http://localhost:8000` and exposes a health check at `/up`. Migrations aren't run automatically by the compose file — run them once against the running `app` container:
+The web service is published on `http://localhost:8000` and exposes a health check at `/up`. Migrations run automatically when the `app` container starts.
+
+To run the app straight from the working copy without building an application image:
 
 ```bash
-docker compose exec app php artisan migrate --force
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f docker-compose.dev.yml up --build
 ```
+
+See [docker/README.md](docker/README.md) for details on both setups (in German).
 
 ## Creating the first user & granting permissions
 

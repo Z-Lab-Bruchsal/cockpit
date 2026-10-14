@@ -1,5 +1,8 @@
 x-app: &app
   image: z-lab-cockpit:latest
+  # The image is built locally by the app service (see build: below), so
+  # queue/scheduler must never try to pull it from a registry.
+  pull_policy: never
   env_file: .env
   # environment:
   #   DB_CONNECTION: sqlite

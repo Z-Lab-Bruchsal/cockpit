@@ -10,13 +10,14 @@ COPY vite.config.js ./
 COPY resources ./resources
 RUN npm run build
 
-# --- application -------------------------------------------------------
-FROM php:${PHP_VERSION}-apache AS app
+# --- runtime base (PHP, Apache, extensions — no application code) ----------
+FROM php:${PHP_VERSION}-apache AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libsqlite3-dev \
         libicu-dev \
         libzip-dev \
+        libpng-dev \
         unzip \
         git \
         curl \
@@ -27,7 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         bcmath \
         gd \
         pcntl \
-        opcache \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -38,6 +38,22 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /var/www/html
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["apache2-foreground"]
+
+# --- development (code is bind-mounted, see docker-compose.dev.yml) --------
+FROM base AS dev
+
+# Run Apache as the host user so files written to the bind-mounted
+# working copy (logs, cache, sqlite) stay owned by that user.
+ARG UID=1000
+ARG GID=1000
+RUN groupmod -o -g "${GID}" www-data \
+    && usermod -o -u "${UID}" -g "${GID}" www-data
+
+# --- application (production image, code baked in) ----------------------
+FROM base AS app
 
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
@@ -50,6 +66,3 @@ RUN --mount=type=secret,id=composer_auth,target=/var/www/html/auth.json \
 
 RUN mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
-
-ENTRYPOINT ["entrypoint.sh"]
-CMD ["apache2-foreground"]
