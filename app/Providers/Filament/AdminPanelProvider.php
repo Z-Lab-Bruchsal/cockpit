@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
@@ -32,12 +33,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('cockpit')
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->login()
             ->spa()
             ->unsavedChangesAlerts()
             ->databaseNotifications()
             ->profile()
-            ->passwordReset()
             ->font(
                 'Bunny',
                 provider: LocalFontProvider::class,
@@ -71,6 +70,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                FilamentOauth2Plugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,
