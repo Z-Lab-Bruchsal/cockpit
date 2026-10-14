@@ -164,6 +164,11 @@ class CourseReservationService
                         ? $loggedInContact->kids()->find($kid['kid_id'])
                         : null;
 
+                    // A saved child without exact birthdate gets the date entered at checkout.
+                    if ($ownKid !== null && $ownKid->exactBirthdate() === null && filled($kid['birthdate'] ?? null)) {
+                        $ownKid->update(['birthdate' => $kid['birthdate'], 'birthdate_estimated' => false]);
+                    }
+
                     $enrollment->update([
                         'kid_id' => $ownKid?->id,
                         'kid_name' => $ownKid?->name ?? trim((string) ($kid['name'] ?? '')),

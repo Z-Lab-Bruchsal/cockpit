@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Guests on protected homepage pages (e.g. /konto) go to the magic link form; the cockpit has its own login.
         $middleware->redirectGuestsTo(fn () => route('homepage.login'));
+
+        // One-click unsubscribe from mail clients (RFC 8058) cannot send a CSRF token; the secret token in the URL protects it.
+        $middleware->validateCsrfTokens(except: ['abmelden/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
@@ -23,4 +26,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('app:send-todo-follow-up-reminders')->dailyAt('07:00');
         $schedule->command('app:send-break-compliance-warnings')->dailyAt('21:00');
         $schedule->command('app:expire-reservations')->everyMinute()->withoutOverlapping();
+        $schedule->command('app:send-course-digests')->everyFifteenMinutes()->withoutOverlapping();
     })->create();

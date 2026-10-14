@@ -21,6 +21,16 @@ use Livewire\Component;
  */
 class Account extends Component
 {
+    /**
+     * @var array<int, string>
+     */
+    public const DIGEST_HOUR_OPTIONS = [1 => 'nach 1 Stunde', 4 => 'nach 4 Stunden', 12 => 'nach 12 Stunden', 24 => 'nach 1 Tag', 72 => 'nach 3 Tagen', 168 => 'nach 1 Woche'];
+
+    /**
+     * @var array<int, string>
+     */
+    public const WEEKLY_MAXIMUM_OPTIONS = [1 => '1 E-Mail', 2 => '2 E-Mails', 3 => '3 E-Mails', 5 => '5 E-Mails', 7 => '7 E-Mails'];
+
     public string $name = '';
 
     public string $phone = '';
@@ -32,6 +42,12 @@ class Account extends Component
     public string $city = '';
 
     public bool $wantsInterestMails = false;
+
+    /** Empty string = company default. */
+    public string $digestHours = '';
+
+    /** Empty string = no maximum. */
+    public string $maxCourseMailsPerWeek = '';
 
     public string $newEmail = '';
 
@@ -60,6 +76,8 @@ class Account extends Component
         $this->zip = (string) $contact->zip;
         $this->city = (string) $contact->city;
         $this->wantsInterestMails = $contact->wantsInterestMails();
+        $this->digestHours = (string) $contact->digest_hours;
+        $this->maxCourseMailsPerWeek = (string) $contact->max_course_mails_per_week;
     }
 
     public function saveProfile(): void
@@ -71,6 +89,8 @@ class Account extends Component
             'zip' => ['nullable', 'string', 'max:10'],
             'city' => ['nullable', 'string', 'max:255'],
             'wantsInterestMails' => ['boolean'],
+            'digestHours' => ['nullable', Rule::in(array_map('strval', array_keys(self::DIGEST_HOUR_OPTIONS)))],
+            'maxCourseMailsPerWeek' => ['nullable', Rule::in(array_map('strval', array_keys(self::WEEKLY_MAXIMUM_OPTIONS)))],
         ]);
 
         $contact = $this->contact();
@@ -84,6 +104,8 @@ class Account extends Component
             'interest_mails_consent_at' => $validated['wantsInterestMails']
                 ? ($contact->interest_mails_consent_at ?? now())
                 : null,
+            'digest_hours' => filled($validated['digestHours']) ? (int) $validated['digestHours'] : null,
+            'max_course_mails_per_week' => filled($validated['maxCourseMailsPerWeek']) ? (int) $validated['maxCourseMailsPerWeek'] : null,
         ]);
 
         session()->flash('profile_saved', true);

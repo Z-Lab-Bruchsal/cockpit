@@ -160,6 +160,31 @@
                 <span>Ja, informiert mich per E-Mail über neue Kurse, die zu den Interessen und dem Alter meiner Kinder passen. Die Einwilligung kann ich jederzeit hier oder über den Link in jeder E-Mail widerrufen.</span>
             </label>
 
+            <div x-show="$wire.wantsInterestMails" class="grid gap-4 sm:grid-cols-2">
+                <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+                    Neue Kurse sammeln und schicken …
+                    <select wire:model="digestHours" class="rounded-lg border-gray-300">
+                        <option value="">Standard ({{ \App\Livewire\Homepage\Account::DIGEST_HOUR_OPTIONS[\App\Models\CompanySetting::current()->digest_hours] ?? 'nach '.\App\Models\CompanySetting::current()->digest_hours.' Stunden' }})</option>
+                        @foreach (\App\Livewire\Homepage\Account::DIGEST_HOUR_OPTIONS as $hours => $label)
+                            <option value="{{ $hours }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <span class="font-normal text-gray-500">… sobald so lange kein weiterer passender Kurs dazugekommen ist.</span>
+                    @error('digestHours')<span class="text-sm text-red-600">{{ $message }}</span>@enderror
+                </label>
+                <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+                    Höchstens pro Woche
+                    <select wire:model="maxCourseMailsPerWeek" class="rounded-lg border-gray-300">
+                        <option value="">Keine Begrenzung</option>
+                        @foreach (\App\Livewire\Homepage\Account::WEEKLY_MAXIMUM_OPTIONS as $count => $label)
+                            <option value="{{ $count }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <span class="font-normal text-gray-500">Weitere Kurse sammeln wir dann für die nächste E-Mail.</span>
+                    @error('maxCourseMailsPerWeek')<span class="text-sm text-red-600">{{ $message }}</span>@enderror
+                </label>
+            </div>
+
             <div class="flex items-center gap-3">
                 <button type="submit" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-contrast hover:opacity-90">Speichern</button>
                 @if (session('profile_saved'))

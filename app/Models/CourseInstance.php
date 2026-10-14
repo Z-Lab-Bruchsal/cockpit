@@ -83,6 +83,11 @@ class CourseInstance extends Model
         return $this->hasMany(Registration::class);
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(CourseInstanceNotification::class);
+    }
+
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);

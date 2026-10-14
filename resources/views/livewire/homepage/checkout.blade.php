@@ -65,6 +65,17 @@
                                         </label>
                                     @endif
 
+                                    @php($selectedOwnKid = filled($kid['kid_id']) ? $this->ownKids->firstWhere('id', (int) $kid['kid_id']) : null)
+
+                                    @if ($selectedOwnKid && ! $selectedOwnKid->exactBirthdate())
+                                        <label class="flex flex-col gap-1 text-sm font-medium text-gray-700 sm:col-span-2">
+                                            Geburtsdatum von {{ $selectedOwnKid->name }}
+                                            <input type="date" wire:model="kids.{{ $registration->id }}.{{ $index }}.birthdate" max="{{ now()->subDay()->toDateString() }}" class="rounded-lg border-gray-300">
+                                            <span class="font-normal text-gray-500">Für die Anmeldung brauchen wir das genaue Geburtsdatum. Wir speichern es auch in deinem Konto.</span>
+                                            @error("kids.{$registration->id}.{$index}.birthdate")<span class="text-sm text-red-600">{{ $message }}</span>@enderror
+                                        </label>
+                                    @endif
+
                                     @if (blank($kid['kid_id']))
                                         <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">
                                             Name des Kindes

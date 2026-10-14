@@ -3,6 +3,7 @@
 namespace Tests\Feature\Contacts;
 
 use App\Livewire\Homepage\Account;
+use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Enrollment;
 use App\Models\Interest;
@@ -178,5 +179,40 @@ class AccountTest extends TestCase
         $estimated->refresh();
         $this->assertSame('2017-05-01', $estimated->birthdate->toDateString());
         $this->assertFalse($estimated->birthdate_estimated);
+    }
+
+    public function test_parent_can_set_digest_time_and_weekly_maximum(): void
+    {
+        Livewire::test(Account::class)
+            ->set('wantsInterestMails', true)
+            ->set('digestHours', '24')
+            ->set('maxCourseMailsPerWeek', '2')
+            ->call('saveProfile')
+            ->assertHasNoErrors();
+
+        $contact = $this->contact->fresh();
+        $this->assertSame(24, $contact->digest_hours);
+        $this->assertSame(24, $contact->effectiveDigestHours());
+        $this->assertSame(2, $contact->max_course_mails_per_week);
+
+        Livewire::test(Account::class)
+            ->assertSet('digestHours', '24')
+            ->set('digestHours', '')
+            ->set('maxCourseMailsPerWeek', '')
+            ->call('saveProfile');
+
+        $contact->refresh();
+        $this->assertNull($contact->digest_hours);
+        $this->assertSame(CompanySetting::current()->digest_hours, $contact->effectiveDigestHours());
+        $this->assertNull($contact->max_course_mails_per_week);
+    }
+
+    public function test_digest_preferences_only_accept_offered_values(): void
+    {
+        Livewire::test(Account::class)
+            ->set('digestHours', '999')
+            ->set('maxCourseMailsPerWeek', '-1')
+            ->call('saveProfile')
+            ->assertHasErrors(['digestHours', 'maxCourseMailsPerWeek']);
     }
 }

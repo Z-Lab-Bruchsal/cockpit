@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  * Parent or school. A contact does not need an account: it is also created for guest bookings.
  * Logging in happens passwordless via magic link (guard "contact").
  */
-#[Fillable(['type', 'name', 'email', 'phone', 'street', 'zip', 'city', 'contact_person', 'notes', 'email_verified_at', 'interest_mails_consent_at', 'last_login_at'])]
+#[Fillable(['type', 'name', 'email', 'phone', 'street', 'zip', 'city', 'contact_person', 'notes', 'email_verified_at', 'interest_mails_consent_at', 'last_login_at', 'digest_hours', 'max_course_mails_per_week'])]
 #[Hidden(['remember_token', 'unsubscribe_token'])]
 class Contact extends Authenticatable
 {
@@ -91,6 +91,24 @@ class Contact extends Authenticatable
     public function kids(): BelongsToMany
     {
         return $this->belongsToMany(Kid::class)->orderBy('name');
+    }
+
+    public function courseInstanceNotifications(): HasMany
+    {
+        return $this->hasMany(CourseInstanceNotification::class);
+    }
+
+    public function courseDigests(): HasMany
+    {
+        return $this->hasMany(CourseDigest::class);
+    }
+
+    /**
+     * Hours without new courses after which collected course infos are sent: own setting, else company default.
+     */
+    public function effectiveDigestHours(): int
+    {
+        return $this->digest_hours ?? CompanySetting::current()->digest_hours;
     }
 
     public function registrations(): HasMany

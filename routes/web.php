@@ -8,6 +8,7 @@ use App\Http\Controllers\Homepage\CourseController;
 use App\Http\Controllers\Homepage\EmailChangeController;
 use App\Http\Controllers\Homepage\HomepageController;
 use App\Http\Controllers\Homepage\RegistrationController;
+use App\Http\Controllers\Homepage\UnsubscribeController;
 use App\Http\Controllers\OrderController;
 use App\Models\Section;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,11 @@ Route::name('homepage.')->group(function (): void {
     Route::post('/konto/anmeldungen/{registration}/stornieren', [RegistrationController::class, 'cancelFromAccount'])
         ->middleware('auth:contact')
         ->name('account.registration.cancel');
+
+    Route::get('/abmelden/{token}', [UnsubscribeController::class, 'show'])->name('unsubscribe');
+    Route::post('/abmelden/{token}', [UnsubscribeController::class, 'unsubscribe'])
+        ->middleware('throttle:20,1')
+        ->name('unsubscribe.confirm');
 
     Route::get('/kontaktformular', [ContactFormController::class, 'show'])->name('contact-form');
     Route::post('/kontaktformular', [ContactFormController::class, 'send'])

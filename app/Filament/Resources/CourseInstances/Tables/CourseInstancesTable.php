@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CourseInstances\Tables;
 
 use App\Enums\CourseInstanceStatus;
+use App\Filament\Resources\CourseInstances\Actions\NotifyInterestedAction;
 use App\Filament\Resources\CourseInstances\CourseInstanceResource;
 use App\Models\CourseInstance;
 use Filament\Actions\BulkActionGroup;
@@ -47,6 +48,10 @@ class CourseInstancesTable
                     ->label('Anmeldung')
                     ->state(fn (CourseInstance $record) => $record->availability())
                     ->badge(),
+                TextColumn::make('notifications_count')
+                    ->label('Benachrichtigt')
+                    ->counts('notifications')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('location')
                     ->label('Ort')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -68,6 +73,7 @@ class CourseInstancesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                NotifyInterestedAction::make(),
                 ReplicateAction::make()
                     ->label('Kopieren')
                     ->excludeAttributes(['dates_count'])

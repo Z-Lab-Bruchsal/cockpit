@@ -78,6 +78,21 @@ class ContactForm
                             ->label('Einwilligung seit')
                             ->dateTime()
                             ->placeholder('—'),
+                        TextInput::make('digest_hours')
+                            ->label('Kursinfos sammeln')
+                            ->helperText('Leer = Standard aus den Firmeninfos')
+                            ->suffix('Stunden')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(0)
+                            ->maxValue(168),
+                        TextInput::make('max_course_mails_per_week')
+                            ->label('Max. Kursinfo-Mails pro Woche')
+                            ->helperText('Leer = keine Begrenzung')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(50),
                     ])
                     ->columns(2)
                     ->visibleOn('edit'),

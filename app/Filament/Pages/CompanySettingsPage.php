@@ -232,6 +232,14 @@ class CompanySettingsPage extends Page
                                     ])
                                     ->columns(3)
                                     ->columnSpanFull(),
+                                TextInput::make('digest_hours')
+                                    ->label('Kursinfos sammeln [h]')
+                                    ->helperText('Infos zu neuen Kursen werden gesammelt und verschickt, wenn so lange kein weiterer passender Kurs dazugekommen ist. Eltern können das in ihrem Konto ändern.')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(0)
+                                    ->maxValue(168)
+                                    ->required(),
                                 TextInput::make('waitlist_offer_hours')
                                     ->label('Frist für Nachrücker [h]')
                                     ->helperText('So lange hat eine Familie Zeit, einen frei gewordenen Platz anzunehmen. Pro Kurs und Durchführung überschreibbar.')

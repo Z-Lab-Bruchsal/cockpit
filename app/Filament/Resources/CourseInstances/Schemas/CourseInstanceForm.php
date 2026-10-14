@@ -19,6 +19,11 @@ use Illuminate\Support\Carbon;
 
 class CourseInstanceForm
 {
+    protected static function isPublished(mixed $status): bool
+    {
+        return ($status instanceof CourseInstanceStatus ? $status : CourseInstanceStatus::tryFrom((string) $status)) === CourseInstanceStatus::Published;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -49,7 +54,13 @@ class CourseInstanceForm
                             ->label('Status')
                             ->options(CourseInstanceStatus::class)
                             ->default(CourseInstanceStatus::Draft)
-                            ->required(),
+                            ->required()
+                            ->live(),
+                        Toggle::make('notify_interested')
+                            ->label('Interessierte gleich benachrichtigen')
+                            ->helperText('Der Kurs wird für Eltern mit Einwilligung vorgemerkt, deren Kinder zu den Interessen und dem Alter passen. Sie bekommen ihn mit der nächsten Sammelmail. Später geht das auch über „Interessierte benachrichtigen“.')
+                            ->dehydrated(false)
+                            ->visible(fn (Get $get, string $operation): bool => $operation === 'create' && static::isPublished($get('status'))),
                         TextInput::make('location')
                             ->label('Ort')
                             ->default('Z-LAB Bruchsal')

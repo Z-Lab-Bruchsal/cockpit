@@ -216,13 +216,27 @@ Im Kalender erscheinen Plätze von anderen als „im Warenkorb eines anderen Nut
 - `RegistrationResource` mit Filtern und Aktionen Bestätigen, Stornieren, Von Warteliste nachrücken. Eine manuelle Anmeldung im Cockpit (`source=cockpit`) läuft über denselben Service.
 - Anwesenheit: Seite bzw. RelationManager je `CourseDate` mit Liste der bestätigten Kinder und `ToggleColumn attended`, dazu die Bulk-Aktion „Alle anwesend“.
 
-## Phase 5: Mails an Interessierte
-- Action „Interessierte benachrichtigen“ auf `CourseInstance` (Edit und Tabelle) sowie Toggle im Create-Formular.
-- Vorauswahl: Interessen des Kurses und Altersspanne, beide anpassbar. Vor dem Senden wird die Empfängerzahl angezeigt.
-- Empfänger sind Kontakte mit `interest_mails_consent_at` und mindestens einem Kind, das passende Interessen hat und am ersten Termin im Alter ist.
-- Mail `NewCourseInstanceMail` mit Abmeldelink (`/abmelden/{unsubscribe_token}`), gequeued.
-- Log-Tabelle `course_instance_notifications` (`instance`, `contact`, `sent_at`) verhindert Doppelversand.
-- `.env`: `QUEUE_CONNECTION=database` plus Worker (aktuell `sync`).
+## Phase 5: Mails an Interessierte ✅ erledigt
+
+**Umgesetzt mit diesen Ergänzungen:**
+- **Empfänger** (`InterestNotificationService`):
+  - Kontakte mit Einwilligung **und bestätigter E-Mail-Adresse**, die mindestens ein Kind mit passendem Interesse und Alter am ersten Termin haben.
+  - **Kinder ohne Geburtsdatum passen unabhängig vom Alter**, der Interessenfilter gilt weiter. Ohne Interessenfilter passt jedes Kind.
+- **Geburtsdatum bei der Anmeldung:** Es ist bei jeder Anmeldung Pflicht, auch für gespeicherte Kinder ohne exaktes Datum. Es wird im Warenkorb abgefragt und am Kind gespeichert. Passt das Alter nicht, kommt keine Anmeldung zustande.
+- **Sammelmails statt Einzelmails:**
+  - „Interessierte benachrichtigen“ merkt den Kurs pro Familie nur vor (`course_instance_notifications`, eindeutig pro Durchführung und Kontakt, mit den passenden Kindern).
+  - `app:send-course-digests` läuft alle 15 Minuten im Scheduler. Er verschickt eine Sammelmail, sobald für die Familie seit `digest_hours` kein neuer Kurs dazugekommen ist (Firmeninfos, Standard 4 Stunden, pro Kontakt überschreibbar).
+  - Die Mail nennt pro Kurs die passenden Kinder.
+- **Wochenmaximum:** `max_course_mails_per_week` pro Kontakt (leer = unbegrenzt). Ist es erreicht, wird weiter gesammelt und später verschickt (`course_digests` protokolliert die Mails).
+- **Einstellungen der Eltern:** Im Konto unter „Neue Kurse sammeln und schicken …“ und „Höchstens pro Woche“, im Cockpit am Kontakt.
+- **Aufräumen:** Kurse, die abgesagt wurden oder schon vorbei sind, fallen vor dem Versand heraus. Bei widerrufener Einwilligung wird das Gesammelte gelöscht.
+- **Abmeldung:** Link in der Fußzeile (`/abmelden/{token}`, Bestätigung per Button) plus One-Click-Header (`List-Unsubscribe`, RFC 8058, POST ohne CSRF). Zusätzlich ein Link zu den Einstellungen im Konto.
+- **Cockpit-Aktion:**
+  - nur bei veröffentlichten Durchführungen
+  - Filter aus dem Kurs vorbelegt
+  - zeigt live die Zahl der neuen und der schon vorgemerkten Familien
+  - Beim Anlegen gibt es den Schalter „Interessierte gleich benachrichtigen“.
+- **Versand:** Die Sammelmail ist `ShouldQueue`. Auf dem Server `QUEUE_CONNECTION=database` setzen und einen Queue-Worker laufen lassen.
 
 ## Phase 6: Schulklassen
 - Kurse mit `audience=SchoolClass`: Jede Durchführung ist ein reservierbarer Slot, Kapazität 1 Klasse, keine Warteliste.

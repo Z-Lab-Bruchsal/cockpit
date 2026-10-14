@@ -295,4 +295,59 @@ class RegistrationFlowTest extends TestCase
         $this->getJson('/kalender/events?'.http_build_query(['start' => now()->toIso8601String(), 'end' => now()->addMonth()->toIso8601String()]))
             ->assertJsonPath('0.extendedProps.availability', 'Gerade alle Plätze in Reservierung');
     }
+
+    public function test_saved_kid_without_birthdate_needs_one_at_checkout(): void
+    {
+        $contact = Contact::factory()->create();
+        $kid = Kid::factory()->create(['name' => 'Paul', 'birthdate' => null]);
+        $contact->kids()->attach($kid);
+        $this->actingAs($contact, 'contact');
+
+        $instance = $this->courseInstance(minAge: 8, maxAge: 12);
+        [$cart, $token] = $this->cartWithToken($contact);
+        $registration = app(CourseReservationService::class)->hold($instance, 1, $cart);
+
+        $checkout = Livewire::withCookies([CartManager::COOKIE => $token])
+            ->test(Checkout::class)
+            ->set("kids.{$registration->id}.0.kid_id", (string) $kid->id)
+            ->assertSee('Geburtsdatum von Paul')
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+
+        $checkout
+            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(5)->toDateString())
+            ->call('checkout')
+            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+
+        $this->assertNull($kid->fresh()->birthdate, 'Nothing is saved if the age does not fit.');
+
+        $checkout
+            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(10)->toDateString())
+            ->call('checkout')
+            ->assertHasNoErrors();
+
+        $this->assertSame(10, $kid->fresh()->age());
+        $this->assertFalse($kid->fresh()->birthdate_estimated);
+        $this->assertSame(RegistrationStatus::Confirmed, $registration->fresh()->status);
+    }
+
+    public function test_saved_kid_with_estimated_birthdate_also_needs_the_exact_one(): void
+    {
+        $contact = Contact::factory()->create();
+        $kid = Kid::factory()->create(['name' => 'Lena'])->estimateBirthdateFromAge(10);
+        $kid->save();
+        $contact->kids()->attach($kid);
+        $this->actingAs($contact, 'contact');
+
+        [$cart, $token] = $this->cartWithToken($contact);
+        $registration = app(CourseReservationService::class)->hold($this->courseInstance(), 1, $cart);
+
+        Livewire::withCookies([CartManager::COOKIE => $token])
+            ->test(Checkout::class)
+            ->set("kids.{$registration->id}.0.kid_id", (string) $kid->id)
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+    }
 }

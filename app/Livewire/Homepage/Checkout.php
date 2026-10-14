@@ -203,19 +203,20 @@ class Checkout extends Component
                     $isValid = false;
                 }
 
-                $age = $ownKid?->age($firstDate) ?? (filled($kid['birthdate']) ? (int) floor(Carbon::parse($kid['birthdate'])->diffInYears($firstDate ?? now())) : null);
+                // The exact birthdate is required for every registration, also for saved children without one.
+                $birthdate = $ownKid?->exactBirthdate() ?? (filled($kid['birthdate']) ? Carbon::parse($kid['birthdate']) : null);
 
-                if ($age === null) {
-                    if ($ownKid !== null && ($course->min_age !== null || $course->max_age !== null)) {
-                        $this->addError($key.'.kid_id', "Für {$ownKid->name} ist kein Geburtsdatum hinterlegt. Bitte ergänze es in deinem Konto.");
-                        $isValid = false;
-                    }
+                if ($birthdate === null) {
+                    $this->addError($key.'.birthdate', 'Bitte gib das Geburtsdatum an.');
+                    $isValid = false;
 
                     continue;
                 }
 
+                $age = (int) floor($birthdate->diffInYears($firstDate ?? now()));
+
                 if (($course->min_age !== null && $age < $course->min_age) || ($course->max_age !== null && $age > $course->max_age)) {
-                    $this->addError($key.($ownKid ? '.kid_id' : '.birthdate'), "Der Kurs ist für {$course->ageRangeLabel()} gedacht.");
+                    $this->addError($key.($ownKid?->exactBirthdate() ? '.kid_id' : '.birthdate'), "Der Kurs ist für {$course->ageRangeLabel()} gedacht.");
                     $isValid = false;
                 }
             }
