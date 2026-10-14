@@ -18,7 +18,7 @@ class WorkTimeCalendarTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get('/calendar-page')->assertOk();
+        $this->actingAs($user)->get('/cockpit/calendar-page')->assertOk();
     }
 
     public function test_calendar_widget_returns_booking_and_todo_events(): void

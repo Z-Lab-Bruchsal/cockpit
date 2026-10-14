@@ -49,9 +49,9 @@ class TerminalCockpitTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $this->get('/terminals')->assertForbidden();
-        $this->get('/chips')->assertForbidden();
-        $this->get('/terminal-events')->assertForbidden();
+        $this->get('/cockpit/terminals')->assertForbidden();
+        $this->get('/cockpit/chips')->assertForbidden();
+        $this->get('/cockpit/terminal-events')->assertForbidden();
     }
 
     public function test_pages_render_for_permitted_user(): void
@@ -59,11 +59,11 @@ class TerminalCockpitTest extends TestCase
         $this->actingAsUserWithPermissions('Terminal', 'Chip', 'TerminalEvent');
         $terminal = Terminal::factory()->create();
 
-        $this->get('/terminals')->assertOk();
-        $this->get('/terminals/create')->assertOk();
-        $this->get("/terminals/{$terminal->id}/edit")->assertOk();
-        $this->get('/chips')->assertOk();
-        $this->get('/terminal-events')->assertOk();
+        $this->get('/cockpit/terminals')->assertOk();
+        $this->get('/cockpit/terminals/create')->assertOk();
+        $this->get("/cockpit/terminals/{$terminal->id}/edit")->assertOk();
+        $this->get('/cockpit/chips')->assertOk();
+        $this->get('/cockpit/terminal-events')->assertOk();
     }
 
     public function test_terminal_is_created_with_hashed_password(): void
@@ -149,7 +149,7 @@ class TerminalCockpitTest extends TestCase
         $this->actingAsUserWithPermissions('TerminalEvent');
 
         Livewire::test(ListTerminalEvents::class)->assertOk();
-        $this->get('/terminal-events/create')->assertNotFound();
+        $this->get('/cockpit/terminal-events/create')->assertNotFound();
     }
 
     public function test_manually_created_booking_is_marked_as_manual(): void

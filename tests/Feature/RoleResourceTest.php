@@ -19,9 +19,9 @@ class RoleResourceTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get('/roles')->assertOk();
-        $this->get('/roles/create')->assertOk();
-        $this->get("/roles/{$role->id}/edit")->assertOk();
+        $this->get('/cockpit/roles')->assertOk();
+        $this->get('/cockpit/roles/create')->assertOk();
+        $this->get("/cockpit/roles/{$role->id}/edit")->assertOk();
     }
 
     public function test_group_edit_page_renders_with_new_roles_relation_manager(): void
@@ -31,6 +31,6 @@ class RoleResourceTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get("/groups/{$group->id}/edit")->assertOk();
+        $this->get("/cockpit/groups/{$group->id}/edit")->assertOk();
     }
 }

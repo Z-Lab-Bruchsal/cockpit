@@ -26,7 +26,7 @@ class BookingReportsPageTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Z-Lab-Crew');
 
-        $this->actingAs($user)->get('/booking-reports-page')->assertOk();
+        $this->actingAs($user)->get('/cockpit/booking-reports-page')->assertOk();
 
         Livewire::test(BookingReportsPage::class)
             ->assertActionHidden('generateSupervisorMonthlyReport')
@@ -49,7 +49,7 @@ class BookingReportsPageTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get('/booking-reports-page')->assertForbidden();
+        $this->actingAs($user)->get('/cockpit/booking-reports-page')->assertForbidden();
     }
 
     public function test_crew_member_can_download_their_own_monthly_report(): void

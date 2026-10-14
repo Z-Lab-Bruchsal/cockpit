@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@source '../views/homepage/**/*.blade.php';
+@source '../views/components/homepage/**/*.blade.php';
+@source '../js/homepage.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Colors are configured in the cockpit (Firmeninfos) and injected as custom properties on <html>. */
+@theme inline {
+    --color-brand: var(--brand, #f59e0b);
+    --color-brand-contrast: var(--brand-contrast, #111827);
+    --color-accent: var(--accent, #fff7ed);
+    --color-accent-contrast: var(--accent-contrast, #111827);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Keep anchors below the sticky header. */
+[id] {
+    scroll-margin-top: 5rem;
+}
+
+[x-cloak] {
+    display: none !important;
+}

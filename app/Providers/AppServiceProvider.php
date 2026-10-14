@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\CompanySetting;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Tables\Columns\Column;
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        CompanySetting::applyToConfig();
+
         RateLimiter::for('terminal', function (Request $request): Limit {
             return Limit::perMinute(60)->by($request->attributes->get('terminal')?->id ?? $request->ip());
         });

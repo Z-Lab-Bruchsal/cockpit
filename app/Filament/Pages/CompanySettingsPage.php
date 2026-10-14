@@ -3,14 +3,20 @@
 namespace App\Filament\Pages;
 
 use App\Models\CompanySetting;
+use App\Models\Section as SectionModel;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Override;
@@ -27,9 +33,9 @@ class CompanySettingsPage extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Verwaltung';
 
-    protected static ?string $navigationLabel = 'Firma';
+    protected static ?string $navigationLabel = 'Firmeninfos';
 
-    protected static ?string $title = 'Firmeneinstellungen';
+    protected static ?string $title = 'Firmeninfos';
 
     /**
      * @var array<string, mixed>|null
@@ -51,40 +57,180 @@ class CompanySettingsPage extends Page
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->label('Firmenname')
-                    ->maxLength(255),
-                Section::make('Adresse')
-                    ->schema([
-                        TextInput::make('street')
-                            ->label('Straße'),
-                        TextInput::make('zip')
-                            ->label('PLZ'),
-                        TextInput::make('city')
-                            ->label('Ort'),
+                Tabs::make('settings')
+                    ->persistTabInQueryString()
+                    ->tabs([
+                        Tab::make('Firma')
+                            ->icon(Heroicon::OutlinedBuildingOffice2)
+                            ->schema([
+                                TextInput::make('name')
+                                    ->label('Firmenname')
+                                    ->maxLength(255)
+                                    ->columnSpanFull(),
+                                TextInput::make('street')
+                                    ->label('Straße'),
+                                TextInput::make('zip')
+                                    ->label('PLZ'),
+                                TextInput::make('city')
+                                    ->label('Ort'),
+                                TextInput::make('contact_email')
+                                    ->label('Kontakt-E-Mail')
+                                    ->email()
+                                    ->maxLength(255),
+                                TextInput::make('contact_phone')
+                                    ->label('Telefon')
+                                    ->tel()
+                                    ->maxLength(255),
+                                FileUpload::make('logo_path')
+                                    ->label('Logo')
+                                    ->image()
+                                    ->disk('public')
+                                    ->directory('company')
+                                    ->visibility('public')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(3),
+                        Tab::make('Anwendung')
+                            ->icon(Heroicon::OutlinedComputerDesktop)
+                            ->schema([
+                                TextInput::make('app_title')
+                                    ->label('Titel der Anwendung')
+                                    ->helperText('Wird im Cockpit, im Browser-Tab und als Absender von E-Mails angezeigt.')
+                                    ->required()
+                                    ->maxLength(255),
+                                Section::make('Farben Cockpit')
+                                    ->description('Leer = Standardfarbe.')
+                                    ->schema([
+                                        static::colorPicker('cockpit_primary_color')
+                                            ->label('Hauptfarbe')
+                                            ->required(),
+                                        static::colorPicker('cockpit_success_color')
+                                            ->label('Erfolg'),
+                                        static::colorPicker('cockpit_warning_color')
+                                            ->label('Warnung'),
+                                        static::colorPicker('cockpit_danger_color')
+                                            ->label('Gefahr'),
+                                        static::colorPicker('cockpit_info_color')
+                                            ->label('Info'),
+                                    ])
+                                    ->columns(5),
+                            ]),
+                        Tab::make('Homepage')
+                            ->icon(Heroicon::OutlinedGlobeAlt)
+                            ->schema([
+                                TextInput::make('homepage_title')
+                                    ->label('Titel der Homepage')
+                                    ->helperText('Leer = Firmenname')
+                                    ->maxLength(255),
+                                TextInput::make('homepage_tagline')
+                                    ->label('Untertitel / Slogan')
+                                    ->maxLength(255),
+                                static::colorPicker('primary_color')
+                                    ->label('Hauptfarbe')
+                                    ->helperText('Buttons, Links, hervorgehobene Kacheln')
+                                    ->required(),
+                                static::colorPicker('secondary_color')
+                                    ->label('Akzentfarbe')
+                                    ->helperText('Hintergrund von Kopfbereich und Footer')
+                                    ->required(),
+                            ])
+                            ->columns(2),
+                        Tab::make('Footer')
+                            ->icon(Heroicon::OutlinedBars3BottomLeft)
+                            ->schema([
+                                TextInput::make('footer_text')
+                                    ->label('Copyright-Text')
+                                    ->helperText('Erscheint als „© Jahr Text“. Leer = Firmenname.')
+                                    ->maxLength(255),
+                                Repeater::make('footer_links')
+                                    ->label('Links')
+                                    ->schema([
+                                        TextInput::make('label')
+                                            ->label('Beschriftung')
+                                            ->required()
+                                            ->maxLength(60),
+                                        Select::make('section_id')
+                                            ->label('Bereich der Homepage')
+                                            ->options(fn (): array => SectionModel::query()->orderBy('title')->pluck('title', 'id')->all())
+                                            ->searchable()
+                                            ->requiredWithout('url'),
+                                        TextInput::make('url')
+                                            ->label('oder externe Adresse')
+                                            ->url()
+                                            ->maxLength(500),
+                                    ])
+                                    ->columns(3)
+                                    ->reorderable()
+                                    ->addActionLabel('Link hinzufügen')
+                                    ->defaultItems(0),
+                                Repeater::make('social_links')
+                                    ->label('Social Media')
+                                    ->schema([
+                                        Select::make('platform')
+                                            ->label('Plattform')
+                                            ->options(CompanySetting::SOCIAL_PLATFORMS)
+                                            ->required(),
+                                        TextInput::make('url')
+                                            ->label('Adresse')
+                                            ->url()
+                                            ->required()
+                                            ->maxLength(500),
+                                    ])
+                                    ->columns(2)
+                                    ->reorderable()
+                                    ->addActionLabel('Profil hinzufügen')
+                                    ->defaultItems(0),
+                            ]),
+                        Tab::make('Kursbuchung')
+                            ->icon(Heroicon::OutlinedTicket)
+                            ->schema([
+                                TextInput::make('hold_minutes')
+                                    ->label('Reservierung im Warenkorb [min]')
+                                    ->helperText('So lange sind Plätze während der Buchung für andere gesperrt.')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(240)
+                                    ->required(),
+                                TextInput::make('confirmation_hours')
+                                    ->label('Frist für E-Mail-Bestätigung [h]')
+                                    ->helperText('Danach verfällt eine unbestätigte Anmeldung.')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(336)
+                                    ->required(),
+                            ])
+                            ->columns(2),
                     ])
-                    ->columns(3),
-                FileUpload::make('logo_path')
-                    ->label('Logo')
-                    ->image()
-                    ->disk('public')
-                    ->directory('company')
-                    ->visibility('public'),
+                    ->columnSpanFull(),
             ])
             ->record($this->getRecord())
             ->statePath('data');
+    }
+
+    protected static function colorPicker(string $name): ColorPicker
+    {
+        return ColorPicker::make($name)
+            ->hex()
+            ->regex('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/');
     }
 
     public function save(): void
     {
         $data = $this->form->getState();
 
-        $this->getRecord()->update($data);
+        $record = $this->getRecord();
+        $record->fill($data);
+        $cockpitColorsChanged = $record->isDirty(['cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color']);
+        $record->save();
 
         Notification::make()
             ->success()
             ->title('Gespeichert')
             ->send();
+
+        if ($cockpitColorsChanged) {
+            $this->redirect(static::getUrl());
+        }
     }
 
     public function getRecord(): CompanySetting
