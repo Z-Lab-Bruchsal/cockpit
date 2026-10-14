@@ -2,6 +2,8 @@
 
 Stand: 14.10.2026 · Phasen 1–6 des [Plans](PLAN.md) sind umgesetzt.
 
+Ein allgemein verständlicher Überblick über die Funktionen steht in [doc/ueberblick.md](doc/ueberblick.md).
+
 ## Überblick
 
 Eine Anwendung, zwei Seiten: Das **Cockpit** unter `/cockpit` ist für das Team, die **Homepage** unter `/` für Eltern, Kinder und Schulen. Alles, was auf der Homepage steht, wird im Cockpit gepflegt.
