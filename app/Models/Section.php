@@ -26,7 +26,7 @@ class Section extends Model
     public const RESERVED_SLUGS = [
         'cockpit', 'api', 'livewire', 'storage', 'build', 'up',
         'kurse', 'kalender', 'konto', 'anmelden', 'abmelden', 'login', 'logout',
-        'schulen', 'buchung', 'warenkorb', 'bestaetigen', 'email-aendern', 'kontaktformular',
+        'schulen', 'buchung', 'warenkorb', 'bestaetigen', 'email-aendern', 'kontaktformular', 'anmeldung', 'freigabe',
         'updateOrderstatusOrdered', 'updateOrderstatusTaken',
     ];
 

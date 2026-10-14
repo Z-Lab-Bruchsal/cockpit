@@ -93,6 +93,11 @@ class Contact extends Authenticatable
         return $this->belongsToMany(Kid::class)->orderBy('name');
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
+    }
+
     public function emailChanges(): HasMany
     {
         return $this->hasMany(ContactEmailChange::class);

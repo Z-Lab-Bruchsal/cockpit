@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours'])]
+#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours'])]
 class CompanySetting extends Model
 {
     /**
@@ -30,6 +30,7 @@ class CompanySetting extends Model
     protected $attributes = [
         'hold_minutes' => 15,
         'confirmation_hours' => 48,
+        'waitlist_offer_hours' => 48,
     ];
 
     /**

@@ -36,6 +36,8 @@ class Course extends Model
         'default_capacity',
         'default_waitlist_enabled',
         'is_published',
+        'responsible_user_id',
+        'waitlist_offer_hours',
     ];
 
     protected static function booted(): void
@@ -60,11 +62,6 @@ class Course extends Model
         ];
     }
 
-    public function kids(): BelongsToMany
-    {
-        return $this->belongsToMany(Kid::class)->withPivot('date');
-    }
-
     public function belts(): BelongsToMany
     {
         return $this->belongsToMany(Belt::class);
@@ -78,6 +75,11 @@ class Course extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(CourseTemplate::class, 'course_template_id');
+    }
+
+    public function responsibleUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
     public function instances(): HasMany

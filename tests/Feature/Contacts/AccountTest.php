@@ -4,7 +4,7 @@ namespace Tests\Feature\Contacts;
 
 use App\Livewire\Homepage\Account;
 use App\Models\Contact;
-use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\Interest;
 use App\Models\Kid;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -144,7 +144,7 @@ class AccountTest extends TestCase
         $withHistory = Kid::factory()->create();
         $this->contact->kids()->attach([$onlyMine->id, $shared->id, $withHistory->id]);
         Contact::factory()->create()->kids()->attach($shared);
-        $withHistory->courses()->attach(Course::factory()->create(), ['date' => now()->subMonth()]);
+        Enrollment::factory()->create(['kid_id' => $withHistory->id]);
 
         Livewire::test(Account::class)
             ->call('removeKid', $onlyMine->id)

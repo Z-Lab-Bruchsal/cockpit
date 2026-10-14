@@ -49,6 +49,10 @@ class CoursesTable
                     ->label('Interessen')
                     ->badge()
                     ->separator(','),
+                TextColumn::make('responsibleUser.name')
+                    ->label('Verantwortlich')
+                    ->placeholder('fehlt')
+                    ->color(fn (Course $record): ?string => $record->responsible_user_id === null ? 'danger' : null),
                 TextColumn::make('upcoming_instances_count')
                     ->label('Kommende Durchführungen')
                     ->counts('upcomingInstances'),

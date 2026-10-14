@@ -6,7 +6,7 @@ use App\Filament\Resources\Kids\Pages\CreateKid;
 use App\Filament\Resources\Kids\Pages\EditKid;
 use App\Filament\Resources\Kids\Pages\ListKids;
 use App\Filament\Resources\Kids\RelationManagers\ContactsRelationManager;
-use App\Filament\Resources\Kids\RelationManagers\CoursesRelationManager;
+use App\Filament\Resources\Kids\RelationManagers\EnrollmentsRelationManager;
 use App\Filament\Resources\Kids\Schemas\KidForm;
 use App\Filament\Resources\Kids\Tables\KidsTable;
 use App\Models\Kid;
@@ -53,7 +53,7 @@ class KidResource extends Resource
     {
         return [
             ContactsRelationManager::class,
-            CoursesRelationManager::class,
+            EnrollmentsRelationManager::class,
         ];
     }
 

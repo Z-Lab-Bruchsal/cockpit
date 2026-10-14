@@ -6,7 +6,6 @@ use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Courses\Pages\EditCourse;
 use App\Filament\Resources\Courses\Pages\ListCourses;
 use App\Filament\Resources\Courses\RelationManagers\InstancesRelationManager;
-use App\Filament\Resources\Courses\RelationManagers\KidsRelationManager;
 use App\Filament\Resources\Courses\Schemas\CourseForm;
 use App\Filament\Resources\Courses\Tables\CoursesTable;
 use App\Models\Course;
@@ -53,7 +52,6 @@ class CourseResource extends Resource
     {
         return [
             InstancesRelationManager::class,
-            KidsRelationManager::class,
         ];
     }
 

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\CourseAudience;
 use App\Models\Course;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,6 +30,7 @@ class CourseFactory extends Factory
             'default_capacity' => 10,
             'default_waitlist_enabled' => true,
             'is_published' => true,
+            'responsible_user_id' => User::factory(),
         ];
     }
 

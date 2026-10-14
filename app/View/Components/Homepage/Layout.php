@@ -4,6 +4,7 @@ namespace App\View\Components\Homepage;
 
 use App\Models\CompanySetting;
 use App\Models\Section;
+use App\Services\Registrations\CartManager;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,6 +24,8 @@ class Layout extends Component
 
     public string $accountUrl;
 
+    public int $cartCount;
+
     public function __construct(public ?string $title = null)
     {
         $this->settings = CompanySetting::current();
@@ -36,6 +39,7 @@ class Layout extends Component
 
         $this->isLoggedIn = Auth::guard('contact')->check();
         $this->accountUrl = route($this->isLoggedIn ? 'homepage.account' : 'homepage.login');
+        $this->cartCount = app(CartManager::class)->current()?->heldRegistrations()->count() ?? 0;
     }
 
     public function pageTitle(): string

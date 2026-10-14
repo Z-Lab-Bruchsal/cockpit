@@ -1,4 +1,45 @@
 <div class="flex flex-col gap-10">
+    {{-- Registrations --}}
+    <section aria-labelledby="anmeldungen">
+        <h2 id="anmeldungen" class="mb-4 text-2xl font-bold tracking-tight text-gray-900">Meine Anmeldungen</h2>
+
+        @if ($registrations->isEmpty())
+            <p class="rounded-2xl bg-gray-50 px-6 py-8 text-center text-gray-500">
+                Keine anstehenden Kurse. <a href="{{ route('homepage.courses.index') }}" class="font-semibold text-brand hover:underline">Jetzt Kurse entdecken</a>
+            </p>
+        @else
+            <ul class="flex flex-col gap-4">
+                @foreach ($registrations as $registration)
+                    <li wire:key="registration-{{ $registration->id }}" class="rounded-2xl border border-gray-200 bg-white p-5">
+                        <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <a href="{{ $registration->courseInstance->course->url() }}" class="text-lg font-semibold text-gray-900 hover:underline">{{ $registration->courseInstance->displayTitle() }}</a>
+                                <p class="text-sm text-gray-600">{{ $registration->courseInstance->dates->first()?->formattedRange() }}@if ($registration->courseInstance->dates->count() > 1) und {{ $registration->courseInstance->dates->count() - 1 }} weitere Termine @endif</p>
+                            </div>
+                            @if ($registration->status === \App\Enums\RegistrationStatus::PendingConfirmation)
+                                <span class="self-start rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Bitte per E-Mail bestätigen</span>
+                            @endif
+                        </div>
+                        <ul class="mt-3 divide-y divide-gray-100 border-t border-gray-100 text-sm">
+                            @foreach ($registration->activeEnrollments as $enrollment)
+                                <li class="flex items-center justify-between gap-3 py-2">
+                                    <span><span class="font-medium">{{ $enrollment->displayKidName() }}</span> <span class="text-gray-500">– {{ $enrollment->status->getLabel() }}</span></span>
+                                    @if (in_array($registration->status, [\App\Enums\RegistrationStatus::Confirmed, \App\Enums\RegistrationStatus::AwaitingApproval], true))
+                                        <form method="POST" action="{{ route('homepage.account.registration.cancel', $registration) }}" onsubmit="return confirm('{{ $enrollment->displayKidName() }} wirklich abmelden?')">
+                                            @csrf
+                                            <input type="hidden" name="enrollment" value="{{ $enrollment->id }}">
+                                            <button type="submit" class="text-gray-500 hover:text-red-600 hover:underline">Abmelden</button>
+                                        </form>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+
     {{-- Children --}}
     <section aria-labelledby="kinder">
         <div class="mb-4 flex items-center justify-between gap-4">

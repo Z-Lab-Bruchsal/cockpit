@@ -37,8 +37,9 @@ class CourseInstancesTable
                 TextColumn::make('dates_count')
                     ->label('Termine'),
                 TextColumn::make('capacity')
-                    ->label('Plätze')
-                    ->numeric(),
+                    ->label('Belegt')
+                    ->state(fn (CourseInstance $record): string => $record->takenSeats().' / '.$record->capacity)
+                    ->description(fn (CourseInstance $record): ?string => ($waiting = $record->waitlistCount()) > 0 ? "{$waiting} auf Warteliste" : null),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),

@@ -14,6 +14,8 @@ enum CourseAvailability: string implements HasColor, HasLabel
     case FewSeatsLeft = 'few_seats_left';
     case Waitlist = 'waitlist';
     case Full = 'full';
+    /** No seat free, but some are only held in carts or awaiting confirmation and may become free again. */
+    case Reserved = 'reserved';
     case NotYetOpen = 'not_yet_open';
     case Closed = 'closed';
     case Cancelled = 'cancelled';
@@ -25,6 +27,7 @@ enum CourseAvailability: string implements HasColor, HasLabel
             self::FewSeatsLeft => 'Nur noch wenige Plätze',
             self::Waitlist => 'Ausgebucht – Warteliste',
             self::Full => 'Ausgebucht',
+            self::Reserved => 'Gerade alle Plätze in Reservierung',
             self::NotYetOpen => 'Anmeldung noch nicht geöffnet',
             self::Closed => 'Anmeldung geschlossen',
             self::Cancelled => 'Abgesagt',
@@ -37,6 +40,7 @@ enum CourseAvailability: string implements HasColor, HasLabel
             self::Available => 'success',
             self::FewSeatsLeft => 'warning',
             self::Waitlist => 'info',
+            self::Reserved => 'warning',
             self::Full, self::Cancelled => 'danger',
             self::NotYetOpen, self::Closed => 'gray',
         };
@@ -51,6 +55,7 @@ enum CourseAvailability: string implements HasColor, HasLabel
             self::Available => '#16a34a',
             self::FewSeatsLeft => '#d97706',
             self::Waitlist => '#2563eb',
+            self::Reserved => '#9333ea',
             self::Full, self::Cancelled => '#dc2626',
             self::NotYetOpen, self::Closed => '#6b7280',
         };

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Courses\Schemas;
 
 use App\Enums\CourseAudience;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
+use App\Models\CompanySetting;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -114,6 +115,23 @@ class CourseForm
                                 Toggle::make('default_waitlist_enabled')
                                     ->label('Warteliste (Vorschlag)')
                                     ->default(true),
+                                Select::make('responsible_user_id')
+                                    ->label('Kursverantwortliche*r')
+                                    ->relationship('responsibleUser', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->default(fn (): ?int => auth()->id())
+                                    ->helperText('Entscheidet über Freigaben (Geschwister, Warteliste) und bekommt die Anfragen per E-Mail.'),
+                                TextInput::make('waitlist_offer_hours')
+                                    ->label('Frist für Nachrücker')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->maxValue(336)
+                                    ->suffix('Stunden')
+                                    ->placeholder(fn (): string => 'Standard: '.CompanySetting::current()->waitlist_offer_hours)
+                                    ->helperText('Leer = Einstellung aus den Firmeninfos.'),
                                 Toggle::make('is_published')
                                     ->label('Auf der Homepage veröffentlicht'),
                                 TextInput::make('slug')

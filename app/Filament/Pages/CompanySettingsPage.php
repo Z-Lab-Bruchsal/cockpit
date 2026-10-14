@@ -202,6 +202,13 @@ class CompanySettingsPage extends Page
                                     ->minValue(1)
                                     ->maxValue(336)
                                     ->required(),
+                                TextInput::make('waitlist_offer_hours')
+                                    ->label('Frist für Nachrücker [h]')
+                                    ->helperText('So lange hat eine Familie Zeit, einen frei gewordenen Platz anzunehmen. Pro Kurs und Durchführung überschreibbar.')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(336)
+                                    ->required(),
                             ])
                             ->columns(2),
                     ])

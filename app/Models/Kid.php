@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,9 +33,9 @@ class Kid extends Model
         ];
     }
 
-    public function courses(): BelongsToMany
+    public function enrollments(): HasMany
     {
-        return $this->belongsToMany(Course::class)->withPivot('date');
+        return $this->hasMany(Enrollment::class);
     }
 
     public function contacts(): BelongsToMany

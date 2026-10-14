@@ -10,6 +10,7 @@ use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\CourseTemplate;
 use App\Models\Interest;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
  * (www.z-lab-bruchsal.de). Safe to run repeatedly.
  *
  * Capacities and the times of the holiday courses are not published on the website and
- * are placeholders that should be checked in the cockpit.
+ * are placeholders that should be checked in the cockpit. The first user becomes responsible for all courses.
  */
 class CourseSeeder extends Seeder
 {
@@ -127,6 +128,7 @@ class CourseSeeder extends Seeder
     {
         $course = Course::query()->updateOrCreate(['slug' => Str::slug($name, language: 'de')], [
             'name' => $name,
+            'responsible_user_id' => User::query()->oldest('id')->value('id'),
             'audience' => CourseAudience::Kids,
             'default_capacity' => 10,
             'default_waitlist_enabled' => true,

@@ -7,6 +7,7 @@ use App\Filament\Resources\CourseInstances\Pages\CreateCourseInstance;
 use App\Filament\Resources\CourseInstances\Pages\EditCourseInstance;
 use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Courses\Pages\EditCourse;
+use App\Filament\Resources\Courses\Pages\ListCourses;
 use App\Filament\Resources\Courses\RelationManagers\InstancesRelationManager;
 use App\Filament\Resources\Interests\Pages\CreateInterest;
 use App\Models\Course;
@@ -80,6 +81,7 @@ class CourseCockpitTest extends TestCase
                 'min_age' => 10,
                 'max_age' => 14,
                 'is_published' => true,
+                'responsible_user_id' => auth()->id(),
             ])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -182,5 +184,28 @@ class CourseCockpitTest extends TestCase
             ->assertHasNoFormErrors();
 
         $this->assertDatabaseHas(Interest::class, ['slug' => 'robotik', 'color' => '#7c3aed']);
+    }
+
+    public function test_course_needs_a_responsible_person(): void
+    {
+        Livewire::test(CreateCourse::class)
+            ->fillForm(['name' => 'Kurs', 'audience' => 'kids', 'duration' => 60, 'default_capacity' => 5, 'responsible_user_id' => null])
+            ->call('create')
+            ->assertHasFormErrors(['responsible_user_id' => 'required']);
+    }
+
+    public function test_responsible_person_defaults_to_current_user(): void
+    {
+        Livewire::test(CreateCourse::class)
+            ->assertSchemaStateSet(['responsible_user_id' => auth()->id()]);
+    }
+
+    public function test_course_table_flags_missing_responsible_person(): void
+    {
+        $course = Course::factory()->create(['responsible_user_id' => null]);
+
+        Livewire::test(ListCourses::class)
+            ->assertCanSeeTableRecords([$course])
+            ->assertSee('fehlt');
     }
 }

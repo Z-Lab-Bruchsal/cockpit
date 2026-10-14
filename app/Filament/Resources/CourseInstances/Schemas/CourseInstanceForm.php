@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CourseInstances\Schemas;
 
 use App\Enums\CourseInstanceStatus;
+use App\Models\CompanySetting;
 use App\Models\Course;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
@@ -53,6 +54,13 @@ class CourseInstanceForm
                             ->label('Ort')
                             ->default('Z-LAB Bruchsal')
                             ->maxLength(255),
+                        Select::make('responsible_user_id')
+                            ->label('Kursverantwortliche*r')
+                            ->relationship('responsibleUser', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->placeholder(fn (Get $get): string => 'vom Kurs: '.(Course::find($get('course_id'))?->responsibleUser?->name ?? '–'))
+                            ->helperText('Nur ausfüllen, wenn für diese Durchführung jemand anderes verantwortlich ist.'),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
@@ -73,6 +81,15 @@ class CourseInstanceForm
                             ->helperText('Leer = unbegrenzt')
                             ->numeric()
                             ->minValue(1)
+                            ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled')),
+                        TextInput::make('waitlist_offer_hours')
+                            ->label('Frist für Nachrücker')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(336)
+                            ->suffix('Stunden')
+                            ->placeholder(fn (Get $get): string => 'vom Kurs: '.(Course::find($get('course_id'))?->waitlist_offer_hours ?? CompanySetting::current()->waitlist_offer_hours))
                             ->visible(fn (Get $get): bool => (bool) $get('waitlist_enabled')),
                         DateTimePicker::make('registration_opens_at')
                             ->label('Anmeldung ab')

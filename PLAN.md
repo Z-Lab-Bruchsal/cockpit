@@ -100,7 +100,7 @@ Achtung Namenskonflikt: `Booking` ist schon die Zeiterfassung. Buchungen heißen
 - JSON-Endpunkt `/kalender/events?start&end&audience` liefert die Termine mit Status-Farbe: frei / wenige Plätze / ausgebucht / Warteliste / „wird gerade reserviert“ / angefragt.
 - Beide Ansichten gibt es zusätzlich als Inhaltsblöcke für die Bereiche (`ContentBlocks`).
 
-**Migration Altbestand** (→ verschoben nach Phase 4)
+**Migration Altbestand** (entfällt, `course_kid` wurde nie genutzt und wird gelöscht)
 - Vorhandene `course_kid`-Zeilen werden in eine Durchführung „Altbestand“ je Kurs und Datum mit bestätigten Enrollments überführt.
 - Danach wird `course_kid` gelöscht und `Kid::courses()` / `Course::kids()` werden ersetzt. Der bestehende `KidsRelationManager` wird durch den Enrollment-RelationManager ersetzt.
 
@@ -139,7 +139,52 @@ Achtung Namenskonflikt: `Booking` ist schon die Zeiterfassung. Buchungen heißen
 - `ContactResource` (Gruppe „Kontakte“) mit Tabs Eltern/Schulen und RelationManager Kinder bzw. Anmeldungen.
 - `KidResource` erweitern: Interessen, Eltern, Kurshistorie inkl. Anwesenheit.
 
-## Phase 4: Warenkorb, Reservierung, DOI, Warteliste, Anwesenheit
+## Phase 4: Warenkorb, Reservierung, DOI, Warteliste, Anwesenheit ✅ erledigt
+
+**Umgesetzt mit diesen Abweichungen bzw. Ergänzungen:**
+- **Ablauf:**
+  - Auf der Kursseite wählt man die Anzahl der Kinder und klickt „Anmeldung beginnen“. Die Plätze werden gehalten.
+  - `/warenkorb` (Livewire `Homepage\Checkout`) zeigt einen Countdown. Weitere Kurse lassen sich hinzufügen.
+  - Erst beim Checkout werden die Kinder eingetragen. Angemeldete Eltern wählen eigene Kinder aus.
+  - Geprüft werden das Alter am ersten Termin und, dass kein Kind doppelt eingetragen ist.
+- **Warenkorb-Cookie** `zlab_cart` mit Zufalls-Token. In der Datenbank liegt nur der Hash (`CartManager`).
+- **Double-Opt-in:**
+  - Eine Mail mit einem Link bestätigt alle Kurse eines Checkouts. `confirmation_token_hash` ist deshalb nicht eindeutig.
+  - **Kontakt und Kinder entstehen erst nach der Bestätigung.** Bis dahin liegen Name und Geburtsdatum der Kinder an der Anmeldung bzw. am Platz. Der Abgleich mit vorhandenen Kindern läuft über Name plus Geburtsdatum.
+  - Angemeldete Eltern mit bestätigter Adresse sind sofort verbindlich angemeldet.
+- **Geschwister:**
+  - Sind Plätze frei, aber weniger als angemeldete Geschwister, werden alle Plätze gehalten (`needs_approval`).
+  - Nach der Bestätigung per E-Mail: Status „Wartet auf Freigabe“ (`AwaitingApproval`, belegt die Plätze dauerhaft).
+  - Die kursverantwortliche Person bekommt eine Mail mit allen Infos und den Buttons „Freigeben“ / „Ablehnen“.
+  - **Freigabe:** Alle Geschwister bekommen einen Platz (überbucht), Mail „Alle Geschwister dürfen teilnehmen“.
+  - **Ablehnung:** Die Familie kommt gemeinsam auf die Warteliste, ohne Warteliste wird die Anmeldung abgelehnt.
+  - Ist gar kein Platz frei, kommt die Familie direkt auf die Warteliste.
+- **Kursverantwortliche*r:** `responsible_user_id` ist am Kurs Pflicht (Vorbelegung: aktueller Benutzer) und an der Durchführung optional überschreibbar. Die Kurstabelle zeigt fehlende Verantwortliche rot an, z. B. nach dem Löschen eines Benutzers. Nur in diesem Fall gehen Anfragen an die Kontakt-E-Mail.
+- **Buttons in der Mail:** Signierte Links (`/freigabe/{registration}`, 30 Tage gültig) führen auf eine Seite mit Bestätigungs-Button. Dieselben Aktionen gibt es im Cockpit: Tab „Freigabe nötig“ mit Badge in der Navigation, Ansicht der Anmeldung, Liste der Teilnehmenden.
+- **Nachrücken streng nach Reihenfolge:**
+  - Passt die nächste Familie in die freien Plätze, bekommt sie ein Angebot (`Offered`, Mail „Platz frei“).
+  - Ist sie zu groß, wird die verantwortliche Person gefragt. Bis zur Entscheidung rückt niemand nach.
+  - **Freigabe:** Die Familie bekommt alle Plätze angeboten.
+  - **Ablehnung:** Die freien Plätze gehen in Reihenfolge an die nächsten Familien. Die große Familie behält ihren Platz auf der Warteliste und wird erst wieder gefragt, wenn erneut Plätze frei werden.
+- **Nachrückfrist:** `waitlist_offer_hours` in den Firmeninfos (Standard 48 Stunden), überschreibbar pro Kurs und pro Durchführung. Sie wird schon beim Eintrag auf die Warteliste genannt: Kursseite, Warenkorb und Mails.
+- **Ablauf von Fristen:**
+  - Der Befehl `app:expire-reservations` läuft jede Minute über den Scheduler.
+  - Die Platzzählung ignoriert abgelaufene Reservierungen auch ohne diesen Befehl.
+- **Neuer Status `Reserved`** bei der Verfügbarkeit: Alle Plätze stecken gerade in Warenkörben oder warten auf Bestätigung. Er erscheint auf Kursseite und Kalender.
+- **Abmelden:**
+  - per Link in der Bestätigungsmail (`/anmeldung/verwalten/{token}`, einzelnes Kind oder alles)
+  - im Konto unter „Meine Anmeldungen“
+  - im Cockpit
+- **Cockpit:**
+  - `RegistrationResource` mit Tabs Aktiv, Warten und Alle. Ein Badge zeigt unbestätigte Anmeldungen.
+  - Aktionen „Bestätigen“ (ohne Mail-Link) und „Stornieren“, wahlweise mit Info-Mail an die Eltern.
+  - An der Durchführung:
+    - Teilnehmende: Kind anmelden, auch über die Kapazität hinaus; von der Warteliste aufnehmen; abmelden.
+    - Anwesenheit als Raster Kind × Termin, dazu „Alle anwesend“.
+  - Am Kind: Kurshistorie mit Anwesenheit (x/y).
+- **Altbestand:** Die alte Tabelle `course_kid` wurde nie genutzt und wird ohne Übernahme gelöscht.
+- **Datenschutz:** Das Geburtsdatum am Platz (`kid_birthdate`) ist wie am Kind für die Serialisierung versteckt.
+
 
 **Tabellen**
 - `carts`: `token`, `contact_id` (nullable), `status` (enum `CartStatus`: Open, CheckedOut, Expired), `expires_at`.

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Homepage;
 
+use App\Enums\RegistrationStatus;
 use App\Models\Contact;
 use App\Models\Interest;
 use App\Models\Kid;
@@ -192,7 +193,7 @@ class Account extends Component
         DB::transaction(function () use ($kid): void {
             $this->contact()->kids()->detach($kid);
 
-            if (! $kid->contacts()->exists() && ! $kid->courses()->exists()) {
+            if (! $kid->contacts()->exists() && ! $kid->enrollments()->exists()) {
                 $kid->delete();
             }
         });
@@ -227,6 +228,12 @@ class Account extends Component
         return view('livewire.homepage.account', [
             'contact' => $this->contact(),
             'pendingEmailChange' => $this->contact()->pendingEmailChange(),
+            'registrations' => $this->contact()->registrations()
+                ->whereIn('status', [RegistrationStatus::Confirmed, RegistrationStatus::PendingConfirmation, RegistrationStatus::AwaitingApproval])
+                ->whereHas('courseInstance', fn ($query) => $query->upcoming())
+                ->with(['courseInstance.course', 'courseInstance.dates', 'enrollments.kid'])
+                ->latest('id')
+                ->get(),
         ]);
     }
 

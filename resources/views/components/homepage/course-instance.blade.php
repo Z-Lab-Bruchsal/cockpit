@@ -32,9 +32,8 @@
     <div class="mt-4 text-sm text-gray-600">
         @if ($availability === \App\Enums\CourseAvailability::NotYetOpen)
             Anmeldung ab {{ $instance->registration_opens_at->locale('de')->isoFormat('dd, DD.MM.YYYY, HH:mm') }} Uhr möglich.
-        @elseif ($availability->acceptsRegistrations())
-            {{-- The online registration flow plugs in here. --}}
-            <x-homepage.course-registration-hint />
+        @else
+            <x-homepage.course-registration-form :instance="$instance" :availability="$availability" />
         @endif
     </div>
 </article>
