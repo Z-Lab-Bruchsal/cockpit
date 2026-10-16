@@ -2,10 +2,10 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\Todo;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 
 class SetReminderAction extends ActionGroup
 {
@@ -17,22 +17,22 @@ class SetReminderAction extends ActionGroup
             ->tooltip('Wiedervorlage setzen')
             ->icon(Heroicon::BellSnooze)
             ->iconButton()
-            ->visible(function (Model $record) {
-                return $record->is_owner_or_assigned();
+            ->visible(function (Todo $record) {
+                return $record->isOwnerOrAssignee(filament()->auth()->user());
             })
             ->actions([
                 Action::make('reminderIn1Day')
                     ->label('in 1 Tag')
-                    ->action(fn (Model $record) => $record->update(['follow_up' => now()->addDay()])),
+                    ->action(fn (Todo $record) => $record->update(['follow_up' => now()->addDay()])),
                 Action::make('reminderIn3Days')
                     ->label('in 3 Tagen')
-                    ->action(fn (Model $record) => $record->update(['follow_up' => now()->addDays(3)])),
+                    ->action(fn (Todo $record) => $record->update(['follow_up' => now()->addDays(3)])),
                 Action::make('reminderIn1Week')
                     ->label('in 1 Woche')
-                    ->action(fn (Model $record) => $record->update(['follow_up' => now()->addWeek()])),
+                    ->action(fn (Todo $record) => $record->update(['follow_up' => now()->addWeek()])),
                 Action::make('reminderIn1Month')
                     ->label('in 1 Monat')
-                    ->action(fn (Model $record) => $record->update(['follow_up' => now()->addMonth()])),
+                    ->action(fn (Todo $record) => $record->update(['follow_up' => now()->addMonth()])),
             ]);
     }
 }

@@ -7,7 +7,6 @@ use App\Filament\Resources\CourseInstances\CourseInstanceResource;
 use App\Filament\Resources\Todos\TodoResource;
 use App\Models\Booking;
 use App\Models\CourseDate;
-use App\Models\Group;
 use App\Models\Todo;
 use App\Models\User;
 use Filament\Widgets\Concerns\InteractsWithPageFilters;
@@ -130,20 +129,12 @@ class WorkTimeCalendarWidget extends CalendarWidget
             $userIds = $this->pageFilters['userIds'];
         }
 
-        // TODO: Das hier prüfen
-        $groupIds = Group::query()
-            ->whereHas('users', fn (Builder $query) => $query->whereIn('users.id', $userIds))
-            ->pluck('id');
-
         $start = Carbon::parse($info->start);
         $end = Carbon::parse($info->end);
 
         $todos = Todo::query()
             ->whereNull('done_date')
-            ->where(fn (Builder $query) => $query
-                ->whereIn('user_id', $userIds)
-                ->orWhere(fn (Builder $q) => $q->where('todoable_type', User::class)->whereIn('todoable_id', $userIds))
-                ->orWhere(fn (Builder $q) => $q->where('todoable_type', Group::class)->whereIn('todoable_id', $groupIds)))
+            ->relevantForUsers(array_map('intval', $userIds))
             ->where(fn (Builder $query) => $query
                 ->whereBetween('due_date', [$start, $end])
                 ->orWhereBetween('follow_up', [$start, $end]))

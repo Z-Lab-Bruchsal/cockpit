@@ -46,10 +46,8 @@ class WorkTimeCalendarTest extends TestCase
         Todo::create([
             'name' => 'Testaufgabe',
             'user_id' => $user->id,
-            'todoable_type' => User::class,
-            'todoable_id' => $user->id,
             'due_date' => '2026-07-20',
-        ]);
+        ])->assignedUsers()->attach($user);
 
         $this->actingAs($user);
 

@@ -10,7 +10,7 @@ Hi,
 ## <a href="{{ $todo_url }}">{{ $todo->name }}:</a>
 
 Erstellt von: {{ $todo->user->name }}
-Zugewiesen: {{ $todo->todoable->name }}
+Zugewiesen: {{ $todo->assigneeNames() }}
 
 Inhalt:
 {!! $todo->content !!}

@@ -5,8 +5,7 @@ namespace App\Filament\Resources\Todos\Tables;
 use App\Filament\Actions\DoneTodoAction;
 use App\Filament\Actions\ReopenTodoAction;
 use App\Filament\Actions\SetReminderAction;
-use App\Models\Group;
-use App\Models\User;
+use App\Models\Todo;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +15,6 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 class TodosTable
 {
@@ -40,9 +38,12 @@ class TodosTable
                 TextColumn::make('user.name')
                     ->label('Benutzer')
                     ->searchable(),
-                TextColumn::make('todoable.name')
+                TextColumn::make('assignees')
                     ->label('Zugewiesen')
-                    ->searchable(),
+                    ->state(fn (Todo $record): string => $record->assigneeNames())
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(fn (Builder $query) => $query
+                        ->whereHas('assignedUsers', fn (Builder $users) => $users->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('assignedGroups', fn (Builder $groups) => $groups->where('name', 'like', "%{$search}%")))),
                 TextColumn::make('due_date')
                     ->label('Todo-Datum')
                     ->date()
@@ -51,6 +52,10 @@ class TodosTable
                     ->label('Erledigt am')
                     ->date()
                     ->sortable(),
+                TextColumn::make('completion_progress')
+                    ->label('Fortschritt')
+                    ->tooltip('Erledigt von x der Zugeordneten (wenn jeder für sich erledigt)')
+                    ->state(fn (Todo $record): ?string => $record->completionProgress()),
                 TextColumn::make('follow_up')
                     ->label('Wiedervorlage')
                     ->date()
@@ -59,29 +64,15 @@ class TodosTable
                     ->label('Review')
                     ->boolean(),
             ])
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['assignedUsers', 'assignedGroups']))
             ->filters([
                 Filter::make('alleoffenen')
                     ->default()
                     ->label('nicht erledigt')
-                    ->query(function (Builder $query) {
-                        $query->whereNull('done_date');
-
-                        return $query;
-                    }),
+                    ->query(fn (Builder $query): Builder => $query->openFor(filament()->auth()->user())),
                 Filter::make('mine')->label('von mir oder für mich')
                     ->default()
-                    ->query(function (Builder $query) {
-                        $query->where(function (Builder $query) {
-                            $query
-                                ->orWhere('user_id', filament()->auth()->user()->id)
-                                ->orWhere('todoable_type', User::class)->where('todoable_id', filament()->auth()->user()->id)
-                                ->orwhere('todoable_type', Group::class)->whereIn('todoable_id', User::find(filament()->auth()->user()->id)->groups()->get()->pluck('id'));
-
-                            return $query;
-                        });
-
-                        return $query;
-                    }),
+                    ->query(fn (Builder $query): Builder => $query->relevantFor(filament()->auth()->user())),
                 Filter::make('keineZukuenftigeWiedervorlage')
                     ->label('ohne zukünftige Wiedervorlage')
                     ->default()
@@ -104,9 +95,7 @@ class TodosTable
                 SetReminderAction::make([]),
                 EditAction::make()->iconButton(),
                 DeleteAction::make()->iconButton()
-                    ->visible(function (Model $record) {
-                        return $record->is_owner_or_assigned();
-                    }),
+                    ->visible(fn (Todo $record): bool => $record->isOwnerOrAssignee(filament()->auth()->user())),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

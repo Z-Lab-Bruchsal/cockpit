@@ -15,6 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Filament\Facades\Filament;
+use Filament\Navigation\NavigationGroup;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -88,5 +90,16 @@ class AppServiceProvider extends ServiceProvider
                 ->native(false)
                 ->displayFormat('d.m.Y');
         });
+
+        Filament::serving(function () {
+            Filament::registerNavigationGroups([
+                NavigationGroup::make()->label('Homepage'),
+                NavigationGroup::make()->label('Kurse und Kinder'),
+                NavigationGroup::make()->label('Kontakte'),
+                NavigationGroup::make()->label('Verwaltung')->collaped(),
+                NavigationGroup::make()->label('Zeiterfassung')
+            ]);
+        });
+
     }
 }

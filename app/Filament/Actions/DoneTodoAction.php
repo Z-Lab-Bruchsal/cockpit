@@ -2,9 +2,9 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\Todo;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 
 class DoneTodoAction extends Action
 {
@@ -14,14 +14,16 @@ class DoneTodoAction extends Action
 
         $this->iconButton()
             ->label('erledigt')
-            ->tooltip('Todo als erledigt markieren')
+            ->tooltip(fn (?Todo $record): string => $record && $this->completesOnlyForCurrentUser($record)
+                ? 'Todo für mich als erledigt markieren'
+                : 'Todo als erledigt markieren')
             ->icon(Heroicon::Check)
-            ->visible(function (Model $record) {
-                return $record->is_owner_or_assigned() && $record->done_date == null;
-            })
-            ->action(function (Model $record) {
-                $record->done_date = now()->today();
-                $record->save();
-            });
+            ->visible(fn (Todo $record): bool => $record->isOwnerOrAssignee(filament()->auth()->user()) && ! $record->isDoneFor(filament()->auth()->user()))
+            ->action(fn (Todo $record) => $record->markDoneBy(filament()->auth()->user()));
+    }
+
+    protected function completesOnlyForCurrentUser(Todo $todo): bool
+    {
+        return $todo->individual_completion && $todo->isAssignee(filament()->auth()->user());
     }
 }

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\TodoMail;
 use App\Models\Todo;
+use App\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -26,7 +27,7 @@ class SendTodoFollowUpReminders extends Command
             ->get();
 
         foreach ($todos as $todo) {
-            foreach ($todo->getassignetusers() as $user) {
+            foreach ($todo->assignees()->reject(fn (User $user): bool => $todo->isDoneFor($user)) as $user) {
                 Mail::to($user)->send(new TodoMail($todo, 'Todo Wiedervorlage', 'Die Wiedervorlage für folgende Todo ist erreicht:'));
             }
 
