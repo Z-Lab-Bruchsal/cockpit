@@ -84,6 +84,15 @@ class CourseInstanceForm
                     ->columnSpanFull(),
                 Section::make('Plätze & Anmeldung')
                     ->schema([
+                        TextInput::make('max_class_size')
+                            ->label('Maximale Klassengröße')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(200)
+                            ->suffix('Kinder')
+                            ->placeholder(fn (Get $get): string => 'vom Kurs: '.(Course::find($get('course_id'))?->max_class_size ?? 'keine Begrenzung'))
+                            ->visible(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses()),
                         TextInput::make('capacity')
                             ->label('Plätze')
                             ->hidden(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())

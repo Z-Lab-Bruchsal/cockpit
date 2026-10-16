@@ -29,7 +29,7 @@
                 <dt class="font-medium text-gray-500">Ort</dt>
                 <dd>{{ $registration->venue?->getLabel() }}@if (filled($registration->visitAddress())): {{ $registration->visitAddress() }}@endif</dd>
                 <dt class="font-medium text-gray-500">Klasse</dt>
-                <dd>{{ $class['class_name'] }}, {{ $class['students'] }} Schüler*innen</dd>
+                <dd>{{ $class['class_name'] }}@if ($registration->schoolClassLevel()) ({{ $registration->schoolClassLevel() }})@endif, {{ $class['students'] }} Kinder</dd>
                 <dt class="font-medium text-gray-500">Lehrkraft</dt>
                 <dd>{{ $class['teacher_name'] }}@if ($class['teacher_phone']), {{ $class['teacher_phone'] }}@endif</dd>
                 @if ($class['topic'])

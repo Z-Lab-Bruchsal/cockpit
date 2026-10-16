@@ -32,7 +32,7 @@
                         <div>
                             <p class="font-semibold text-gray-900">{{ $instance->displayTitle() }}</p>
                             <p class="text-sm text-gray-600">{{ $instance->dates->first()?->formattedRange() }} · {{ $registration->venue?->getLabel() }}</p>
-                            <p class="text-sm text-gray-600">Klasse {{ $class['class_name'] }}, {{ $class['students'] }} Schüler*innen · {{ $class['teacher_name'] }}</p>
+                            <p class="text-sm text-gray-600">Klasse {{ $class['class_name'] }}@if ($registration->schoolClassLevel()) ({{ $registration->schoolClassLevel() }})@endif, {{ $class['students'] }} Kinder · {{ $class['teacher_name'] }}</p>
                             <p class="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold {{ match ($registration->status) {
                                 \App\Enums\RegistrationStatus::Confirmed => 'bg-green-50 text-green-800',
                                 \App\Enums\RegistrationStatus::Requested => 'bg-amber-50 text-amber-800',

@@ -40,9 +40,6 @@
                     'rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100',
                     'bg-brand/10 text-gray-900' => request()->routeIs('homepage.schools.*'),
                 ])>Schulen</a>
-                @if ($cartCount > 0)
-                    <a href="{{ $cartUrl }}" class="ml-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-contrast hover:opacity-90">Warenkorb ({{ $cartCount }})</a>
-                @endif
                 <a href="{{ $accountUrl }}" @class([
                     'ml-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-100',
                     'bg-brand/10 text-gray-900' => request()->routeIs('homepage.account', 'homepage.login', 'homepage.schools.account'),
@@ -63,9 +60,6 @@
                 <li><a href="{{ route('homepage.courses.index') }}" class="block py-3 font-medium">Kurse</a></li>
                 <li><a href="{{ route('homepage.calendar') }}" class="block py-3 font-medium">Kalender</a></li>
                 <li><a href="{{ route('homepage.schools.index') }}" class="block py-3 font-medium">Schulen</a></li>
-                @if ($cartCount > 0)
-                    <li class="border-t border-gray-200"><a href="{{ $cartUrl }}" class="block py-3 font-semibold text-brand">Warenkorb ({{ $cartCount }})</a></li>
-                @endif
                 <li class="border-t border-gray-200"><a href="{{ $accountUrl }}" class="block py-3 font-medium">{{ $isLoggedIn ? 'Mein Konto' : 'Anmelden' }}</a></li>
             </ul>
         </nav>

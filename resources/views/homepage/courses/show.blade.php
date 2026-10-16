@@ -22,6 +22,10 @@
                 </ol>
             </nav>
 
+            @if (session('status'))
+                <p class="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('status') }}</p>
+            @endif
+
             <div @class([
                 'grid gap-8',
                 'lg:grid-cols-2 lg:items-start' => $image && $layout === \App\Enums\CourseDetailLayout::SideImage,
@@ -30,8 +34,8 @@
                     <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{{ $course->name }}</h1>
 
                     <div class="mt-3 flex flex-wrap gap-1.5">
-                        @if ($template->show_age_range && $course->ageRangeLabel())
-                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ $course->ageRangeLabel() }}</span>
+                        @if ($template->show_age_range && $course->audienceLabel())
+                            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ $course->audienceLabel() }}</span>
                         @endif
                         <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ $course->audience->getLabel() }}</span>
                         @if ($template->show_interests)

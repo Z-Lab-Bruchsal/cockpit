@@ -36,12 +36,16 @@ Route::name('homepage.')->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('calendar.events');
 
-    Route::get('/warenkorb', [RegistrationController::class, 'cart'])->name('cart');
-    Route::get('/warenkorb/abgeschlossen', [RegistrationController::class, 'done'])->name('cart.done');
-    Route::post('/warenkorb/kurs/{instance}', [RegistrationController::class, 'addToCart'])
+    Route::post('/kurse/buchen/{instance}', [RegistrationController::class, 'start'])
         ->middleware('throttle:20,1')
-        ->name('cart.add');
-    Route::post('/warenkorb/entfernen/{registration}', [RegistrationController::class, 'removeFromCart'])->name('cart.remove');
+        ->name('booking.start');
+    Route::get('/buchung/abgeschlossen', [RegistrationController::class, 'done'])->name('booking.done');
+    Route::get('/buchung/{token}', [RegistrationController::class, 'showBooking'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->name('booking.show');
+    Route::post('/buchung/{token}/abbrechen', [RegistrationController::class, 'cancelHold'])
+        ->where('token', '[A-Za-z0-9]{64}')
+        ->name('booking.cancel');
     Route::get('/anmeldung/verwalten/{token}', [RegistrationController::class, 'manage'])->name('registration.manage');
     Route::post('/anmeldung/verwalten/{token}', [RegistrationController::class, 'cancel'])
         ->middleware('throttle:10,1')
@@ -106,11 +110,16 @@ Route::name('homepage.')->group(function (): void {
 
         Route::middleware(EnsureSchoolContact::class)->group(function (): void {
             Route::get('/konto', [SchoolController::class, 'account'])->name('account');
-            Route::post('/warenkorb/termin/{instance}', [SchoolController::class, 'addToCart'])
+            Route::post('/buchen/{instance}', [SchoolController::class, 'start'])
                 ->middleware('throttle:20,1')
-                ->name('cart.add');
-            Route::get('/warenkorb', [SchoolController::class, 'cart'])->name('cart');
-            Route::get('/warenkorb/abgeschlossen', [SchoolController::class, 'done'])->name('cart.done');
+                ->name('booking.start');
+            Route::get('/buchung/abgeschlossen', [SchoolController::class, 'done'])->name('booking.done');
+            Route::get('/buchung/{token}', [SchoolController::class, 'showBooking'])
+                ->where('token', '[A-Za-z0-9]{64}')
+                ->name('booking.show');
+            Route::post('/buchung/{token}/abbrechen', [SchoolController::class, 'cancelHold'])
+                ->where('token', '[A-Za-z0-9]{64}')
+                ->name('booking.cancel');
             Route::post('/buchungen/{registration}/stornieren', [SchoolController::class, 'cancel'])
                 ->middleware('throttle:10,1')
                 ->name('cancel');

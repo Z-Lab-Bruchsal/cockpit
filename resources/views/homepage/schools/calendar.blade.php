@@ -14,7 +14,7 @@
         </div>
 
         <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Legende">
-            @foreach ([\App\Enums\SchoolSlotState::Free, \App\Enums\SchoolSlotState::InCart, \App\Enums\SchoolSlotState::Requested, \App\Enums\SchoolSlotState::Reserved] as $state)
+            @foreach ([\App\Enums\SchoolSlotState::Free, \App\Enums\SchoolSlotState::BeingBooked, \App\Enums\SchoolSlotState::Requested, \App\Enums\SchoolSlotState::Reserved] as $state)
                 <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full" style="background-color: {{ $state->hexColor() }}"></span>{{ $state->getLabel() }}</li>
             @endforeach
         </ul>

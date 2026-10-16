@@ -191,8 +191,8 @@ class CompanySettingsPage extends Page
                             ->icon(Heroicon::OutlinedTicket)
                             ->schema([
                                 TextInput::make('hold_minutes')
-                                    ->label('Reservierung im Warenkorb [min]')
-                                    ->helperText('So lange sind Plätze während der Buchung für andere gesperrt.')
+                                    ->label('Zeit zum Buchen [min]')
+                                    ->helperText('Zeit vom Klick auf „Buchen“ bis zum Absenden. So lange sind die Plätze für andere gesperrt, danach werden sie wieder frei.')
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(240)

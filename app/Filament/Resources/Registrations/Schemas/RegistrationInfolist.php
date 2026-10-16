@@ -95,8 +95,12 @@ class RegistrationInfolist
                         TextEntry::make('class_name')
                             ->label('Klasse')
                             ->state(fn (Registration $record): string => $record->schoolClass()['class_name']),
+                        TextEntry::make('class_level')
+                            ->label('Klassenstufe / Schulart')
+                            ->state(fn (Registration $record): ?string => $record->schoolClassLevel())
+                            ->placeholder('–'),
                         TextEntry::make('students')
-                            ->label('Schüler*innen')
+                            ->label('Anzahl Kinder')
                             ->state(fn (Registration $record): int => $record->schoolClass()['students']),
                         TextEntry::make('teacher')
                             ->label('Lehrkraft')

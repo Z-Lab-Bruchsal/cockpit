@@ -28,8 +28,8 @@
 
     <div class="flex grow flex-col gap-2 p-5">
         <div class="flex flex-wrap gap-1.5 text-xs">
-            @if ($template->show_age_range && $course->ageRangeLabel())
-                <span class="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-700">{{ $course->ageRangeLabel() }}</span>
+            @if ($template->show_age_range && $course->audienceLabel())
+                <span class="rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-700">{{ $course->audienceLabel() }}</span>
             @endif
             @if ($template->show_interests)
                 @foreach ($course->interests as $interest)

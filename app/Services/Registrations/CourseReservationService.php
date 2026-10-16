@@ -3,7 +3,6 @@
 namespace App\Services\Registrations;
 
 use App\Enums\ContactType;
-use App\Enums\CourseAudience;
 use App\Enums\CourseAvailability;
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationSource;
@@ -16,7 +15,6 @@ use App\Mail\RegistrationCancelledMail;
 use App\Mail\RegistrationConfirmationMail;
 use App\Mail\RegistrationConfirmedMail;
 use App\Mail\WaitlistOfferMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\CourseInstance;
@@ -32,7 +30,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
- * All state changes of course registrations: holding seats in a cart, checkout with double opt-in,
+ * All state changes of course registrations: holding seats while a booking runs, checkout with double opt-in,
  * confirmation, approvals by the course lead, cancellation, expiry and moving up from the waitlist.
  *
  * Seat counting relies on Enrollment::scopeOccupyingSeat(), which ignores expired holds,
@@ -41,11 +39,14 @@ use Illuminate\Support\Str;
 class CourseReservationService
 {
     /**
-     * Holds seats in the cart. Siblings are never split up: if some but not enough seats are free,
+     * Starts a booking: holds the seats for the configured minutes and returns the registration together with
+     * the plain token of the booking page. Siblings are never split up: if some but not enough seats are free,
      * all seats are held and the registration needs the course lead's approval after confirmation.
      * Without any free seat the family goes on the waitlist together.
+     *
+     * @return array{0: Registration, 1: string}
      */
-    public function hold(CourseInstance $instance, int $seats, Cart $cart): Registration
+    public function hold(CourseInstance $instance, int $seats, ?Contact $contact = null): array
     {
         $maxSeats = CompanySetting::current()->max_seats_per_registration;
 
@@ -53,24 +54,13 @@ class CourseReservationService
             throw new ReservationException("Bitte wähle zwischen 1 und {$maxSeats} Plätzen.");
         }
 
-        return DB::transaction(function () use ($instance, $seats, $cart): Registration {
+        $plainToken = Str::random(64);
+
+        $registration = DB::transaction(function () use ($instance, $seats, $contact, $plainToken): Registration {
             $instance = CourseInstance::query()->lockForUpdate()->findOrFail($instance->id);
 
             if (in_array($instance->availability(), [CourseAvailability::NotYetOpen, CourseAvailability::Closed, CourseAvailability::Cancelled], true)) {
                 throw new ReservationException('Für diesen Kurs ist gerade keine Anmeldung möglich.');
-            }
-
-            if ($cart->heldRegistrations()->where('course_instance_id', $instance->id)->exists()) {
-                throw new ReservationException('Dieser Kurs liegt schon in deinem Warenkorb.');
-            }
-
-            // School class slots and kids' courses are checked out with different forms, so they never share a cart.
-            $isSchoolSlot = $instance->course->isForSchoolClasses();
-
-            if ($cart->heldRegistrations()->whereHas('courseInstance.course', fn ($courses) => $isSchoolSlot
-                ? $courses->where('audience', '!=', CourseAudience::SchoolClass)
-                : $courses->where('audience', CourseAudience::SchoolClass))->exists()) {
-                throw new ReservationException('Termine für Schulklassen und Kurse für Kinder können nicht zusammen gebucht werden. Bitte schließe zuerst die Buchung im Warenkorb ab.');
             }
 
             $expiresAt = now()->addMinutes(CompanySetting::current()->hold_minutes);
@@ -90,8 +80,8 @@ class CourseReservationService
             }
 
             $registration = $instance->registrations()->create([
-                'cart_id' => $cart->id,
-                'contact_id' => $cart->contact_id,
+                'hold_token_hash' => Registration::hashToken($plainToken),
+                'contact_id' => $contact?->id,
                 'status' => RegistrationStatus::Held,
                 'source' => RegistrationSource::Homepage,
                 'expires_at' => $expiresAt,
@@ -111,12 +101,22 @@ class CourseReservationService
 
             return $registration->load('enrollments');
         });
+
+        return [$registration, $plainToken];
     }
 
     /**
-     * Removes a registration from the cart before checkout.
+     * The running booking behind the token, or null if it does not exist, was sent or its time ran out.
      */
-    public function removeFromCart(Registration $registration): void
+    public function findHeld(string $plainToken): ?Registration
+    {
+        return Registration::query()->heldWithToken($plainToken)->first();
+    }
+
+    /**
+     * Ends a running booking before it is sent, so the seats are free again right away.
+     */
+    public function releaseHold(Registration $registration): void
     {
         if ($registration->status !== RegistrationStatus::Held) {
             return;
@@ -126,87 +126,83 @@ class CourseReservationService
     }
 
     /**
-     * Completes the checkout of all held registrations in the cart.
+     * Sends a running booking: stores contact and child details and starts the double opt-in.
      *
-     * @param  array{email: string, name: string, phone?: ?string, wants_interest_mails?: bool, message?: ?string}  $contactData
-     * @param  array<int, list<array{kid_id?: ?int, name?: ?string, birthdate?: ?string}>>  $kidsByRegistration  keyed by registration id, one entry per enrollment
-     * @return Collection<int, Registration>
+     * @param  array{email: string, name: string, phone: string, wants_interest_mails?: bool, message?: ?string}  $contactData
+     * @param  list<array{kid_id?: ?int, name?: ?string, birthdate?: ?string}>  $kids  one entry per enrollment
      */
-    public function checkout(Cart $cart, array $contactData, array $kidsByRegistration, ?Contact $loggedInContact = null): Collection
+    public function checkout(Registration $registration, array $contactData, array $kids, ?Contact $loggedInContact = null): Registration
     {
         $email = Str::lower(trim($contactData['email']));
         $plainToken = Str::random(64);
         $confirmationHours = CompanySetting::current()->confirmation_hours;
 
-        $registrations = DB::transaction(function () use ($cart, $contactData, $kidsByRegistration, $loggedInContact, $email, $plainToken, $confirmationHours): Collection {
-            $registrations = $cart->heldRegistrations()->with('enrollments')->lockForUpdate()->get();
+        DB::transaction(function () use ($registration, $contactData, $kids, $loggedInContact, $email, $plainToken, $confirmationHours): void {
+            $registration = Registration::query()->with('enrollments')->lockForUpdate()->find($registration->id);
 
-            if ($registrations->isEmpty()) {
-                throw new ReservationException('Deine Reservierung ist abgelaufen. Bitte lege die Kurse erneut in den Warenkorb.');
+            if ($registration === null || $registration->status !== RegistrationStatus::Held || ! $registration->expires_at?->isFuture()) {
+                throw new ReservationException('Deine Reservierung ist abgelaufen. Die Plätze wurden wieder freigegeben – bitte starte die Buchung neu.');
             }
 
-            $this->ensureBookingLimit($registrations, $kidsByRegistration, $loggedInContact);
+            $kids = array_values($kids);
+            $activeEnrollments = $registration->enrollments->filter(fn (Enrollment $enrollment): bool => in_array($enrollment->status, [EnrollmentStatus::Held, EnrollmentStatus::Waitlisted], true))->values();
 
-            foreach ($registrations as $registration) {
-                $kids = array_values($kidsByRegistration[$registration->id] ?? []);
-                $activeEnrollments = $registration->enrollments->filter(fn (Enrollment $enrollment): bool => in_array($enrollment->status, [EnrollmentStatus::Held, EnrollmentStatus::Waitlisted], true))->values();
+            if (count($kids) !== $activeEnrollments->count()) {
+                throw new ReservationException('Bitte gib für jeden Platz ein Kind an.');
+            }
 
-                if (count($kids) !== $activeEnrollments->count()) {
-                    throw new ReservationException('Bitte gib für jeden Platz ein Kind an.');
+            $this->ensureBookingLimit($registration, $kids, $loggedInContact);
+
+            $registration->update([
+                'contact_id' => $loggedInContact?->id,
+                'email' => $email,
+                'contact_name' => trim($contactData['name']),
+                'phone' => trim($contactData['phone']),
+                'wants_interest_mails' => (bool) ($contactData['wants_interest_mails'] ?? false),
+                'message' => $contactData['message'] ?? null,
+                'status' => RegistrationStatus::PendingConfirmation,
+                'hold_token_hash' => null,
+                'confirmation_token_hash' => hash('sha256', $plainToken),
+                'checked_out_at' => now(),
+                'expires_at' => now()->addHours($confirmationHours),
+            ]);
+
+            foreach ($activeEnrollments as $index => $enrollment) {
+                $kid = $kids[$index];
+                $ownKid = isset($kid['kid_id']) && $loggedInContact !== null
+                    ? $loggedInContact->kids()->find($kid['kid_id'])
+                    : null;
+
+                // A saved child without exact birthdate gets the date entered at checkout.
+                if ($ownKid !== null && $ownKid->exactBirthdate() === null && filled($kid['birthdate'] ?? null)) {
+                    $ownKid->update(['birthdate' => $kid['birthdate'], 'birthdate_estimated' => false]);
                 }
 
-                $registration->update([
-                    'contact_id' => $loggedInContact?->id,
-                    'email' => $email,
-                    'contact_name' => trim($contactData['name']),
-                    'phone' => $contactData['phone'] ?? null,
-                    'wants_interest_mails' => (bool) ($contactData['wants_interest_mails'] ?? false),
-                    'message' => $contactData['message'] ?? null,
-                    'status' => RegistrationStatus::PendingConfirmation,
-                    'confirmation_token_hash' => hash('sha256', $plainToken),
-                    'checked_out_at' => now(),
+                $enrollment->update([
+                    'kid_id' => $ownKid?->id,
+                    'kid_name' => $ownKid?->name ?? trim((string) ($kid['name'] ?? '')),
+                    'kid_birthdate' => $ownKid?->exactBirthdate() ?? ($kid['birthdate'] ?? null),
+                    'status' => $enrollment->status === EnrollmentStatus::Held ? EnrollmentStatus::Pending : EnrollmentStatus::Waitlisted,
                     'expires_at' => now()->addHours($confirmationHours),
                 ]);
-
-                foreach ($activeEnrollments as $index => $enrollment) {
-                    $kid = $kids[$index];
-                    $ownKid = isset($kid['kid_id']) && $loggedInContact !== null
-                        ? $loggedInContact->kids()->find($kid['kid_id'])
-                        : null;
-
-                    // A saved child without exact birthdate gets the date entered at checkout.
-                    if ($ownKid !== null && $ownKid->exactBirthdate() === null && filled($kid['birthdate'] ?? null)) {
-                        $ownKid->update(['birthdate' => $kid['birthdate'], 'birthdate_estimated' => false]);
-                    }
-
-                    $enrollment->update([
-                        'kid_id' => $ownKid?->id,
-                        'kid_name' => $ownKid?->name ?? trim((string) ($kid['name'] ?? '')),
-                        'kid_birthdate' => $ownKid?->exactBirthdate() ?? ($kid['birthdate'] ?? null),
-                        'status' => $enrollment->status === EnrollmentStatus::Held ? EnrollmentStatus::Pending : EnrollmentStatus::Waitlisted,
-                        'expires_at' => now()->addHours($confirmationHours),
-                    ]);
-                }
             }
-
-            return $registrations;
         });
 
         // Logged-in parents have proven their address already, so no extra confirmation mail is needed.
         if ($loggedInContact !== null && $loggedInContact->hasVerifiedEmail() && $loggedInContact->email === $email) {
             $this->confirm($plainToken);
 
-            return $registrations->map->fresh();
+            return $registration->fresh();
         }
 
         Mail::to($email)->send(new RegistrationConfirmationMail(
-            registrations: $registrations->map->fresh(['courseInstance.course', 'courseInstance.dates', 'enrollments']),
+            registrations: collect([$registration->fresh(['courseInstance.course', 'courseInstance.dates', 'enrollments'])]),
             confirmationUrl: route('homepage.registration.show', $plainToken),
             name: trim($contactData['name']),
             confirmationHours: $confirmationHours,
         ));
 
-        return $registrations->map->fresh();
+        return $registration->fresh();
     }
 
     /**
@@ -240,30 +236,22 @@ class CourseReservationService
     }
 
     /**
-     * Checks the booking limits for one child with the given number of courses in the cart.
+     * Checks the booking limits for one child that is about to be booked for one more course.
      *
      * @param  list<int>  $exceptRegistrationIds
      * @return string|null message for parents (including how long to wait), or null if the booking is allowed
      */
-    public function bookingLimitMessage(?int $kidId, ?string $name, ?string $birthdate, int $coursesInCart, array $exceptRegistrationIds = []): ?string
+    public function bookingLimitMessage(?int $kidId, ?string $name, ?string $birthdate, array $exceptRegistrationIds = []): ?string
     {
         foreach (CompanySetting::current()->bookingLimits() as $limit) {
             $displayName = filled($name) ? trim($name) : 'dieses Kind';
-            $prefix = "Für {$displayName} sind höchstens {$limit['text']} möglich, damit alle Kinder eine Chance haben.";
-
-            if ($coursesInCart > $limit['limit']) {
-                $tooMany = $coursesInCart - $limit['limit'];
-
-                return $prefix.' Bitte entferne '.($tooMany === 1 ? 'einen Kurs' : "{$tooMany} Kurse").' aus dem Warenkorb.';
-            }
-
             $times = $this->bookingTimesForKid(now()->subMinutes($limit['minutes']), $kidId, $name, $birthdate, $exceptRegistrationIds);
-            $mustExpire = $times->count() + $coursesInCart - $limit['limit'];
+            $mustExpire = $times->count() + 1 - $limit['limit'];
 
             if ($mustExpire > 0) {
                 $availableAt = $times->get($mustExpire - 1)->copy()->addMinutes($limit['minutes']);
 
-                return $prefix.' Weitere Kurse kannst du '.static::waitingText($availableAt).' buchen.';
+                return "Für {$displayName} sind höchstens {$limit['text']} möglich, damit alle Kinder eine Chance haben. Weitere Kurse kannst du ".static::waitingText($availableAt).' buchen.';
             }
         }
 
@@ -289,31 +277,20 @@ class CourseReservationService
     /**
      * Enforces the limits of courses per child and hour / 24 hours from the company settings.
      *
-     * @param  Collection<int, Registration>  $registrations
-     * @param  array<int, list<array{kid_id?: ?int, name?: ?string, birthdate?: ?string}>>  $kidsByRegistration
+     * @param  list<array{kid_id?: ?int, name?: ?string, birthdate?: ?string}>  $kids
      */
-    protected function ensureBookingLimit(Collection $registrations, array $kidsByRegistration, ?Contact $loggedInContact): void
+    protected function ensureBookingLimit(Registration $registration, array $kids, ?Contact $loggedInContact): void
     {
         if (! CompanySetting::current()->hasBookingLimit()) {
             return;
         }
 
-        $inThisCheckout = [];
+        foreach ($kids as $kid) {
+            $ownKid = isset($kid['kid_id']) && $loggedInContact !== null ? $loggedInContact->kids()->find($kid['kid_id']) : null;
+            $name = $ownKid?->name ?? ($kid['name'] ?? null);
+            $birthdate = $ownKid?->exactBirthdate()?->toDateString() ?? ($kid['birthdate'] ?? null);
 
-        foreach ($registrations as $registration) {
-            foreach ($kidsByRegistration[$registration->id] ?? [] as $kid) {
-                $ownKid = isset($kid['kid_id']) && $loggedInContact !== null ? $loggedInContact->kids()->find($kid['kid_id']) : null;
-                $name = $ownKid?->name ?? ($kid['name'] ?? null);
-                $birthdate = $ownKid?->exactBirthdate()?->toDateString() ?? ($kid['birthdate'] ?? null);
-                $key = $ownKid !== null ? 'id:'.$ownKid->id : 'name:'.Str::lower(trim((string) $name)).'|'.$birthdate;
-
-                $inThisCheckout[$key] ??= ['count' => 0, 'name' => (string) $name, 'kid_id' => $ownKid?->id, 'birthdate' => $birthdate];
-                $inThisCheckout[$key]['count']++;
-            }
-        }
-
-        foreach ($inThisCheckout as $kid) {
-            $message = $this->bookingLimitMessage($kid['kid_id'], $kid['name'], $kid['birthdate'], $kid['count'], $registrations->pluck('id')->all());
+            $message = $this->bookingLimitMessage($ownKid?->id, $name, $birthdate, [$registration->id]);
 
             if ($message !== null) {
                 throw new ReservationException($message);

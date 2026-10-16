@@ -4,8 +4,7 @@ namespace Tests\Feature\Registrations;
 
 use App\Exceptions\ReservationException;
 use App\Filament\Pages\CompanySettingsPage;
-use App\Livewire\Homepage\Checkout;
-use App\Models\Cart;
+use App\Livewire\Homepage\BookingForm;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Course;
@@ -13,12 +12,10 @@ use App\Models\CourseInstance;
 use App\Models\Kid;
 use App\Models\Registration;
 use App\Models\User;
-use App\Services\Registrations\CartManager;
 use App\Services\Registrations\CourseReservationService;
 use Database\Seeders\ShieldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -48,10 +45,9 @@ class BookingLimitTest extends TestCase
 
     protected function bookGuest(string $kidName, string $birthdate = '2016-05-01', string $email = 'eltern@example.com', ?CourseInstance $instance = null): void
     {
-        $cart = Cart::factory()->create();
-        $registration = $this->reservations->hold($instance ?? $this->newInstance(), 1, $cart);
-        $this->reservations->checkout($cart, ['email' => $email, 'name' => 'Familie'], [
-            $registration->id => [['name' => $kidName, 'birthdate' => $birthdate]],
+        [$registration] = $this->reservations->hold($instance ?? $this->newInstance(), 1);
+        $this->reservations->checkout($registration, ['email' => $email, 'name' => 'Familie', 'phone' => '0911 123456'], [
+            ['name' => $kidName, 'birthdate' => $birthdate],
         ]);
     }
 
@@ -96,18 +92,13 @@ class BookingLimitTest extends TestCase
         $this->assertSame(3, Registration::query()->whereNotNull('checked_out_at')->count());
     }
 
-    public function test_three_courses_in_one_cart_are_rejected(): void
+    public function test_third_booking_within_an_hour_is_rejected(): void
     {
-        $cart = Cart::factory()->create();
-        $kids = [];
-
-        foreach (range(1, 3) as $i) {
-            $registration = $this->reservations->hold($this->newInstance(), 1, $cart);
-            $kids[$registration->id] = [['name' => 'Paul', 'birthdate' => '2016-05-01']];
-        }
+        $this->bookGuest('Paul');
+        $this->bookGuest('Paul');
 
         $this->expectException(ReservationException::class);
-        $this->reservations->checkout($cart, ['email' => 'eltern@example.com', 'name' => 'Familie'], $kids);
+        $this->bookGuest('Paul');
     }
 
     public function test_limit_recognises_saved_kids_of_logged_in_parents(): void
@@ -119,12 +110,11 @@ class BookingLimitTest extends TestCase
         $this->bookGuest('Paul');
         $this->bookGuest('Paul');
 
-        $cart = Cart::factory()->create(['contact_id' => $contact->id]);
-        $registration = $this->reservations->hold($this->newInstance(), 1, $cart);
+        [$registration] = $this->reservations->hold($this->newInstance(), 1, $contact);
 
         $this->expectException(ReservationException::class);
-        $this->reservations->checkout($cart, ['email' => $contact->email, 'name' => $contact->name], [
-            $registration->id => [['kid_id' => $kid->id]],
+        $this->reservations->checkout($registration, ['email' => $contact->email, 'name' => $contact->name, 'phone' => '0911 123456'], [
+            ['kid_id' => $kid->id],
         ], $contact);
     }
 
@@ -133,19 +123,17 @@ class BookingLimitTest extends TestCase
         $this->bookGuest('Paul');
         $this->bookGuest('Paul');
 
-        $plainToken = Str::random(64);
-        $cart = Cart::query()->create(['token_hash' => Cart::hashToken($plainToken)]);
-        $registration = $this->reservations->hold($this->newInstance(), 1, $cart);
+        [, $token] = $this->reservations->hold($this->newInstance(), 1);
 
-        Livewire::withCookies([CartManager::COOKIE => $plainToken])
-            ->test(Checkout::class)
+        Livewire::test(BookingForm::class, ['token' => $token])
             ->set('name', 'Familie')
             ->set('email', 'eltern@example.com')
-            ->set("kids.{$registration->id}.0.name", 'Paul')
-            ->set("kids.{$registration->id}.0.birthdate", '2016-05-01')
+            ->set('phone', '0911 123456')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', '2016-05-01')
             ->set('acceptsPrivacy', true)
             ->call('checkout')
-            ->assertHasErrors("kids.{$registration->id}.0.name")
+            ->assertHasErrors('kids.0.name')
             ->assertSee('höchstens 2 Kurse pro Stunde');
     }
 
@@ -172,33 +160,16 @@ class BookingLimitTest extends TestCase
         $this->bookGuest('Paul');
     }
 
-    public function test_hint_is_shown_before_adding_a_course_and_in_the_cart(): void
+    public function test_hint_is_shown_on_the_course_page_and_the_booking_page(): void
     {
         $instance = $this->newInstance();
 
         $this->get($instance->course->url())
             ->assertSee('höchstens 2 Kurse pro Stunde und 4 Kurse in 24 Stunden buchbar');
 
-        $this->post(route('homepage.cart.add', $instance), ['seats' => 1])
-            ->assertSessionMissing('booking_limit_warning');
-    }
-
-    public function test_warning_when_cart_holds_more_courses_than_the_limit(): void
-    {
-        $cookie = $this->post(route('homepage.cart.add', $this->newInstance()), ['seats' => 1])
-            ->getCookie(CartManager::COOKIE, decrypt: true)
-            ->getValue();
-
-        $this->withCookie(CartManager::COOKIE, $cookie)->post(route('homepage.cart.add', $this->newInstance()), ['seats' => 1])
-            ->assertSessionMissing('booking_limit_warning');
-        $this->assertSame(1, Cart::query()->count());
-
-        $this->withCookie(CartManager::COOKIE, $cookie)->post(route('homepage.cart.add', $this->newInstance()), ['seats' => 1])
-            ->assertSessionHas('booking_limit_warning', fn (string $warning): bool => str_contains($warning, '3 Kurse im Warenkorb'));
-
-        $this->withCookie(CartManager::COOKIE, $cookie)->get('/warenkorb')
-            ->assertSee('3 Kurse im Warenkorb')
-            ->assertSee('höchstens 2 Kurse pro Stunde');
+        $this->followingRedirects()
+            ->post(route('homepage.booking.start', $instance), ['seats' => 1])
+            ->assertSee('höchstens 2 Kurse pro Stunde und 4 Kurse in 24 Stunden buchbar');
     }
 
     public function test_daily_limit_counts_the_last_24_hours(): void
@@ -245,18 +216,15 @@ class BookingLimitTest extends TestCase
         }
     }
 
-    public function test_too_many_courses_in_one_cart_asks_to_remove_courses(): void
+    public function test_running_bookings_do_not_count_towards_the_limit(): void
     {
-        $cart = Cart::factory()->create();
-        $kids = [];
+        $this->reservations->hold($this->newInstance(), 1);
+        $this->reservations->hold($this->newInstance(), 1);
 
-        foreach (range(1, 3) as $i) {
-            $registration = $this->reservations->hold($this->newInstance(), 1, $cart);
-            $kids[$registration->id] = [['name' => 'Paul', 'birthdate' => '2016-05-01']];
-        }
+        $this->bookGuest('Paul');
+        $this->bookGuest('Paul');
 
-        $this->expectExceptionMessage('Bitte entferne einen Kurs aus dem Warenkorb.');
-        $this->reservations->checkout($cart, ['email' => 'eltern@example.com', 'name' => 'Familie'], $kids);
+        $this->assertSame(2, Registration::query()->whereNotNull('checked_out_at')->count());
     }
 
     public function test_waiting_text_mentions_the_day_if_not_today(): void
@@ -312,10 +280,10 @@ class BookingLimitTest extends TestCase
             ->assertSee('<option value="3">3</option>', false)
             ->assertDontSee('<option value="4">4</option>', false);
 
-        $this->post(route('homepage.cart.add', $instance), ['seats' => 4])->assertSessionHasErrors('seats');
+        $this->post(route('homepage.booking.start', $instance), ['seats' => 4])->assertSessionHasErrors('seats');
 
         $this->expectException(ReservationException::class);
-        $this->reservations->hold($instance, 4, Cart::factory()->create());
+        $this->reservations->hold($instance, 4);
     }
 
     public function test_limits_can_be_changed_in_the_company_settings(): void

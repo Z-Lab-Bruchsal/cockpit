@@ -3,22 +3,19 @@
 namespace Tests\Feature\Schools;
 
 use App\Enums\RegistrationStatus;
-use App\Livewire\Schools\SchoolCheckout;
+use App\Livewire\Schools\SchoolBookingForm;
 use App\Mail\SchoolBookingUpdateMail;
 use App\Mail\SchoolRequestMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\Registration;
 use App\Models\User;
-use App\Services\Registrations\CartManager;
 use App\Services\Schools\SchoolBookingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -53,9 +50,8 @@ class SchoolRescheduleTest extends TestCase
 
     protected function confirmedBooking(CourseInstance $instance): Registration
     {
-        $cart = Cart::factory()->create();
-        $registration = $this->service->hold($instance, $cart, $this->teacher);
-        $this->service->checkout($cart, [$registration->id => ['class_name' => '4b', 'students' => 24, 'teacher_name' => 'Frau Berg', 'topic' => 'Sensoren']], $this->teacher);
+        [$registration] = $this->service->hold($instance, $this->teacher);
+        $this->service->checkout($registration, ['class_name' => '4b', 'grade' => 4, 'school_type' => 'primary', 'students' => 24, 'teacher_name' => 'Frau Berg', 'teacher_phone' => '0911 123456', 'topic' => 'Sensoren'], $this->teacher);
         $this->service->approve($registration->fresh());
 
         return $registration->fresh();
@@ -66,21 +62,21 @@ class SchoolRescheduleTest extends TestCase
      */
     protected function requestMove(Registration $registration, CourseInstance $newSlot): Registration
     {
-        $plainToken = Str::random(64);
-        Cart::query()->create(['token_hash' => Cart::hashToken($plainToken), 'contact_id' => $this->teacher->id]);
-
-        $this->actingAs($this->teacher, 'contact')
-            ->withCookie(CartManager::COOKIE, $plainToken)
+        $bookingUrl = $this->actingAs($this->teacher, 'contact')
             ->post(route('homepage.schools.reschedule.hold', [$registration, $newSlot]))
-            ->assertRedirect(route('homepage.schools.cart'));
+            ->assertRedirect()
+            ->headers->get('Location');
 
         $move = Registration::query()->where('replaces_registration_id', $registration->id)->firstOrFail();
+        $this->get($bookingUrl)->assertOk()->assertSee('Verschiebung');
 
         Livewire::actingAs($this->teacher, 'contact')
-            ->withCookies([CartManager::COOKIE => $plainToken])
-            ->test(SchoolCheckout::class)
-            ->assertSet("classes.{$move->id}.class_name", '4b')
-            ->assertSet("classes.{$move->id}.topic", 'Sensoren')
+            ->test(SchoolBookingForm::class, ['token' => basename($bookingUrl)])
+            ->assertSet('className', '4b')
+            ->assertSet('grade', '4')
+            ->assertSet('schoolType', 'primary')
+            ->assertSet('teacherPhone', '0911 123456')
+            ->assertSet('topic', 'Sensoren')
             ->set('acceptsPrivacy', true)
             ->call('checkout')
             ->assertHasNoErrors();

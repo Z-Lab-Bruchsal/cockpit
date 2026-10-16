@@ -5,7 +5,6 @@ namespace App\View\Components\Homepage;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Section;
-use App\Services\Registrations\CartManager;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,10 +23,6 @@ class Layout extends Component
     public bool $isLoggedIn;
 
     public string $accountUrl;
-
-    public int $cartCount;
-
-    public string $cartUrl;
 
     public bool $isSchoolContact;
 
@@ -51,12 +46,6 @@ class Layout extends Component
             $this->isLoggedIn => 'homepage.account',
             default => 'homepage.login',
         });
-
-        $heldRegistrations = app(CartManager::class)->current()?->heldRegistrations()->with('courseInstance.course')->get();
-        $this->cartCount = $heldRegistrations?->count() ?? 0;
-        $this->cartUrl = route($heldRegistrations?->contains(fn ($registration): bool => (bool) $registration->courseInstance?->course?->isForSchoolClasses())
-            ? 'homepage.schools.cart'
-            : 'homepage.cart');
     }
 
     public function pageTitle(): string

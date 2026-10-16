@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
-#[Fillable(['course_id', 'title', 'capacity', 'waitlist_enabled', 'waitlist_limit', 'status', 'registration_opens_at', 'registration_closes_at', 'location', 'notes', 'responsible_user_id', 'waitlist_offer_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days'])]
+#[Fillable(['course_id', 'title', 'capacity', 'waitlist_enabled', 'waitlist_limit', 'status', 'registration_opens_at', 'registration_closes_at', 'location', 'notes', 'responsible_user_id', 'waitlist_offer_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days', 'max_class_size'])]
 class CourseInstance extends Model
 {
     /** @use HasFactory<CourseInstanceFactory> */
@@ -120,6 +120,14 @@ class CourseInstance extends Model
         return $this->staff_reminder_days
             ?? $this->course?->staff_reminder_days
             ?? CompanySetting::current()->staff_reminder_days;
+    }
+
+    /**
+     * Largest class allowed to book: instance, else course; null means no limit.
+     */
+    public function maxClassSize(): ?int
+    {
+        return $this->max_class_size ?? $this->course?->max_class_size;
     }
 
     public function rescheduleDeadlineDays(): int
@@ -226,15 +234,13 @@ class CourseInstance extends Model
     }
 
     /**
-     * Seats only held temporarily (carts, pending confirmations, waitlist offers), excluding the given cart.
+     * Seats only held temporarily (running bookings, pending confirmations, waitlist offers).
      */
-    public function temporarilyHeldSeats(?Cart $exceptCart = null): int
+    public function temporarilyHeldSeats(): int
     {
         return $this->enrollments()
             ->whereIn('status', EnrollmentStatus::temporarilyOccupying())
             ->where('expires_at', '>', now())
-            ->when($exceptCart, fn (Builder $query) => $query->whereHas('registration', fn (Builder $registrations) => $registrations
-                ->whereNull('cart_id')->orWhere('cart_id', '!=', $exceptCart->id)))
             ->count();
     }
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Courses;
 
 use App\Enums\CourseInstanceStatus;
+use App\Enums\SchoolType;
 use App\Filament\Resources\CourseInstances\Pages\CreateCourseInstance;
 use App\Filament\Resources\CourseInstances\Pages\EditCourseInstance;
 use App\Filament\Resources\Courses\Pages\CreateCourse;
@@ -89,6 +90,51 @@ class CourseCockpitTest extends TestCase
         $course = Course::query()->where('name', 'Löten für Anfänger')->firstOrFail();
         $this->assertSame('loeten-fuer-anfaenger', $course->slug);
         $this->assertTrue($course->interests->contains($interest));
+    }
+
+    public function test_can_create_school_class_course_with_school_types_grades_and_class_size(): void
+    {
+        Livewire::test(CreateCourse::class)
+            ->fillForm([
+                'name' => 'Roboter bauen',
+                'audience' => 'school_class',
+                'duration' => 90,
+                'school_format' => 'at_zlab',
+                'school_types' => ['primary', 'special_needs'],
+                'min_grade' => 3,
+                'max_grade' => 4,
+                'max_class_size' => 28,
+                'responsible_user_id' => auth()->id(),
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $course = Course::query()->where('name', 'Roboter bauen')->firstOrFail();
+        $this->assertEqualsCanonicalizing([SchoolType::Primary, SchoolType::SpecialNeeds], $course->school_types->all());
+        $this->assertSame('Klasse 3–4 · Grundschule, Förderschule', $course->audienceLabel());
+        $this->assertSame(28, $course->max_class_size);
+    }
+
+    public function test_max_grade_must_not_be_below_min_grade(): void
+    {
+        Livewire::test(CreateCourse::class)
+            ->fillForm(['name' => 'Kurs', 'audience' => 'school_class', 'duration' => 60, 'school_format' => 'at_zlab', 'min_grade' => 5, 'max_grade' => 3])
+            ->call('create')
+            ->assertHasFormErrors(['max_grade']);
+    }
+
+    public function test_class_size_can_be_overridden_on_a_school_class_instance(): void
+    {
+        $course = Course::factory()->forSchoolClasses()->create(['max_class_size' => 28]);
+        $instance = CourseInstance::factory()->for($course)->withDates()->create();
+
+        Livewire::test(EditCourseInstance::class, ['record' => $instance->id])
+            ->fillForm(['max_class_size' => 20])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(20, $instance->fresh()->maxClassSize());
+        $this->assertSame(28, CourseInstance::factory()->for($course)->withDates()->create()->maxClassSize());
     }
 
     public function test_max_age_must_not_be_below_min_age(): void

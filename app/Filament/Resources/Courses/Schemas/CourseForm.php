@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Courses\Schemas;
 
 use App\Enums\CourseAudience;
 use App\Enums\SchoolCourseFormat;
+use App\Enums\SchoolType;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -158,6 +160,33 @@ class CourseForm
                                     ->required()
                                     ->helperText('Bei „Schule wählt“ entscheidet die Lehrkraft bei der Buchung.')
                                     ->columnSpanFull(),
+                                CheckboxList::make('school_types')
+                                    ->label('Schularten')
+                                    ->options(SchoolType::class)
+                                    ->columns(2)
+                                    ->helperText('Nichts angehakt = für alle Schularten.')
+                                    ->columnSpanFull(),
+                                TextInput::make('min_grade')
+                                    ->label('Ab Klassenstufe')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->maxValue(13),
+                                TextInput::make('max_grade')
+                                    ->label('Bis Klassenstufe')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->maxValue(13)
+                                    ->gte('min_grade'),
+                                TextInput::make('max_class_size')
+                                    ->label('Maximale Klassengröße')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->maxValue(200)
+                                    ->suffix('Kinder')
+                                    ->helperText('Leer = keine Begrenzung. Pro Durchführung überschreibbar.'),
                                 Section::make('Erinnerungen und Fristen')
                                     ->description('Leer = Einstellung aus den Firmeninfos. Pro Durchführung überschreibbar.')
                                     ->schema(SchoolClassSettingsFields::overrides(fn (string $field): string => 'Standard: '.SchoolClassSettingsFields::inheritedValue(null, $field)))

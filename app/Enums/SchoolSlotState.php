@@ -11,7 +11,7 @@ use Filament\Support\Contracts\HasLabel;
 enum SchoolSlotState: string implements HasLabel
 {
     case Free = 'free';
-    case InCart = 'in_cart';
+    case BeingBooked = 'being_booked';
     case Requested = 'requested';
     case Reserved = 'reserved';
     case Closed = 'closed';
@@ -36,14 +36,14 @@ enum SchoolSlotState: string implements HasLabel
             return self::Requested;
         }
 
-        return $instance->temporarilyHeldSeats() > 0 ? self::InCart : self::Reserved;
+        return $instance->temporarilyHeldSeats() > 0 ? self::BeingBooked : self::Reserved;
     }
 
     public function getLabel(): string
     {
         return match ($this) {
             self::Free => 'Frei',
-            self::InCart => 'Gerade im Warenkorb einer anderen Schule',
+            self::BeingBooked => 'Wird gerade von einer anderen Schule gebucht',
             self::Requested => 'Angefragt',
             self::Reserved => 'Vergeben',
             self::Closed => 'Nicht buchbar',
@@ -54,7 +54,7 @@ enum SchoolSlotState: string implements HasLabel
     {
         return match ($this) {
             self::Free => '#16a34a',
-            self::InCart => '#9333ea',
+            self::BeingBooked => '#9333ea',
             self::Requested => '#d97706',
             self::Reserved => '#dc2626',
             self::Closed => '#6b7280',

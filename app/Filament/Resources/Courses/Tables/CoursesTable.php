@@ -39,7 +39,7 @@ class CoursesTable
                     ->imageSize(40),
                 TextColumn::make('name')
                     ->label('Name')
-                    ->description(fn (Course $record): ?string => $record->ageRangeLabel())
+                    ->description(fn (Course $record): ?string => $record->audienceLabel())
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('audience')

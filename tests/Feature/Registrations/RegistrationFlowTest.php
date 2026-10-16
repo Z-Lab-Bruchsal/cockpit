@@ -4,20 +4,17 @@ namespace Tests\Feature\Registrations;
 
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
-use App\Livewire\Homepage\Checkout;
+use App\Livewire\Homepage\BookingForm;
 use App\Mail\RegistrationConfirmationMail;
 use App\Mail\RegistrationConfirmedMail;
-use App\Models\Cart;
 use App\Models\Contact;
 use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\Kid;
 use App\Models\Registration;
-use App\Services\Registrations\CartManager;
 use App\Services\Registrations\CourseReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -41,133 +38,248 @@ class RegistrationFlowTest extends TestCase
     }
 
     /**
-     * Creates a cart with a known plain token so requests and Livewire tests can use its cookie.
+     * Starts a booking directly via the service and returns the registration and the plain token of the booking page.
+     *
+     * @return array{0: Registration, 1: string}
      */
-    protected function cartWithToken(?Contact $contact = null): array
+    protected function startBooking(CourseInstance $instance, int $seats = 1, ?Contact $contact = null): array
     {
-        $plainToken = Str::random(64);
-        $cart = Cart::query()->create(['token_hash' => Cart::hashToken($plainToken), 'contact_id' => $contact?->id]);
-
-        return [$cart, $plainToken];
+        return app(CourseReservationService::class)->hold($instance, $seats, $contact);
     }
 
-    public function test_course_page_offers_registration(): void
+    public function test_course_page_offers_booking_with_the_time_limit(): void
     {
         $instance = $this->courseInstance();
 
         $this->get($instance->course->url())
             ->assertOk()
-            ->assertSee('Anmeldung beginnen')
-            ->assertSee(route('homepage.cart.add', $instance), false);
+            ->assertSee('Buchen')
+            ->assertSee('15 Minuten für dich reserviert')
+            ->assertSee(route('homepage.booking.start', $instance), false);
     }
 
-    public function test_starting_a_registration_holds_seats_and_sets_cart_cookie(): void
+    public function test_booking_holds_seats_and_opens_the_booking_page_with_countdown(): void
     {
         $instance = $this->courseInstance();
 
-        $response = $this->post(route('homepage.cart.add', $instance), ['seats' => 2]);
+        $response = $this->post(route('homepage.booking.start', $instance), ['seats' => 2]);
 
-        $response->assertRedirect(route('homepage.cart'))->assertCookie(CartManager::COOKIE);
+        $registration = Registration::query()->sole();
+        $this->assertSame(RegistrationStatus::Held, $registration->status);
         $this->assertSame(3, $instance->freeSeats());
-        $this->assertSame(RegistrationStatus::Held, Registration::query()->sole()->status);
+        $this->assertNotNull($registration->hold_token_hash);
+
+        $response->assertRedirect();
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee($instance->displayTitle())
+            ->assertSee('role="timer"', false)
+            ->assertSee('Minuten, um die Buchung abzuschicken');
+    }
+
+    public function test_clicking_book_twice_continues_the_running_booking(): void
+    {
+        $instance = $this->courseInstance();
+
+        $first = $this->post(route('homepage.booking.start', $instance), ['seats' => 1])->headers->get('Location');
+        $second = $this->post(route('homepage.booking.start', $instance), ['seats' => 1])->headers->get('Location');
+
+        $this->assertSame($first, $second);
+        $this->assertSame(1, Registration::query()->count());
     }
 
     public function test_full_course_shows_error_on_course_page(): void
     {
         $instance = CourseInstance::factory()->withDates()->create(['capacity' => 1, 'waitlist_enabled' => false]);
-        app(CourseReservationService::class)->hold($instance, 1, Cart::factory()->create());
+        $this->startBooking($instance);
 
-        $this->post(route('homepage.cart.add', $instance), ['seats' => 1])
+        $this->post(route('homepage.booking.start', $instance), ['seats' => 1])
             ->assertRedirect($instance->course->url().'#durchfuehrung-'.$instance->id)
             ->assertSessionHasErrorsIn('instance'.$instance->id, 'seats');
     }
 
-    public function test_cart_page_and_course_page_show_held_course(): void
+    public function test_school_accounts_cannot_book_courses_for_kids(): void
     {
         $instance = $this->courseInstance();
-        [$cart, $token] = $this->cartWithToken();
-        app(CourseReservationService::class)->hold($instance, 1, $cart);
+        $this->actingAs(Contact::factory()->school()->create(), 'contact');
 
-        $this->withCookie(CartManager::COOKIE, $token)
-            ->get('/warenkorb')
-            ->assertOk()
-            ->assertSee($instance->displayTitle())
-            ->assertSee('für dich reserviert');
+        $this->get($instance->course->url())
+            ->assertSee('Mit einem Schulkonto können keine Kurse für einzelne Kinder gebucht werden')
+            ->assertDontSee(route('homepage.booking.start', $instance), false);
 
-        $this->withCookie(CartManager::COOKIE, $token)
-            ->get($instance->course->url())
-            ->assertSee('In deinem Warenkorb');
+        $this->post(route('homepage.booking.start', $instance), ['seats' => 1])
+            ->assertRedirect($instance->course->url().'#durchfuehrung-'.$instance->id)
+            ->assertSessionHasErrorsIn('instance'.$instance->id, 'seats');
+
+        $this->assertSame(0, Registration::query()->count());
     }
 
-    public function test_guest_checkout_via_cart_page(): void
+    public function test_school_class_courses_cannot_be_booked_as_parent(): void
+    {
+        $course = Course::factory()->forSchoolClasses()->create();
+        $instance = CourseInstance::factory()->for($course)->withDates()->create();
+
+        $this->get($course->url())
+            ->assertSee('Dieser Kurs ist für Schulklassen')
+            ->assertDontSee(route('homepage.booking.start', $instance), false);
+
+        $this->post(route('homepage.booking.start', $instance), ['seats' => 1])->assertNotFound();
+
+        [, $token] = app(CourseReservationService::class)->hold($instance, 1);
+        $this->get(route('homepage.booking.show', $token))->assertNotFound();
+    }
+
+    public function test_guest_checkout_on_the_booking_page(): void
     {
         $instance = $this->courseInstance();
-        [$cart, $token] = $this->cartWithToken();
-        $registration = app(CourseReservationService::class)->hold($instance, 2, $cart);
+        [$registration, $token] = $this->startBooking($instance, 2);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
+        Livewire::test(BookingForm::class, ['token' => $token])
             ->set('name', 'Maria Muster')
             ->set('email', 'maria@example.com')
-            ->set("kids.{$registration->id}.0.name", 'Paul')
-            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(9)->toDateString())
-            ->set("kids.{$registration->id}.1.name", 'Lena')
-            ->set("kids.{$registration->id}.1.birthdate", now()->subYears(11)->toDateString())
+            ->set('phone', '0911 / 123 45-6')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(9)->toDateString())
+            ->set('kids.1.name', 'Lena')
+            ->set('kids.1.birthdate', now()->subYears(11)->toDateString())
             ->set('acceptsPrivacy', true)
             ->call('checkout')
             ->assertHasNoErrors()
-            ->assertRedirect(route('homepage.cart.done'));
+            ->assertRedirect(route('homepage.booking.done'));
 
         Mail::assertSent(RegistrationConfirmationMail::class, fn ($mail): bool => $mail->hasTo('maria@example.com'));
-        $this->assertSame(RegistrationStatus::PendingConfirmation, $registration->fresh()->status);
+        $registration->refresh();
+        $this->assertSame(RegistrationStatus::PendingConfirmation, $registration->status);
+        $this->assertSame('0911 / 123 45-6', $registration->phone);
+        $this->assertNull($registration->hold_token_hash);
+    }
+
+    public function test_phone_number_is_required_and_checked(): void
+    {
+        [, $token] = $this->startBooking($this->courseInstance());
+
+        $form = Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('name', 'Maria')
+            ->set('email', 'maria@example.com')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(10)->toDateString())
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasErrors(['phone' => 'required'])
+            ->assertSee('Bitte gib eine Telefonnummer für Rückfragen an.');
+
+        $form->set('phone', 'ruft mich an')
+            ->call('checkout')
+            ->assertHasErrors('phone');
+
+        $form->set('phone', '12345')
+            ->call('checkout')
+            ->assertHasErrors('phone');
+
+        $form->set('phone', '+49 911 123456')
+            ->call('checkout')
+            ->assertHasNoErrors();
+
+        Mail::assertSent(RegistrationConfirmationMail::class);
+    }
+
+    public function test_sending_after_the_time_ran_out_fails_and_seats_are_free(): void
+    {
+        $instance = $this->courseInstance(capacity: 1);
+        [$registration, $token] = $this->startBooking($instance);
+
+        $form = Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('name', 'Maria')
+            ->set('email', 'maria@example.com')
+            ->set('phone', '0911 123456')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(10)->toDateString())
+            ->set('acceptsPrivacy', true);
+
+        $this->travel(16)->minutes();
+
+        $form->call('checkout')->assertRedirect(route('homepage.booking.show', $token));
+
+        $this->assertSame(1, $instance->freeSeats());
+        $this->assertSame(RegistrationStatus::Held, $registration->fresh()->status);
+        Mail::assertNothingSent();
+
+        $this->get(route('homepage.booking.show', $token))
+            ->assertOk()
+            ->assertSee('Die Zeit ist abgelaufen')
+            ->assertSee($instance->course->url().'#durchfuehrung-'.$instance->id, false);
+    }
+
+    public function test_unknown_booking_token_is_not_found(): void
+    {
+        $this->get(route('homepage.booking.show', str_repeat('a', 64)))->assertNotFound();
     }
 
     public function test_checkout_validates_children_and_consent(): void
     {
         $instance = $this->courseInstance(minAge: 8, maxAge: 12);
-        [$cart, $token] = $this->cartWithToken();
-        $registration = app(CourseReservationService::class)->hold($instance, 2, $cart);
+        [, $token] = $this->startBooking($instance, 2);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
+        Livewire::test(BookingForm::class, ['token' => $token])
             ->set('name', 'Maria')
             ->set('email', 'maria@example.com')
-            ->set("kids.{$registration->id}.0.name", 'Paul')
-            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(5)->toDateString())
-            ->set("kids.{$registration->id}.1.name", '')
+            ->set('phone', '0911 123456')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(5)->toDateString())
+            ->set('kids.1.name', '')
             ->call('checkout')
-            ->assertHasErrors(['acceptsPrivacy', "kids.{$registration->id}.1.name"]);
+            ->assertHasErrors(['acceptsPrivacy', 'kids.1.name']);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
+        Livewire::test(BookingForm::class, ['token' => $token])
             ->set('name', 'Maria')
             ->set('email', 'maria@example.com')
-            ->set("kids.{$registration->id}.0.name", 'Paul')
-            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(5)->toDateString())
-            ->set("kids.{$registration->id}.1.name", 'paul ')
-            ->set("kids.{$registration->id}.1.birthdate", now()->subYears(9)->toDateString())
+            ->set('phone', '0911 123456')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(5)->toDateString())
+            ->set('kids.1.name', 'paul ')
+            ->set('kids.1.birthdate', now()->subYears(9)->toDateString())
             ->set('acceptsPrivacy', true)
             ->call('checkout')
-            ->assertHasErrors(["kids.{$registration->id}.0.birthdate", "kids.{$registration->id}.1.name"]);
+            ->assertHasErrors(['kids.0.birthdate', 'kids.1.name']);
 
         Mail::assertNothingSent();
     }
 
+    public function test_child_already_booked_for_the_course_cannot_be_booked_again(): void
+    {
+        $instance = $this->courseInstance();
+        $birthdate = now()->subYears(10)->toDateString();
+        [$first] = $this->startBooking($instance);
+        app(CourseReservationService::class)->checkout($first, ['email' => 'maria@example.com', 'name' => 'Maria', 'phone' => '0911 123456'], [['name' => 'Paul', 'birthdate' => $birthdate]]);
+
+        [, $token] = $this->startBooking($instance);
+
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('name', 'Maria')
+            ->set('email', 'maria@example.com')
+            ->set('phone', '0911 123456')
+            ->set('kids.0.name', 'paul')
+            ->set('kids.0.birthdate', $birthdate)
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasErrors('kids.0.name')
+            ->assertSee('Dieses Kind ist für diesen Kurs schon angemeldet.');
+    }
+
     public function test_logged_in_parent_picks_own_kids_and_is_confirmed_directly(): void
     {
-        $contact = Contact::factory()->create();
+        $contact = Contact::factory()->create(['phone' => '0911 123456']);
         $kid = Kid::factory()->aged(10)->create();
         $contact->kids()->attach($kid);
         $this->actingAs($contact, 'contact');
 
         $instance = $this->courseInstance();
-        [$cart, $token] = $this->cartWithToken($contact);
-        $registration = app(CourseReservationService::class)->hold($instance, 1, $cart);
+        [$registration, $token] = $this->startBooking($instance, 1, $contact);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
+        Livewire::test(BookingForm::class, ['token' => $token])
             ->assertSet('email', $contact->email)
-            ->set("kids.{$registration->id}.0.kid_id", (string) $kid->id)
+            ->assertSet('phone', '0911 123456')
+            ->set('kids.0.kid_id', (string) $kid->id)
             ->set('acceptsPrivacy', true)
             ->call('checkout')
             ->assertHasNoErrors();
@@ -184,38 +296,37 @@ class RegistrationFlowTest extends TestCase
         $this->actingAs($contact, 'contact');
         $foreignKid = Kid::factory()->create();
 
-        [$cart, $token] = $this->cartWithToken($contact);
-        $registration = app(CourseReservationService::class)->hold($this->courseInstance(), 1, $cart);
+        [, $token] = $this->startBooking($this->courseInstance(), 1, $contact);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
-            ->set("kids.{$registration->id}.0.kid_id", (string) $foreignKid->id)
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('kids.0.kid_id', (string) $foreignKid->id)
             ->set('acceptsPrivacy', true)
             ->call('checkout')
-            ->assertHasErrors("kids.{$registration->id}.0.kid_id");
+            ->assertHasErrors('kids.0.kid_id');
     }
 
-    public function test_removing_a_course_from_the_cart_frees_seats(): void
+    public function test_cancelling_a_booking_frees_the_seats(): void
     {
         $instance = $this->courseInstance(capacity: 1);
-        [$cart, $token] = $this->cartWithToken();
-        $registration = app(CourseReservationService::class)->hold($instance, 1, $cart);
+        [$registration, $token] = $this->startBooking($instance);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
-            ->call('remove', $registration->id)
-            ->assertSee('Dein Warenkorb ist leer');
+        $this->get(route('homepage.booking.show', $token))->assertSee(route('homepage.booking.cancel', $token), false);
+
+        $this->post(route('homepage.booking.cancel', $token))
+            ->assertRedirect($instance->course->url().'#durchfuehrung-'.$instance->id)
+            ->assertSessionHas('status');
 
         $this->assertSame(1, $instance->freeSeats());
+        $this->assertSame(RegistrationStatus::Cancelled, $registration->fresh()->status);
+        $this->post(route('homepage.booking.cancel', $token))->assertNotFound();
     }
 
     public function test_confirmation_link_needs_a_click_on_the_button(): void
     {
         $instance = $this->courseInstance();
-        $cart = Cart::factory()->create();
-        $registration = app(CourseReservationService::class)->hold($instance, 1, $cart);
-        app(CourseReservationService::class)->checkout($cart, ['email' => 'maria@example.com', 'name' => 'Maria'], [
-            $registration->id => [['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()]],
+        [$registration] = $this->startBooking($instance);
+        app(CourseReservationService::class)->checkout($registration, ['email' => 'maria@example.com', 'name' => 'Maria', 'phone' => '0911 123456'], [
+            ['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()],
         ]);
         $token = basename(parse_url(Mail::sent(RegistrationConfirmationMail::class)->last()->confirmationUrl, PHP_URL_PATH));
 
@@ -232,13 +343,10 @@ class RegistrationFlowTest extends TestCase
     public function test_parents_can_cancel_via_manage_link(): void
     {
         $instance = $this->courseInstance();
-        $cart = Cart::factory()->create();
-        $registration = app(CourseReservationService::class)->hold($instance, 2, $cart);
-        app(CourseReservationService::class)->checkout($cart, ['email' => 'maria@example.com', 'name' => 'Maria'], [
-            $registration->id => [
-                ['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()],
-                ['name' => 'Lena', 'birthdate' => now()->subYears(9)->toDateString()],
-            ],
+        [$registration] = $this->startBooking($instance, 2);
+        app(CourseReservationService::class)->checkout($registration, ['email' => 'maria@example.com', 'name' => 'Maria', 'phone' => '0911 123456'], [
+            ['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()],
+            ['name' => 'Lena', 'birthdate' => now()->subYears(9)->toDateString()],
         ]);
         app(CourseReservationService::class)->confirm(basename(parse_url(Mail::sent(RegistrationConfirmationMail::class)->last()->confirmationUrl, PHP_URL_PATH)));
 
@@ -279,7 +387,7 @@ class RegistrationFlowTest extends TestCase
     public function test_expire_command_releases_overdue_holds(): void
     {
         $instance = $this->courseInstance(capacity: 1);
-        app(CourseReservationService::class)->hold($instance, 1, Cart::factory()->create());
+        $this->startBooking($instance);
         $this->travel(20)->minutes();
 
         $this->artisan('app:expire-reservations')->expectsOutputToContain('1 Plätze verfallen')->assertSuccessful();
@@ -287,10 +395,10 @@ class RegistrationFlowTest extends TestCase
         $this->assertSame(RegistrationStatus::Expired, Registration::query()->sole()->status);
     }
 
-    public function test_calendar_marks_courses_with_all_seats_in_carts(): void
+    public function test_calendar_marks_courses_with_all_seats_in_running_bookings(): void
     {
         $instance = CourseInstance::factory()->withDates(1, now()->addDays(2))->create(['capacity' => 1, 'waitlist_enabled' => false]);
-        app(CourseReservationService::class)->hold($instance, 1, Cart::factory()->create());
+        $this->startBooking($instance);
 
         $this->getJson('/kalender/events?'.http_build_query(['start' => now()->toIso8601String(), 'end' => now()->addMonth()->toIso8601String()]))
             ->assertJsonPath('0.extendedProps.availability', 'Gerade alle Plätze in Reservierung');
@@ -304,26 +412,25 @@ class RegistrationFlowTest extends TestCase
         $this->actingAs($contact, 'contact');
 
         $instance = $this->courseInstance(minAge: 8, maxAge: 12);
-        [$cart, $token] = $this->cartWithToken($contact);
-        $registration = app(CourseReservationService::class)->hold($instance, 1, $cart);
+        [$registration, $token] = $this->startBooking($instance, 1, $contact);
 
-        $checkout = Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
-            ->set("kids.{$registration->id}.0.kid_id", (string) $kid->id)
+        $checkout = Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('phone', '0911 123456')
+            ->set('kids.0.kid_id', (string) $kid->id)
             ->assertSee('Geburtsdatum von Paul')
             ->set('acceptsPrivacy', true)
             ->call('checkout')
-            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+            ->assertHasErrors('kids.0.birthdate');
 
         $checkout
-            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(5)->toDateString())
+            ->set('kids.0.birthdate', now()->subYears(5)->toDateString())
             ->call('checkout')
-            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+            ->assertHasErrors('kids.0.birthdate');
 
         $this->assertNull($kid->fresh()->birthdate, 'Nothing is saved if the age does not fit.');
 
         $checkout
-            ->set("kids.{$registration->id}.0.birthdate", now()->subYears(10)->toDateString())
+            ->set('kids.0.birthdate', now()->subYears(10)->toDateString())
             ->call('checkout')
             ->assertHasNoErrors();
 
@@ -340,14 +447,12 @@ class RegistrationFlowTest extends TestCase
         $contact->kids()->attach($kid);
         $this->actingAs($contact, 'contact');
 
-        [$cart, $token] = $this->cartWithToken($contact);
-        $registration = app(CourseReservationService::class)->hold($this->courseInstance(), 1, $cart);
+        [, $token] = $this->startBooking($this->courseInstance(), 1, $contact);
 
-        Livewire::withCookies([CartManager::COOKIE => $token])
-            ->test(Checkout::class)
-            ->set("kids.{$registration->id}.0.kid_id", (string) $kid->id)
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->set('kids.0.kid_id', (string) $kid->id)
             ->set('acceptsPrivacy', true)
             ->call('checkout')
-            ->assertHasErrors("kids.{$registration->id}.0.birthdate");
+            ->assertHasErrors('kids.0.birthdate');
     }
 }

@@ -10,7 +10,6 @@ use App\Filament\Resources\Registrations\Pages\ViewRegistration;
 use App\Mail\SchoolBookingUpdateMail;
 use App\Mail\SchoolVisitReminderMail;
 use App\Mail\SchoolVisitStaffReminderMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Course;
@@ -54,11 +53,10 @@ class SchoolReminderTest extends TestCase
     protected function confirmedBooking(int $daysAhead, array $instanceAttributes = [], ?string $venue = null): Registration
     {
         $instance = CourseInstance::factory()->for($this->course)->withDates(1, now()->addDays($daysAhead)->setTime(9, 0))->create($instanceAttributes);
-        $cart = Cart::factory()->create();
         $service = app(SchoolBookingService::class);
 
-        $registration = $service->hold($instance, $cart, $this->teacher);
-        $service->checkout($cart, [$registration->id => ['class_name' => '4b', 'students' => 24, 'teacher_name' => 'Frau Berg', 'venue' => $venue]], $this->teacher);
+        [$registration] = $service->hold($instance, $this->teacher);
+        $service->checkout($registration, ['class_name' => '4b', 'grade' => 4, 'school_type' => 'primary', 'students' => 24, 'teacher_name' => 'Frau Berg', 'teacher_phone' => '0911 123456', 'venue' => $venue], $this->teacher);
         $service->approve($registration->fresh());
 
         return $registration->fresh();

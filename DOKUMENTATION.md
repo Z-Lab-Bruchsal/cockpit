@@ -61,22 +61,26 @@ Kursliste und Kalender lassen sich zusätzlich als Blöcke in Bereiche setzen. I
 
 Eine Anmeldung ist erst verbindlich, wenn die E-Mail-Adresse bestätigt ist. Ein Konto braucht man dafür nicht.
 
-1. **Anmeldung beginnen:** Auf der Kursseite die Anzahl der Kinder wählen. Die Plätze werden sofort für alle anderen gesperrt (Countdown, Standard 15 Minuten). Weitere Kurse können in den Warenkorb.
-2. **Warenkorb `/warenkorb`:** Pro Platz ein Kind eintragen, mit Name und Geburtsdatum. Angemeldete Eltern wählen ihr gespeichertes Kind aus. Fehlt bei einem gespeicherten Kind das genaue Geburtsdatum, wird es hier abgefragt. Dazu kommen Kontaktdaten und die Datenschutz-Zustimmung, optional ein Abo für Kursinfos.
-3. **Prüfungen beim Absenden:** Alter am ersten Termin, kein Kind doppelt im Kurs, Buchungsgrenzen. Bei einem Verstoß erscheint eine Meldung am betroffenen Kind, bei Buchungsgrenzen mit Wartezeit.
-4. **Bestätigung:** Gäste bekommen eine Mail mit einem Link für alle Kurse des Warenkorbs (Standard 48 Stunden gültig). Erst danach werden Kontakt und Kinder angelegt. Angemeldete Eltern mit bestätigter Adresse sind sofort verbindlich angemeldet.
-5. **Bestätigungsmail** mit allen Terminen und einem Link zum Verwalten bzw. Stornieren, für die ganze Anmeldung oder einzelne Kinder.
+Jede Buchung gilt für genau einen Kurstermin (eine Durchführung). Einen Warenkorb gibt es nicht.
+
+1. **Buchen:** Auf der Kursseite die Anzahl der Kinder wählen und auf „Buchen“ klicken. Die Plätze werden sofort für alle anderen gesperrt und die Buchungsseite öffnet sich mit einem sichtbaren **Countdown** (Standard 15 Minuten). Ein zweiter Klick auf denselben Termin führt zur laufenden Buchung zurück.
+2. **Buchungsseite:** Pro Platz ein Kind eintragen, mit Name und Geburtsdatum. Angemeldete Eltern wählen ihr gespeichertes Kind aus. Fehlt bei einem gespeicherten Kind das genaue Geburtsdatum, wird es hier abgefragt. Dazu kommen Kontaktdaten mit **Pflicht-Telefonnummer für Rückfragen** und die Datenschutz-Zustimmung, optional ein Abo für Kursinfos. „Abbrechen“ gibt die Plätze sofort wieder frei.
+3. **Zeit abgelaufen:** Wird die Seite nicht rechtzeitig abgeschickt, sperrt ein Hinweis das Formular und die Plätze werden wieder frei. Die Buchung muss dann neu gestartet werden.
+4. **Prüfungen beim Absenden:** Alter am ersten Termin, kein Kind doppelt im Kurs (auch nicht aus einer früheren Buchung), Buchungsgrenzen. Bei einem Verstoß erscheint eine Meldung am betroffenen Kind, bei Buchungsgrenzen mit Wartezeit.
+5. **Bestätigung:** Gäste bekommen eine Mail mit einem Bestätigungslink (Standard 48 Stunden gültig). Erst danach werden Kontakt und Kinder angelegt. Angemeldete Eltern mit bestätigter Adresse sind sofort verbindlich angemeldet. Der Countdown gilt nur bis zum Absenden.
+6. **Bestätigungsmail** mit allen Terminen und einem Link zum Verwalten bzw. Stornieren, für die ganze Anmeldung oder einzelne Kinder.
 
 ```mermaid
 flowchart TD
-    A[Anmeldung beginnen] --> B{Freie Plätze?}
+    A[Buchen] --> B{Freie Plätze?}
     B -- genug für alle Kinder --> C[Plätze gehalten]
     B -- weniger als Geschwister --> D[Plätze gehalten, Freigabe nötig]
     B -- keiner frei --> E[Warteliste]
-    C --> F[Warenkorb absenden]
+    C --> F{Innerhalb der Zeit abgeschickt?}
     D --> F
     E --> F
-    F --> G{Konto mit bestätigter Adresse?}
+    F -- nein --> X[Plätze wieder frei, neu starten]
+    F -- ja --> G{Konto mit bestätigter Adresse?}
     G -- nein --> H[Mail mit Bestätigungslink]
     H -- Link angeklickt --> I{Status}
     G -- ja --> I
@@ -94,7 +98,7 @@ Alle Werte stehen unter Firmeninfos → Kursbuchung. Die Nachrückfrist lässt s
 
 | Regel | Standard | Wirkung |
 | --- | --- | --- |
-| Reservierung im Warenkorb | 15 min | Danach werden gehaltene Plätze wieder frei |
+| Zeit zum Buchen | 15 min | Vom Klick auf „Buchen“ bis zum Absenden; danach werden die Plätze wieder frei |
 | Frist für E-Mail-Bestätigung | 48 h | Unbestätigte Anmeldungen verfallen |
 | Frist für Nachrücker | 48 h | So lange kann eine Familie einen frei gewordenen Platz annehmen |
 | Max. Kurse pro Kind und Stunde | 2 | Letzte 60 Minuten, 0 = aus |
@@ -177,7 +181,11 @@ Kurse mit der Zielgruppe **Schulklassen** werden von Schulen gebucht. Jede Durch
 - Das Schulkonto sieht alle Buchungen der Schule, eine Lehrkraft nur ihre eigenen. Mails an die Lehrkraft gehen in Kopie an die Funktionsadresse.
 - Anmelden geht wie bei Eltern per Link unter `/anmelden`; Schulen und Lehrkräfte landen danach im Schulkonto.
 
-**Buchen:** Unter `/schulen/kalender` und `/schulen/termine` stehen alle Termine mit Status frei / im Warenkorb einer anderen Schule / angefragt / vergeben (ohne Namen anderer Schulen). Freie Termine kommen in den Warenkorb (gleiche Reservierungszeit wie bei Eltern). Beim Absenden werden Klasse, Schülerzahl, Lehrkraft, Telefon, Thema/Anmerkung und ggf. der Ort abgefragt. Termine für Schulklassen und Kurse für Kinder können nicht im selben Warenkorb liegen.
+**Für wen (Kurs → Reiter „Schulklassen“):** Statt eines Alters legt der Kurs fest, für welche **Schularten** (leer = alle) und **Klassenstufen** (von–bis) er gedacht ist, und optional eine **maximale Klassengröße**. Die Klassengröße lässt sich pro Durchführung überschreiben. Auf der Homepage steht dann z. B. „Klasse 3–4 · Grundschule · max. 28 Kinder“.
+
+**Wer darf was buchen:** Kurse für Schulklassen kann nur ein Schulkonto (oder eine Lehrkraft der Schule) buchen. Umgekehrt kann ein Schulkonto keine Kurse für einzelne Kinder buchen; auf der Kursseite steht dann ein Hinweis statt des Buchen-Knopfs.
+
+**Buchen:** Unter `/schulen/kalender` und `/schulen/termine` stehen alle Termine mit Status frei / wird gerade von einer anderen Schule gebucht / angefragt / vergeben (ohne Namen anderer Schulen). Ein Klick auf „Buchen“ reserviert den Termin mit demselben Countdown wie bei Eltern. Abgefragt werden Schulart, Klassenstufe, Klasse, **Anzahl der Kinder** (höchstens die maximale Klassengröße), Lehrkraft, **Telefon für Rückfragen (Pflicht)**, Thema/Anmerkung und ggf. der Ort. Schulart und Klassenstufe werden gegen den Kurs geprüft. Die Schulart der letzten Buchung ist vorausgewählt.
 
 **Freigabe:** Jede Buchung ist zunächst eine **Anfrage**, die den Termin blockiert. Die Kursverantwortlichen bekommen eine Mail mit „Bestätigen“/„Ablehnen“ (optional mit Nachricht an die Schule) oder entscheiden im Cockpit. Bei Ablehnung wird der Termin wieder frei.
 

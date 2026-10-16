@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers\Homepage;
 
-use App\Enums\CourseAudience;
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
 use App\Exceptions\ReservationException;
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
+use App\Models\Contact;
 use App\Models\CourseInstance;
 use App\Models\Registration;
-use App\Services\Registrations\CartManager;
 use App\Services\Registrations\CourseReservationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,69 +17,79 @@ use Illuminate\Http\Request;
 
 class RegistrationController extends Controller
 {
-    public function __construct(
-        protected CourseReservationService $reservations,
-        protected CartManager $carts,
-    ) {}
+    /**
+     * Session key holding the token of the running booking per course instance.
+     */
+    public const SESSION_KEY = 'booking_holds';
 
-    public function addToCart(Request $request, CourseInstance $instance): RedirectResponse
+    public function __construct(protected CourseReservationService $reservations) {}
+
+    /**
+     * "Buchen" on a course page: holds the seats and opens the booking page with the countdown.
+     * A second click on the same course continues the running booking instead of holding more seats.
+     */
+    public function start(Request $request, CourseInstance $instance): RedirectResponse
     {
+        abort_unless($instance->course?->is_published && ! $instance->course->isForSchoolClasses(), 404);
+
+        $backToCourse = redirect()->to($instance->course->url().'#durchfuehrung-'.$instance->id);
+        $contact = $this->contact($request);
+
+        if ($contact?->canBookForSchool()) {
+            return $backToCourse->withErrors(['seats' => 'Mit einem Schulkonto können keine Kurse für einzelne Kinder gebucht werden. Bitte buchen Sie über den Bereich für Schulen.'], 'instance'.$instance->id);
+        }
+
         $validated = $request->validate([
             'seats' => ['required', 'integer', 'min:1', 'max:'.CompanySetting::current()->max_seats_per_registration],
         ]);
 
-        abort_unless($instance->course?->is_published && ! $instance->course->isForSchoolClasses(), 404);
+        $runningToken = $request->session()->get(self::SESSION_KEY.'.'.$instance->id);
+
+        if (is_string($runningToken) && $this->reservations->findHeld($runningToken) !== null) {
+            return redirect()->route('homepage.booking.show', $runningToken);
+        }
 
         try {
-            $registration = $this->reservations->hold($instance, (int) $validated['seats'], $this->carts->currentOrCreate());
+            [, $plainToken] = $this->reservations->hold($instance, (int) $validated['seats'], $contact);
         } catch (ReservationException $exception) {
-            return redirect()
-                ->to($instance->course->url().'#durchfuehrung-'.$instance->id)
-                ->withErrors(['seats' => $exception->getMessage()], 'instance'.$instance->id);
+            return $backToCourse->withErrors(['seats' => $exception->getMessage()], 'instance'.$instance->id);
         }
 
-        $settings = CompanySetting::current();
-        $coursesInCart = $registration->cart->heldRegistrations()->count();
+        $request->session()->put(self::SESSION_KEY.'.'.$instance->id, $plainToken);
 
-        $status = match (true) {
-            $registration->isOnWaitlist() => 'Der Kurs ist ausgebucht – du kommst auf die Warteliste.',
-            $registration->needs_approval => 'Die Plätze sind für dich reserviert. Weil nicht mehr genug Plätze für alle Geschwister frei sind, prüfen wir die Anmeldung nach dem Absenden.',
-            default => 'Die Plätze sind für dich reserviert.',
-        };
-
-        $redirect = redirect()->route('homepage.cart')->with('status', $status);
-
-        if ($settings->strictestBookingLimit() !== null && $coursesInCart > $settings->strictestBookingLimit()) {
-            $redirect->with('booking_limit_warning', "Du hast jetzt {$coursesInCart} Kurse im Warenkorb. Pro Kind sind aber {$settings->bookingLimitText()} möglich – bei Geschwistern ist das kein Problem, sonst entferne bitte einen Kurs.");
-        }
-
-        return $redirect;
+        return redirect()->route('homepage.booking.show', $plainToken);
     }
 
-    public function removeFromCart(Registration $registration): RedirectResponse
+    /**
+     * Booking page with countdown. Once the time has run out, it explains that the seats were released.
+     */
+    public function showBooking(string $token): View
     {
-        $cart = $this->carts->current();
+        if (($registration = $this->reservations->findHeld($token)) !== null) {
+            abort_if($registration->courseInstance->course->isForSchoolClasses(), 404);
 
-        abort_unless($cart !== null && $registration->cart_id === $cart->id, 404);
-
-        $this->reservations->removeFromCart($registration);
-
-        return redirect()->route('homepage.cart');
-    }
-
-    public function cart(): View|RedirectResponse
-    {
-        // School slots are checked out with the school form.
-        if ($this->carts->current()?->heldRegistrations()->whereHas('courseInstance.course', fn ($courses) => $courses->where('audience', CourseAudience::SchoolClass))->exists()) {
-            return redirect()->route('homepage.schools.cart');
+            return view('homepage.booking.show', ['registration' => $registration, 'token' => $token]);
         }
 
-        return view('homepage.registrations.cart');
+        return $this->expired($token);
+    }
+
+    public function cancelHold(Request $request, string $token): RedirectResponse
+    {
+        $registration = $this->reservations->findHeld($token);
+
+        abort_if($registration === null || $registration->courseInstance->course->isForSchoolClasses(), 404);
+
+        $this->reservations->releaseHold($registration);
+        $request->session()->forget(self::SESSION_KEY.'.'.$registration->course_instance_id);
+
+        return redirect()->to($registration->courseInstance->course->url().'#durchfuehrung-'.$registration->course_instance_id)
+            ->with('status', 'Die Buchung wurde abgebrochen, die Plätze sind wieder frei.');
     }
 
     public function done(): View
     {
-        return view('homepage.registrations.done', [
+        return view('homepage.booking.done', [
             'confirmedDirectly' => (bool) session('registration_confirmed_directly'),
             'email' => session('registration_email'),
         ]);
@@ -148,5 +157,33 @@ class RegistrationController extends Controller
         $this->reservations->cancel($registration, $enrollment);
 
         return redirect()->route('homepage.account')->with('status', 'Die Abmeldung ist erledigt.');
+    }
+
+    /**
+     * Shown for a booking page whose time has run out (or that was cancelled) – with the way back to the course.
+     */
+    protected function expired(string $token): View
+    {
+        $registration = Registration::query()
+            ->where('hold_token_hash', Registration::hashToken($token))
+            ->with('courseInstance.course')
+            ->first();
+
+        abort_if($registration === null, 404);
+
+        $course = $registration->courseInstance->course;
+
+        return view('homepage.booking.expired', [
+            'isSchool' => $course->isForSchoolClasses(),
+            'backUrl' => $course->isForSchoolClasses()
+                ? route('homepage.schools.slots').'#termin-'.$registration->course_instance_id
+                : $course->url().'#durchfuehrung-'.$registration->course_instance_id,
+        ]);
+    }
+
+    protected function contact(Request $request): ?Contact
+    {
+        /** @var Contact|null */
+        return $request->user('contact');
     }
 }

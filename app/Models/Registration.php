@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationSource;
 use App\Enums\RegistrationStatus;
+use App\Enums\SchoolType;
 use App\Enums\SchoolVenue;
 use Database\Factories\RegistrationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,8 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Registration of one or more children for one course instance, made in one checkout.
  * For school class courses it is the booking of one class (one enrollment), see school_class_data.
  */
-#[Fillable(['cart_id', 'contact_id', 'course_instance_id', 'status', 'source', 'email', 'contact_name', 'phone', 'wants_interest_mails', 'message', 'school_class_data', 'confirmation_token_hash', 'manage_token_hash', 'expires_at', 'checked_out_at', 'confirmed_at', 'cancelled_at', 'needs_approval', 'approval_requested_at', 'approval_decided_at', 'waitlist_skipped_at_free_seats', 'school_id', 'venue', 'replaces_registration_id', 'decision_note', 'teacher_reminded_at', 'teacher_confirmed_at', 'staff_remind_at', 'staff_reminded_at'])]
-#[Hidden(['confirmation_token_hash', 'manage_token_hash'])]
+#[Fillable(['contact_id', 'course_instance_id', 'status', 'source', 'email', 'contact_name', 'phone', 'wants_interest_mails', 'message', 'school_class_data', 'confirmation_token_hash', 'manage_token_hash', 'expires_at', 'checked_out_at', 'confirmed_at', 'cancelled_at', 'needs_approval', 'approval_requested_at', 'approval_decided_at', 'waitlist_skipped_at_free_seats', 'school_id', 'venue', 'replaces_registration_id', 'decision_note', 'teacher_reminded_at', 'teacher_confirmed_at', 'staff_remind_at', 'staff_reminded_at', 'hold_token_hash'])]
+#[Hidden(['confirmation_token_hash', 'manage_token_hash', 'hold_token_hash'])]
 class Registration extends Model
 {
     /** @use HasFactory<RegistrationFactory> */
@@ -48,11 +50,6 @@ class Registration extends Model
             'staff_remind_at' => 'datetime',
             'staff_reminded_at' => 'datetime',
         ];
-    }
-
-    public function cart(): BelongsTo
-    {
-        return $this->belongsTo(Cart::class);
     }
 
     public function contact(): BelongsTo
@@ -105,7 +102,7 @@ class Registration extends Model
     /**
      * Class details entered at checkout.
      *
-     * @return array{class_name: string, students: int, teacher_name: string, teacher_email: ?string, teacher_phone: ?string, topic: ?string}
+     * @return array{class_name: string, grade: ?int, school_type: ?SchoolType, students: int, teacher_name: string, teacher_email: ?string, teacher_phone: ?string, topic: ?string}
      */
     public function schoolClass(): array
     {
@@ -113,12 +110,47 @@ class Registration extends Model
 
         return [
             'class_name' => (string) ($data['class_name'] ?? ''),
+            'grade' => isset($data['grade']) ? (int) $data['grade'] : null,
+            'school_type' => SchoolType::tryFrom((string) ($data['school_type'] ?? '')),
             'students' => (int) ($data['students'] ?? 0),
             'teacher_name' => (string) ($data['teacher_name'] ?? $this->contact_name ?? ''),
             'teacher_email' => $data['teacher_email'] ?? $this->email,
             'teacher_phone' => $data['teacher_phone'] ?? $this->phone,
             'topic' => $data['topic'] ?? null,
         ];
+    }
+
+    /**
+     * e.g. "4. Klasse, Grundschule"; null for bookings made before grade and school type were asked.
+     */
+    public function schoolClassLevel(): ?string
+    {
+        $class = $this->schoolClass();
+
+        return collect([
+            $class['grade'] !== null ? "{$class['grade']}. Klasse" : null,
+            $class['school_type']?->getLabel(),
+        ])->filter()->implode(', ') ?: null;
+    }
+
+    /**
+     * Running bookings are found by a random token in the URL; only its hash is stored.
+     */
+    public static function hashToken(string $plainToken): string
+    {
+        return hash('sha256', $plainToken);
+    }
+
+    /**
+     * The running booking behind the token, as long as its time has not run out.
+     *
+     * @param  Builder<Registration>  $query
+     */
+    public function scopeHeldWithToken(Builder $query, string $plainToken): void
+    {
+        $query->where('hold_token_hash', static::hashToken($plainToken))
+            ->where('status', RegistrationStatus::Held)
+            ->where('expires_at', '>', now());
     }
 
     /**

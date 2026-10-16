@@ -28,7 +28,7 @@
                 <ol class="mt-3 list-decimal space-y-1 pl-5 text-gray-600">
                     <li>Die Schule registriert sich einmal mit ihrer <strong>Funktionsadresse</strong> (z. B. sekretariat@…) und ihrer Anschrift.</li>
                     <li>Im Schulkonto lädt die Schule ihre <strong>Lehrkräfte</strong> ein. Jede Lehrkraft bekommt ein eigenes Unterkonto.</li>
-                    <li>Angemeldet können Sie freie Termine in den Warenkorb legen und für Ihre Klasse anfragen.</li>
+                    <li>Angemeldet können Sie einen freien Termin direkt für Ihre Klasse buchen. Ab dem Klick auf „Buchen“ ist der Termin {{ \App\Models\CompanySetting::current()->hold_minutes }} Minuten für Sie reserviert.</li>
                 </ol>
                 <div class="mt-5 flex flex-wrap gap-3">
                     <a href="{{ route('homepage.schools.register') }}" class="rounded-lg bg-brand px-4 py-2 font-semibold text-brand-contrast hover:opacity-90">Schule registrieren</a>

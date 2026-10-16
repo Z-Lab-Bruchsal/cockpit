@@ -16,7 +16,6 @@ use App\Mail\SchoolRequestMail;
 use App\Mail\SchoolRequestReceivedMail;
 use App\Mail\SchoolVisitReminderMail;
 use App\Mail\SchoolVisitStaffReminderMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\Course;
@@ -65,10 +64,9 @@ class SchoolCockpitTest extends TestCase
 
     protected function requestedBooking(): Registration
     {
-        $cart = Cart::factory()->create();
         $service = app(SchoolBookingService::class);
-        $registration = $service->hold($this->instance, $cart, $this->teacher);
-        $service->checkout($cart, [$registration->id => ['class_name' => '4b', 'students' => 24, 'teacher_name' => 'Frau Berg', 'topic' => 'Sensoren | Licht']], $this->teacher);
+        [$registration] = $service->hold($this->instance, $this->teacher);
+        $service->checkout($registration, ['class_name' => '4b', 'grade' => 4, 'school_type' => 'primary', 'students' => 24, 'teacher_name' => 'Frau Berg', 'teacher_phone' => '0911 123456', 'topic' => 'Sensoren | Licht'], $this->teacher);
 
         return $registration->fresh();
     }

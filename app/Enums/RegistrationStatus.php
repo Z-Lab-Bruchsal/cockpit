@@ -23,7 +23,7 @@ enum RegistrationStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Held => 'Im Warenkorb',
+            self::Held => 'Buchung läuft',
             self::PendingConfirmation => 'Wartet auf Bestätigung',
             self::Confirmed => 'Bestätigt',
             self::AwaitingApproval => 'Wartet auf Freigabe',

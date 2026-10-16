@@ -12,7 +12,7 @@ use App\Models\Contact;
 use App\Models\CourseDate;
 use App\Models\CourseInstance;
 use App\Models\Registration;
-use App\Services\Registrations\CartManager;
+use App\Services\Registrations\CourseReservationService;
 use App\Services\Schools\SchoolAccountService;
 use App\Services\Schools\SchoolBookingService;
 use Illuminate\Contracts\View\View;
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\URL;
 
 /**
  * Area for schools and teachers on the homepage: registration, free slots (calendar and list),
- * cart, and managing booked visits.
+ * booking a slot, and managing booked visits.
  */
 class SchoolController extends Controller
 {
@@ -37,7 +37,7 @@ class SchoolController extends Controller
 
     public function __construct(
         protected SchoolBookingService $schoolBookings,
-        protected CartManager $carts,
+        protected CourseReservationService $reservations,
     ) {}
 
     public function index(Request $request): View
@@ -145,24 +145,55 @@ class SchoolController extends Controller
         ]);
     }
 
-    public function addToCart(Request $request, CourseInstance $instance): RedirectResponse
+    /**
+     * "Buchen" on a free slot: holds it and opens the booking page with the countdown.
+     */
+    public function start(Request $request, CourseInstance $instance): RedirectResponse
     {
         abort_unless($instance->course?->is_published && $instance->course->isForSchoolClasses(), 404);
 
+        $runningToken = $request->session()->get(RegistrationController::SESSION_KEY.'.'.$instance->id);
+
+        if (is_string($runningToken) && $this->reservations->findHeld($runningToken) !== null) {
+            return redirect()->route('homepage.schools.booking.show', $runningToken);
+        }
+
         try {
-            $this->schoolBookings->hold($instance, $this->carts->currentOrCreate(), $this->contact($request));
+            [, $plainToken] = $this->schoolBookings->hold($instance, $this->contact($request));
         } catch (ReservationException $exception) {
             return redirect()
                 ->to(route('homepage.schools.slots').'#termin-'.$instance->id)
                 ->with('school_error', $exception->getMessage());
         }
 
-        return redirect()->route('homepage.schools.cart')->with('status', 'Der Termin ist für Sie reserviert. Bitte ergänzen Sie die Angaben zur Klasse.');
+        $request->session()->put(RegistrationController::SESSION_KEY.'.'.$instance->id, $plainToken);
+
+        return redirect()->route('homepage.schools.booking.show', $plainToken);
     }
 
-    public function cart(): View
+    public function showBooking(Request $request, string $token): View
     {
-        return view('homepage.schools.cart');
+        $registration = $this->reservations->findHeld($token);
+
+        if ($registration === null) {
+            return app(RegistrationController::class)->showBooking($token);
+        }
+
+        abort_unless($registration->courseInstance->course->isForSchoolClasses() && $registration->contact_id === $this->contact($request)?->id, 404);
+
+        return view('homepage.schools.booking', ['registration' => $registration, 'token' => $token]);
+    }
+
+    public function cancelHold(Request $request, string $token): RedirectResponse
+    {
+        $registration = $this->reservations->findHeld($token);
+
+        abort_unless($registration !== null && $registration->contact_id === $this->contact($request)?->id, 404);
+
+        $this->reservations->releaseHold($registration);
+        $request->session()->forget(RegistrationController::SESSION_KEY.'.'.$registration->course_instance_id);
+
+        return redirect()->route('homepage.schools.slots')->with('status', 'Die Buchung wurde abgebrochen, der Termin ist wieder frei.');
     }
 
     public function done(): View
@@ -216,12 +247,12 @@ class SchoolController extends Controller
         }
 
         try {
-            $this->schoolBookings->hold($instance, $this->carts->currentOrCreate(), $this->contact($request), replaces: $registration);
+            [, $plainToken] = $this->schoolBookings->hold($instance, $this->contact($request), replaces: $registration);
         } catch (ReservationException $exception) {
             return redirect()->route('homepage.schools.reschedule', $registration)->with('school_error', $exception->getMessage());
         }
 
-        return redirect()->route('homepage.schools.cart')->with('status', 'Der neue Termin ist für Sie reserviert. Bitte prüfen Sie die Angaben und schicken Sie die Anfrage ab.');
+        return redirect()->route('homepage.schools.booking.show', $plainToken)->with('status', 'Der neue Termin ist für Sie reserviert. Bitte prüfen Sie die Angaben und schicken Sie die Anfrage ab.');
     }
 
     /**
@@ -246,7 +277,7 @@ class SchoolController extends Controller
         abort_unless($registration->isSchoolBooking() && $registration->status === RegistrationStatus::Confirmed, 404);
 
         $validated = $request->validate([
-            'students' => ['required', 'integer', 'min:1', 'max:200'],
+            'students' => ['required', 'integer', 'min:1', 'max:'.($registration->courseInstance->maxClassSize() ?? 200)],
             'remark' => ['nullable', 'string', 'max:2000'],
         ]);
 

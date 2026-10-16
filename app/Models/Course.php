@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Enums\CourseAudience;
 use App\Enums\CourseInstanceStatus;
 use App\Enums\SchoolCourseFormat;
+use App\Enums\SchoolType;
 use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,6 +46,10 @@ class Course extends Model
         'teacher_reminder_days',
         'staff_reminder_days',
         'school_reschedule_deadline_days',
+        'school_types',
+        'min_grade',
+        'max_grade',
+        'max_class_size',
     ];
 
     protected static function booted(): void
@@ -63,6 +69,7 @@ class Course extends Model
         return [
             'audience' => CourseAudience::class,
             'school_format' => SchoolCourseFormat::class,
+            'school_types' => AsEnumCollection::of(SchoolType::class),
             'school_reminders_enabled' => 'boolean',
             'default_waitlist_enabled' => 'boolean',
             'is_published' => 'boolean',
@@ -214,6 +221,58 @@ class Course extends Model
             $this->max_age !== null => "bis {$this->max_age} Jahre",
             default => null,
         };
+    }
+
+    /**
+     * e.g. "Klasse 3–4", "ab Klasse 5" or null if no grade limits are set.
+     */
+    public function gradeRangeLabel(): ?string
+    {
+        return match (true) {
+            $this->min_grade !== null && $this->max_grade !== null && $this->min_grade === $this->max_grade => "Klasse {$this->min_grade}",
+            $this->min_grade !== null && $this->max_grade !== null => "Klasse {$this->min_grade}–{$this->max_grade}",
+            $this->min_grade !== null => "ab Klasse {$this->min_grade}",
+            $this->max_grade !== null => "bis Klasse {$this->max_grade}",
+            default => null,
+        };
+    }
+
+    /**
+     * School types the course is meant for; empty means all.
+     *
+     * @return list<SchoolType>
+     */
+    public function allowedSchoolTypes(): array
+    {
+        $types = $this->school_types?->all() ?? [];
+
+        return $types === [] ? SchoolType::cases() : array_values($types);
+    }
+
+    /**
+     * Grades a class may be in to book the course.
+     *
+     * @return list<int>
+     */
+    public function allowedGrades(): array
+    {
+        return range($this->min_grade ?? 1, $this->max_grade ?? 13);
+    }
+
+    /**
+     * Who the course is for: grades and school types for school classes, else the age range.
+     */
+    public function audienceLabel(): ?string
+    {
+        if (! $this->isForSchoolClasses()) {
+            return $this->ageRangeLabel();
+        }
+
+        $schoolTypes = $this->school_types?->isNotEmpty()
+            ? $this->school_types->map(fn (SchoolType $type): string => $type->getLabel())->implode(', ')
+            : null;
+
+        return collect([$this->gradeRangeLabel(), $schoolTypes])->filter()->implode(' · ') ?: null;
     }
 
     public function url(): string

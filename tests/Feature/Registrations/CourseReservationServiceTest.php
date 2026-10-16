@@ -13,7 +13,6 @@ use App\Mail\RegistrationCancelledMail;
 use App\Mail\RegistrationConfirmationMail;
 use App\Mail\RegistrationConfirmedMail;
 use App\Mail\WaitlistOfferMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Contact;
 use App\Models\CourseInstance;
@@ -52,12 +51,11 @@ class CourseReservationServiceTest extends TestCase
      */
     protected function bookAsGuest(CourseInstance $instance, array $kidNames, string $email = 'eltern@example.com'): string
     {
-        $cart = Cart::factory()->create();
-        $registration = $this->reservations->hold($instance, count($kidNames), $cart);
+        [$registration] = $this->reservations->hold($instance, count($kidNames));
 
-        $this->reservations->checkout($cart, ['email' => $email, 'name' => 'Familie Muster'], [
-            $registration->id => array_map(fn (string $name): array => ['name' => $name, 'birthdate' => now()->subYears(10)->toDateString()], $kidNames),
-        ]);
+        $this->reservations->checkout($registration, ['email' => $email, 'name' => 'Familie Muster', 'phone' => '0911 123456'],
+            array_map(fn (string $name): array => ['name' => $name, 'birthdate' => now()->subYears(10)->toDateString()], $kidNames),
+        );
 
         return $this->lastTokenFrom(RegistrationConfirmationMail::class);
     }
@@ -73,7 +71,7 @@ class CourseReservationServiceTest extends TestCase
     {
         $instance = $this->courseInstance(capacity: 3);
 
-        $registration = $this->reservations->hold($instance, 2, Cart::factory()->create());
+        $registration = $this->reservations->hold($instance, 2)[0];
 
         $this->assertSame(RegistrationStatus::Held, $registration->status);
         $this->assertCount(2, $registration->enrollments);
@@ -83,7 +81,7 @@ class CourseReservationServiceTest extends TestCase
     public function test_expired_holds_free_their_seats_even_before_the_job_runs(): void
     {
         $instance = $this->courseInstance(capacity: 1);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
 
         $this->assertSame(0, $instance->freeSeats());
 
@@ -95,20 +93,20 @@ class CourseReservationServiceTest extends TestCase
     public function test_seats_held_by_others_are_shown_as_reserved_when_no_waitlist(): void
     {
         $instance = $this->courseInstance(capacity: 1, waitlist: false);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
 
         $this->assertSame(CourseAvailability::Reserved, $instance->availability());
 
         $this->expectException(ReservationException::class);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
     }
 
     public function test_family_without_any_free_seat_goes_to_waitlist_together(): void
     {
         $instance = $this->courseInstance(capacity: 1);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
 
-        $registration = $this->reservations->hold($instance, 2, Cart::factory()->create());
+        $registration = $this->reservations->hold($instance, 2)[0];
 
         $this->assertTrue($registration->isOnWaitlist());
         $this->assertFalse($registration->needs_approval);
@@ -181,11 +179,11 @@ class CourseReservationServiceTest extends TestCase
     public function test_full_course_without_waitlist_rejects_holds(): void
     {
         $instance = $this->courseInstance(capacity: 1, waitlist: false);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
         $this->travel(1)->minutes();
 
         try {
-            $this->reservations->hold($instance, 2, Cart::factory()->create());
+            $this->reservations->hold($instance, 2)[0];
             $this->fail('Expected a ReservationException.');
         } catch (ReservationException $exception) {
             $this->assertStringContainsString('ausgebucht', $exception->getMessage());
@@ -195,28 +193,43 @@ class CourseReservationServiceTest extends TestCase
     public function test_waitlist_limit_is_respected(): void
     {
         $instance = CourseInstance::factory()->withDates()->create(['capacity' => 1, 'waitlist_enabled' => true, 'waitlist_limit' => 1]);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
+        $this->reservations->hold($instance, 1)[0];
 
         $this->expectException(ReservationException::class);
-        $this->reservations->hold($instance, 1, Cart::factory()->create());
+        $this->reservations->hold($instance, 1)[0];
     }
 
-    public function test_same_course_cannot_be_added_twice_to_a_cart(): void
+    public function test_running_booking_is_found_by_its_token_until_the_time_runs_out(): void
     {
         $instance = $this->courseInstance(capacity: 5);
-        $cart = Cart::factory()->create();
-        $this->reservations->hold($instance, 1, $cart);
+        [$registration, $token] = $this->reservations->hold($instance, 1);
 
-        $this->expectException(ReservationException::class);
-        $this->reservations->hold($instance, 1, $cart);
+        $this->assertTrue($this->reservations->findHeld($token)->is($registration));
+        $this->assertNull($this->reservations->findHeld(str_repeat('a', 64)));
+
+        $this->travel(16)->minutes();
+
+        $this->assertNull($this->reservations->findHeld($token));
+    }
+
+    public function test_releasing_a_running_booking_frees_the_seats_at_once(): void
+    {
+        $instance = $this->courseInstance(capacity: 2);
+        [$registration, $token] = $this->reservations->hold($instance, 2);
+
+        $this->reservations->releaseHold($registration);
+
+        $this->assertSame(2, $instance->freeSeats());
+        $this->assertNull($this->reservations->findHeld($token));
+        Mail::assertNothingSent();
     }
 
     public function test_closed_or_draft_instances_cannot_be_booked(): void
     {
         $this->expectException(ReservationException::class);
 
-        $this->reservations->hold(CourseInstance::factory()->draft()->withDates()->create(), 1, Cart::factory()->create());
+        $this->reservations->hold(CourseInstance::factory()->draft()->withDates()->create(), 1)[0];
     }
 
     public function test_guest_checkout_sends_double_opt_in_and_creates_nothing_before_confirmation(): void
@@ -262,22 +275,24 @@ class CourseReservationServiceTest extends TestCase
         $this->assertCount(0, $this->reservations->confirm($otherToken));
     }
 
-    public function test_one_confirmation_covers_all_courses_of_a_checkout(): void
+    public function test_same_child_in_two_bookings_is_created_only_once(): void
     {
-        $first = $this->courseInstance();
-        $second = $this->courseInstance();
-        $cart = Cart::factory()->create();
-        $a = $this->reservations->hold($first, 1, $cart);
-        $b = $this->reservations->hold($second, 1, $cart);
+        $this->reservations->confirm($this->bookAsGuest($this->courseInstance(), ['Paul']));
+        $this->reservations->confirm($this->bookAsGuest($this->courseInstance(), ['Paul']));
 
-        $this->reservations->checkout($cart, ['email' => 'eltern@example.com', 'name' => 'Muster'], [
-            $a->id => [['name' => 'Paul', 'birthdate' => '2016-01-01']],
-            $b->id => [['name' => 'Paul', 'birthdate' => '2016-01-01']],
-        ]);
-
-        Mail::assertSentCount(1);
-        $this->assertCount(2, $this->reservations->confirm($this->lastTokenFrom(RegistrationConfirmationMail::class)));
+        $this->assertSame(2, Registration::query()->where('status', RegistrationStatus::Confirmed)->count());
         $this->assertSame(1, Kid::query()->count(), 'The same child must not be created twice.');
+    }
+
+    public function test_checkout_stores_the_phone_number_and_ends_the_running_booking(): void
+    {
+        [$registration, $token] = $this->reservations->hold($this->courseInstance(), 1);
+
+        $this->reservations->checkout($registration, ['email' => 'a@example.com', 'name' => 'A', 'phone' => ' 0911 123456 '], [['name' => 'Paul', 'birthdate' => '2016-01-01']]);
+
+        $this->assertSame('0911 123456', $registration->fresh()->phone);
+        $this->assertNull($registration->fresh()->hold_token_hash);
+        $this->assertNull($this->reservations->findHeld($token));
     }
 
     public function test_confirmation_reuses_existing_contact_and_child(): void
@@ -298,11 +313,10 @@ class CourseReservationServiceTest extends TestCase
         $contact = Contact::factory()->create(['email' => 'eltern@example.com']);
         $kid = Kid::factory()->create();
         $contact->kids()->attach($kid);
-        $cart = Cart::factory()->create(['contact_id' => $contact->id]);
-        $registration = $this->reservations->hold($this->courseInstance(), 1, $cart);
+        [$registration] = $this->reservations->hold($this->courseInstance(), 1, $contact);
 
-        $this->reservations->checkout($cart, ['email' => 'eltern@example.com', 'name' => $contact->name], [
-            $registration->id => [['kid_id' => $kid->id]],
+        $this->reservations->checkout($registration, ['email' => 'eltern@example.com', 'name' => $contact->name, 'phone' => '0911 123456'], [
+            ['kid_id' => $kid->id],
         ], $contact);
 
         Mail::assertNotSent(RegistrationConfirmationMail::class);
@@ -313,12 +327,11 @@ class CourseReservationServiceTest extends TestCase
 
     public function test_checkout_after_hold_expired_fails(): void
     {
-        $cart = Cart::factory()->create();
-        $registration = $this->reservations->hold($this->courseInstance(), 1, $cart);
+        [$registration] = $this->reservations->hold($this->courseInstance(), 1);
         $this->travel(16)->minutes();
 
         $this->expectException(ReservationException::class);
-        $this->reservations->checkout($cart, ['email' => 'a@example.com', 'name' => 'A'], [$registration->id => [['name' => 'Paul', 'birthdate' => '2016-01-01']]]);
+        $this->reservations->checkout($registration, ['email' => 'a@example.com', 'name' => 'A', 'phone' => '0911 123456'], [['name' => 'Paul', 'birthdate' => '2016-01-01']]);
     }
 
     public function test_cancellation_offers_the_seat_to_the_waitlist(): void

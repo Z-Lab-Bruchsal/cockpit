@@ -13,7 +13,6 @@ use App\Filament\Resources\Registrations\Pages\ListRegistrations;
 use App\Filament\Resources\Registrations\Pages\ViewRegistration;
 use App\Mail\RegistrationConfirmedMail;
 use App\Models\Attendance;
-use App\Models\Cart;
 use App\Models\Contact;
 use App\Models\CourseInstance;
 use App\Models\Enrollment;
@@ -54,10 +53,9 @@ class RegistrationCockpitTest extends TestCase
 
     protected function pendingRegistration(): Registration
     {
-        $cart = Cart::factory()->create();
-        $registration = app(CourseReservationService::class)->hold(CourseInstance::factory()->withDates()->create(), 1, $cart);
-        app(CourseReservationService::class)->checkout($cart, ['email' => 'maria@example.com', 'name' => 'Maria'], [
-            $registration->id => [['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()]],
+        [$registration] = app(CourseReservationService::class)->hold(CourseInstance::factory()->withDates()->create(), 1);
+        app(CourseReservationService::class)->checkout($registration, ['email' => 'maria@example.com', 'name' => 'Maria', 'phone' => '0911 123456'], [
+            ['name' => 'Paul', 'birthdate' => now()->subYears(10)->toDateString()],
         ]);
 
         return $registration->fresh();

@@ -24,7 +24,7 @@ Was im Cockpit geändert wird, ist sofort auf der Homepage sichtbar. Niemand mus
 
 **Kurse finden.** Alle aktuellen Kurse stehen in einer Übersicht, die sich nach Interessen, Alter und Zielgruppe filtern lässt. Zusätzlich gibt es einen Kalender mit allen Terminen. Jeder Kurs hat eine eigene Seite mit Beschreibung, Bildern und allen Terminen.
 
-**Anmelden – auch ohne Konto.** Eltern wählen einen Kurs und die Anzahl der Kinder. Die Plätze werden sofort für sie zurückgehalten, damit sie in Ruhe die Daten eintragen können (normalerweise 15 Minuten). Wie in einem Onlineshop können mehrere Kurse in einen Warenkorb. Zum Schluss kommt eine Mail mit einem Bestätigungslink. Erst mit diesem Klick ist die Anmeldung verbindlich. So wird verhindert, dass jemand mit fremder Mail-Adresse Kinder anmeldet.
+**Anmelden – auch ohne Konto.** Eltern wählen einen Kurs und die Anzahl der Kinder und klicken auf „Buchen“. Ab dann läuft eine sichtbare Uhr: Die Plätze sind für sie zurückgehalten, damit sie in Ruhe die Daten eintragen können (normalerweise 15 Minuten). Wird die Zeit überschritten, werden die Plätze wieder frei und man fängt neu an. Jede Buchung gilt für einen Kurs. Eine Telefonnummer für Rückfragen ist Pflicht. Zum Schluss kommt eine Mail mit einem Bestätigungslink. Erst mit diesem Klick ist die Anmeldung verbindlich. So wird verhindert, dass jemand mit fremder Mail-Adresse Kinder anmeldet.
 
 **Das System achtet automatisch auf die Regeln:**
 - Passt das Alter des Kindes zum Kurs?
@@ -47,6 +47,8 @@ Schulen können Kurse für ganze Schulklassen buchen.
 
 - Die Schule legt ein **Schulkonto** an, etwa mit der Adresse des Sekretariats, und lädt ihre **Lehrkräfte** ein. Jede Lehrkraft hat einen eigenen Zugang.
 - In einem Kalender sehen sie, welche Termine noch frei sind, und fragen einen Termin für ihre Klasse an. Je nach Kurs findet er im Z-LAB oder in der Schule statt.
+- Schulkurse sind nicht nach Alter, sondern nach **Schulart und Klassenstufe** ausgeschrieben, z. B. „Klasse 3–4, Grundschule“, und können eine **maximale Klassengröße** haben. Bei der Buchung gibt die Schule an, welche Klasse mit wie vielen Kindern kommt.
+- Nur Schulkonten können Schulkurse buchen, und Schulkonten können keine Kurse für einzelne Kinder buchen.
 - Jede Buchung ist zunächst eine **Anfrage**. Die kursverantwortliche Person bestätigt sie oder lehnt sie ab, auch direkt aus der Mail heraus.
 - Vor dem Termin bekommen Lehrkraft und Kursverantwortliche automatisch eine **Erinnerung**. Bei Besuchen im Z-LAB hängt eine Anfahrtsbeschreibung an. Die Lehrkraft kann die Teilnahme bestätigen und die Schülerzahl korrigieren.
 - Bis zu einer festgelegten Frist kann die Schule selbst **absagen oder auf einen anderen Termin verschieben**.

@@ -6,30 +6,27 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
 use App\Enums\SchoolCourseFormat;
 use App\Enums\SchoolSlotState;
+use App\Enums\SchoolType;
 use App\Enums\SchoolVenue;
 use App\Exceptions\ReservationException;
 use App\Filament\Resources\Registrations\Actions\ApproveSchoolRequestAction;
 use App\Filament\Resources\Registrations\Actions\DeclineSchoolRequestAction;
 use App\Filament\Resources\Registrations\Pages\ListRegistrations;
 use App\Filament\Resources\Registrations\Pages\ViewRegistration;
-use App\Livewire\Schools\SchoolCheckout;
+use App\Livewire\Schools\SchoolBookingForm;
 use App\Mail\SchoolRequestDecidedMail;
 use App\Mail\SchoolRequestMail;
 use App\Mail\SchoolRequestReceivedMail;
-use App\Models\Cart;
 use App\Models\Contact;
 use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\Registration;
 use App\Models\User;
-use App\Services\Registrations\CartManager;
-use App\Services\Registrations\CourseReservationService;
 use App\Services\Schools\SchoolBookingService;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -56,19 +53,15 @@ class SchoolBookingTest extends TestCase
         $this->lead = User::factory()->create(['email' => 'lead@example.com']);
         $this->school = Contact::factory()->school()->create(['email' => 'sekretariat@gs-wald.de', 'name' => 'Grundschule am Wald']);
         $this->teacher = Contact::factory()->teacher($this->school)->create(['email' => 'berg@gs-wald.de', 'name' => 'Frau Berg']);
-        $course = Course::factory()->forSchoolClasses()->create(['name' => 'Roboter bauen', 'responsible_user_id' => $this->lead->id]);
+        $course = Course::factory()->forSchoolClasses()->create([
+            'name' => 'Roboter bauen',
+            'responsible_user_id' => $this->lead->id,
+            'school_types' => [SchoolType::Primary, SchoolType::SpecialNeeds],
+            'min_grade' => 3,
+            'max_grade' => 4,
+            'max_class_size' => 28,
+        ]);
         $this->instance = CourseInstance::factory()->for($course)->withDates()->create();
-    }
-
-    /**
-     * @return array{0: Cart, 1: string}
-     */
-    protected function cartWithToken(?Contact $contact = null): array
-    {
-        $plainToken = Str::random(64);
-        $cart = Cart::query()->create(['token_hash' => Cart::hashToken($plainToken), 'contact_id' => $contact?->id]);
-
-        return [$cart, $plainToken];
     }
 
     /**
@@ -76,16 +69,14 @@ class SchoolBookingTest extends TestCase
      */
     protected function classData(array $overrides = []): array
     {
-        return ['class_name' => '4b', 'students' => 24, 'teacher_name' => 'Frau Berg', 'teacher_phone' => '', 'topic' => 'Schwerpunkt Sensoren', 'venue' => '', ...$overrides];
+        return ['class_name' => '4b', 'grade' => 4, 'school_type' => SchoolType::Primary->value, 'students' => 24, 'teacher_name' => 'Frau Berg', 'teacher_phone' => '0911 123456', 'topic' => 'Schwerpunkt Sensoren', 'venue' => '', ...$overrides];
     }
 
     protected function requestSlot(?CourseInstance $instance = null): Registration
     {
-        $cart = Cart::factory()->create();
-        $registration = app(SchoolBookingService::class)->hold($instance ?? $this->instance, $cart, $this->teacher);
-        app(SchoolBookingService::class)->checkout($cart, [$registration->id => $this->classData()], $this->teacher);
+        [$registration] = app(SchoolBookingService::class)->hold($instance ?? $this->instance, $this->teacher);
 
-        return $registration->fresh();
+        return app(SchoolBookingService::class)->checkout($registration, $this->classData(), $this->teacher);
     }
 
     public function test_school_class_instances_always_have_one_slot_without_waitlist(): void
@@ -101,11 +92,16 @@ class SchoolBookingTest extends TestCase
 
     public function test_slot_list_and_calendar_show_free_slots(): void
     {
-        $this->get('/schulen/termine')->assertOk()->assertSee('Roboter bauen')->assertSee('Frei')->assertDontSee('In den Warenkorb');
+        $this->get('/schulen/termine')
+            ->assertOk()
+            ->assertSee('Roboter bauen')
+            ->assertSee('Klasse 3–4 · Grundschule, Förderschule · max. 28 Kinder')
+            ->assertSee('Frei')
+            ->assertDontSee(route('homepage.schools.booking.start', $this->instance), false);
 
         $this->actingAs($this->teacher, 'contact')
             ->get('/schulen/termine')
-            ->assertSee(route('homepage.schools.cart.add', $this->instance), false);
+            ->assertSee(route('homepage.schools.booking.start', $this->instance), false);
 
         $this->getJson('/schulen/kalender/events?start='.now()->toDateString().'&end='.now()->addMonth()->toDateString())
             ->assertOk()
@@ -131,50 +127,55 @@ class SchoolBookingTest extends TestCase
             ->assertJsonPath('0.extendedProps.availability', SchoolSlotState::Reserved->getLabel());
     }
 
-    public function test_slot_in_another_cart_is_shown_as_in_cart(): void
+    public function test_slot_being_booked_by_another_school_is_shown_as_such(): void
     {
-        app(SchoolBookingService::class)->hold($this->instance, Cart::factory()->create(), $this->teacher);
+        app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
 
-        $this->assertSame(SchoolSlotState::InCart, SchoolSlotState::for($this->instance->fresh()));
+        $this->assertSame(SchoolSlotState::BeingBooked, SchoolSlotState::for($this->instance->fresh()));
     }
 
-    public function test_teacher_puts_a_slot_into_the_cart(): void
+    public function test_teacher_books_a_slot_and_sees_the_countdown(): void
     {
-        [, $token] = $this->cartWithToken();
-
-        $this->actingAs($this->teacher, 'contact')
-            ->withCookie(CartManager::COOKIE, $token)
-            ->post(route('homepage.schools.cart.add', $this->instance))
-            ->assertRedirect(route('homepage.schools.cart'));
+        $response = $this->actingAs($this->teacher, 'contact')
+            ->post(route('homepage.schools.booking.start', $this->instance));
 
         $this->assertSame(1, $this->instance->enrollments()->where('status', EnrollmentStatus::Held)->count());
 
-        // The parents' cart page hands over to the school checkout.
-        $this->withCookie(CartManager::COOKIE, $token)->get('/warenkorb')->assertRedirect(route('homepage.schools.cart'));
+        $response->assertRedirect();
+        $this->get($response->headers->get('Location'))
+            ->assertOk()
+            ->assertSee('Termin buchen')
+            ->assertSee('role="timer"', false)
+            ->assertSee('Danach wird der Termin wieder freigegeben.')
+            ->assertSee('Höchstens 28 Kinder');
     }
 
     public function test_guests_and_parents_cannot_book_school_slots(): void
     {
-        $this->post(route('homepage.schools.cart.add', $this->instance))->assertRedirect();
+        $this->post(route('homepage.schools.booking.start', $this->instance))->assertRedirect(route('homepage.login', ['weiter' => '/schulen/buchen/'.$this->instance->id]));
+
+        $this->actingAs(Contact::factory()->create(), 'contact')
+            ->post(route('homepage.schools.booking.start', $this->instance))
+            ->assertRedirect(route('homepage.schools.index'));
+
         $this->assertSame(0, $this->instance->enrollments()->count());
 
         $this->expectException(ReservationException::class);
-        app(SchoolBookingService::class)->hold($this->instance, Cart::factory()->create(), Contact::factory()->create());
+        app(SchoolBookingService::class)->hold($this->instance, Contact::factory()->create());
     }
 
     public function test_school_slots_cannot_be_booked_through_the_parents_form(): void
     {
-        $this->post(route('homepage.cart.add', $this->instance), ['seats' => 1])->assertNotFound();
+        $this->post(route('homepage.booking.start', $this->instance), ['seats' => 1])->assertNotFound();
     }
 
-    public function test_school_slots_and_kids_courses_are_not_mixed_in_one_cart(): void
+    public function test_other_schools_cannot_open_a_running_booking(): void
     {
-        $cart = Cart::factory()->create();
-        $kidsInstance = CourseInstance::factory()->withDates()->create();
-        app(CourseReservationService::class)->hold($kidsInstance, 1, $cart);
+        [, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+        $otherSchool = Contact::factory()->school()->create();
 
-        $this->expectException(ReservationException::class);
-        app(SchoolBookingService::class)->hold($this->instance, $cart, $this->teacher);
+        $this->actingAs($otherSchool, 'contact')->get(route('homepage.schools.booking.show', $token))->assertNotFound();
+        $this->actingAs($otherSchool, 'contact')->post(route('homepage.schools.booking.cancel', $token))->assertNotFound();
     }
 
     public function test_a_taken_slot_cannot_be_held_again(): void
@@ -182,63 +183,168 @@ class SchoolBookingTest extends TestCase
         $this->requestSlot();
 
         $this->expectException(ReservationException::class);
-        app(SchoolBookingService::class)->hold($this->instance, Cart::factory()->create(), $this->teacher);
+        app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
     }
 
     public function test_checkout_sends_the_request_and_occupies_the_slot(): void
     {
-        [$cart, $token] = $this->cartWithToken($this->teacher);
-        $registration = app(SchoolBookingService::class)->hold($this->instance, $cart, $this->teacher);
+        [$registration, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
 
         Livewire::actingAs($this->teacher, 'contact')
-            ->withCookies([CartManager::COOKIE => $token])
-            ->test(SchoolCheckout::class)
-            ->assertSet("classes.{$registration->id}.teacher_name", 'Frau Berg')
-            ->set("classes.{$registration->id}.class_name", '4b')
-            ->set("classes.{$registration->id}.students", 24)
-            ->set("classes.{$registration->id}.topic", 'Schwerpunkt Sensoren')
+            ->test(SchoolBookingForm::class, ['token' => $token])
+            ->assertSet('teacherName', 'Frau Berg')
+            ->set('className', '4b')
+            ->set('schoolType', SchoolType::Primary->value)
+            ->set('grade', '4')
+            ->set('students', '24')
+            ->set('teacherPhone', '0911 123456')
+            ->set('topic', 'Schwerpunkt Sensoren')
             ->set('acceptsPrivacy', true)
             ->call('checkout')
             ->assertHasNoErrors()
-            ->assertRedirect(route('homepage.schools.cart.done'));
+            ->assertRedirect(route('homepage.schools.booking.done'));
 
         $registration->refresh();
         $this->assertSame(RegistrationStatus::Requested, $registration->status);
         $this->assertTrue($registration->school->is($this->school));
         $this->assertSame(SchoolVenue::ZLab, $registration->venue);
         $this->assertSame(24, $registration->schoolClass()['students']);
+        $this->assertSame(4, $registration->schoolClass()['grade']);
+        $this->assertSame(SchoolType::Primary, $registration->schoolClass()['school_type']);
+        $this->assertSame('4. Klasse, Grundschule', $registration->schoolClassLevel());
+        $this->assertSame('0911 123456', $registration->phone);
+        $this->assertNull($registration->hold_token_hash);
         $this->assertSame(EnrollmentStatus::Requested, $registration->enrollments->first()->status);
         $this->assertSame(0, $this->instance->fresh()->freeSeats());
 
         Mail::assertSent(SchoolRequestReceivedMail::class, fn (SchoolRequestReceivedMail $mail): bool => $mail->hasTo('berg@gs-wald.de') && $mail->hasCc('sekretariat@gs-wald.de'));
-        Mail::assertSent(SchoolRequestMail::class, fn (SchoolRequestMail $mail): bool => $mail->hasTo('lead@example.com'));
+        Mail::assertSent(SchoolRequestMail::class, fn (SchoolRequestMail $mail): bool => $mail->hasTo('lead@example.com') && str_contains($mail->render(), '4. Klasse, Grundschule'));
     }
 
-    public function test_checkout_requires_class_details_and_venue_if_the_school_may_choose(): void
+    public function test_checkout_requires_class_details_phone_and_venue_if_the_school_may_choose(): void
     {
         $this->instance->course->update(['school_format' => SchoolCourseFormat::Both]);
-        [$cart, $token] = $this->cartWithToken($this->teacher);
-        $registration = app(SchoolBookingService::class)->hold($this->instance, $cart, $this->teacher);
+        [$registration, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
 
         Livewire::actingAs($this->teacher, 'contact')
-            ->withCookies([CartManager::COOKIE => $token])
-            ->test(SchoolCheckout::class)
-            ->set("classes.{$registration->id}.class_name", '')
+            ->test(SchoolBookingForm::class, ['token' => $token])
+            ->set('className', '')
+            ->set('teacherPhone', '')
             ->call('checkout')
-            ->assertHasErrors(["classes.{$registration->id}.class_name", "classes.{$registration->id}.students", "classes.{$registration->id}.venue", 'acceptsPrivacy']);
+            ->assertHasErrors(['className', 'grade', 'schoolType', 'students', 'venue', 'teacherPhone', 'acceptsPrivacy'])
+            ->assertSee('Bitte geben Sie eine Telefonnummer für Rückfragen an.');
 
         Livewire::actingAs($this->teacher, 'contact')
-            ->withCookies([CartManager::COOKIE => $token])
-            ->test(SchoolCheckout::class)
-            ->set("classes.{$registration->id}.class_name", '4b')
-            ->set("classes.{$registration->id}.students", 24)
-            ->set("classes.{$registration->id}.venue", SchoolVenue::School->value)
+            ->test(SchoolBookingForm::class, ['token' => $token])
+            ->set('className', '4b')
+            ->set('schoolType', SchoolType::Primary->value)
+            ->set('grade', '4')
+            ->set('students', '24')
+            ->set('teacherPhone', '0911 123456')
+            ->set('venue', SchoolVenue::School->value)
             ->set('acceptsPrivacy', true)
             ->call('checkout')
             ->assertHasNoErrors();
 
         $this->assertSame(SchoolVenue::School, $registration->fresh()->venue);
         $this->assertSame($this->school->addressLine(), $registration->fresh()->visitAddress());
+    }
+
+    public function test_class_size_grade_and_school_type_must_fit_the_course(): void
+    {
+        [, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+
+        Livewire::actingAs($this->teacher, 'contact')
+            ->test(SchoolBookingForm::class, ['token' => $token])
+            ->set('className', '7a')
+            ->set('schoolType', SchoolType::Grammar->value)
+            ->set('grade', '7')
+            ->set('students', '29')
+            ->set('teacherPhone', '0911 123456')
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasErrors(['schoolType', 'grade', 'students'])
+            ->assertSee('Für diesen Kurs sind höchstens 28 Kinder möglich.');
+
+        $this->assertSame(RegistrationStatus::Held, Registration::query()->sole()->status);
+    }
+
+    public function test_class_size_can_be_overridden_per_instance(): void
+    {
+        $this->instance->update(['max_class_size' => 20]);
+        [$registration] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+
+        try {
+            app(SchoolBookingService::class)->checkout($registration, $this->classData(['students' => 21]), $this->teacher);
+            $this->fail('Expected the class size of the instance to apply.');
+        } catch (ReservationException $exception) {
+            $this->assertStringContainsString('höchstens 20 Kinder', $exception->getMessage());
+        }
+
+        $this->instance->update(['max_class_size' => null]);
+        $this->instance->course->update(['max_class_size' => null]);
+
+        $this->assertSame(RegistrationStatus::Requested, app(SchoolBookingService::class)->checkout($registration, $this->classData(['students' => 60]), $this->teacher)->status);
+    }
+
+    public function test_courses_without_limits_accept_every_school_type_and_grade(): void
+    {
+        $this->instance->course->update(['school_types' => null, 'min_grade' => null, 'max_grade' => null]);
+        [$registration] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+
+        $registration = app(SchoolBookingService::class)->checkout($registration, $this->classData(['school_type' => SchoolType::Vocational->value, 'grade' => 12]), $this->teacher);
+
+        $this->assertSame('12. Klasse, Berufliche Schule', $registration->schoolClassLevel());
+    }
+
+    public function test_school_type_is_prefilled_from_the_last_booking(): void
+    {
+        $this->requestSlot();
+        [, $token] = app(SchoolBookingService::class)->hold(CourseInstance::factory()->for($this->instance->course)->withDates()->create(), $this->teacher);
+
+        Livewire::actingAs($this->teacher, 'contact')
+            ->test(SchoolBookingForm::class, ['token' => $token])
+            ->assertSet('schoolType', SchoolType::Primary->value);
+    }
+
+    public function test_sending_after_the_time_ran_out_fails(): void
+    {
+        [, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+
+        $form = Livewire::actingAs($this->teacher, 'contact')
+            ->test(SchoolBookingForm::class, ['token' => $token]);
+
+        $this->travel(16)->minutes();
+
+        $form->call('checkout')->assertRedirect(route('homepage.schools.booking.show', $token));
+
+        $this->assertSame(1, $this->instance->fresh()->freeSeats());
+        $this->actingAs($this->teacher, 'contact')
+            ->get(route('homepage.schools.booking.show', $token))
+            ->assertOk()
+            ->assertSee('Der Termin wurde wieder freigegeben')
+            ->assertSee(route('homepage.schools.slots').'#termin-'.$this->instance->id, false);
+    }
+
+    public function test_cancelling_a_booking_frees_the_slot(): void
+    {
+        [, $token] = app(SchoolBookingService::class)->hold($this->instance, $this->teacher);
+
+        $this->actingAs($this->teacher, 'contact')
+            ->post(route('homepage.schools.booking.cancel', $token))
+            ->assertRedirect(route('homepage.schools.slots'));
+
+        $this->assertSame(1, $this->instance->fresh()->freeSeats());
+    }
+
+    public function test_visit_confirmation_respects_the_class_size(): void
+    {
+        $registration = $this->requestSlot();
+        app(SchoolBookingService::class)->approve($registration);
+        $url = URL::temporarySignedRoute('homepage.schools.visit.confirm', now()->addHour(), ['registration' => $registration->id]);
+
+        $this->post($url, ['students' => 29])->assertSessionHasErrors('students');
+        $this->post($url, ['students' => 28])->assertSessionHasNoErrors();
     }
 
     public function test_course_lead_approves_via_signed_link(): void

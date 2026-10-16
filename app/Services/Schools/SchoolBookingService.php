@@ -4,6 +4,7 @@ namespace App\Services\Schools;
 
 use App\Enums\EnrollmentStatus;
 use App\Enums\RegistrationStatus;
+use App\Enums\SchoolType;
 use App\Enums\SchoolVenue;
 use App\Exceptions\ReservationException;
 use App\Mail\SchoolBookingUpdateMail;
@@ -12,7 +13,6 @@ use App\Mail\SchoolRequestMail;
 use App\Mail\SchoolRequestReceivedMail;
 use App\Mail\SchoolVisitReminderMail;
 use App\Mail\SchoolVisitStaffReminderMail;
-use App\Models\Cart;
 use App\Models\Contact;
 use App\Models\CourseInstance;
 use App\Models\CourseInstanceNote;
@@ -38,9 +38,11 @@ class SchoolBookingService
     public function __construct(protected CourseReservationService $reservations) {}
 
     /**
-     * Puts a free slot into the cart of a logged-in school or teacher.
+     * Starts the booking of a free slot by a logged-in school or teacher.
+     *
+     * @return array{0: Registration, 1: string} the held registration and the plain token of the booking page
      */
-    public function hold(CourseInstance $instance, Cart $cart, Contact $booker, ?Registration $replaces = null): Registration
+    public function hold(CourseInstance $instance, Contact $booker, ?Registration $replaces = null): array
     {
         if (! $instance->course?->isForSchoolClasses()) {
             throw new ReservationException('Dieser Kurs ist nicht für Schulklassen gedacht.');
@@ -50,7 +52,7 @@ class SchoolBookingService
             throw new ReservationException('Bitte melden Sie sich mit dem Konto Ihrer Schule an.');
         }
 
-        $registration = $this->reservations->hold($instance, 1, $cart);
+        [$registration, $plainToken] = $this->reservations->hold($instance, 1, $booker);
 
         if ($replaces !== null) {
             $registration->update([
@@ -60,16 +62,15 @@ class SchoolBookingService
             ]);
         }
 
-        return $registration;
+        return [$registration, $plainToken];
     }
 
     /**
-     * Sends the held slots as requests to the course leads. No double opt-in: the booker is logged in.
+     * Sends the held slot as request to the course lead. No double opt-in: the booker is logged in.
      *
-     * @param  array<int, array{class_name: string, students: int|string, teacher_name: string, teacher_phone?: ?string, topic?: ?string, venue?: ?string}>  $classesByRegistration  keyed by registration id
-     * @return Collection<int, Registration>
+     * @param  array{class_name: string, grade: int|string, school_type: string, students: int|string, teacher_name: string, teacher_phone: string, topic?: ?string, venue?: ?string}  $class
      */
-    public function checkout(Cart $cart, array $classesByRegistration, Contact $booker): Collection
+    public function checkout(Registration $registration, array $class, Contact $booker): Registration
     {
         $school = $booker->schoolAccount();
 
@@ -77,64 +78,93 @@ class SchoolBookingService
             throw new ReservationException('Bitte melden Sie sich mit dem Konto Ihrer Schule an.');
         }
 
-        $registrations = DB::transaction(function () use ($cart, $classesByRegistration, $booker, $school): Collection {
-            $registrations = $cart->heldRegistrations()->with(['enrollments', 'courseInstance.course'])->lockForUpdate()->get();
+        DB::transaction(function () use ($registration, $class, $booker, $school): void {
+            $registration = Registration::query()->with(['enrollments', 'courseInstance.course'])->lockForUpdate()->find($registration->id);
 
-            if ($registrations->isEmpty()) {
-                throw new ReservationException('Ihre Reservierung ist abgelaufen. Bitte legen Sie die Termine erneut in den Warenkorb.');
+            if ($registration === null || $registration->status !== RegistrationStatus::Held || ! $registration->expires_at?->isFuture()) {
+                throw new ReservationException('Ihre Reservierung ist abgelaufen. Der Termin wurde wieder freigegeben – bitte starten Sie die Buchung neu.');
             }
 
-            foreach ($registrations as $registration) {
-                $class = $classesByRegistration[$registration->id] ?? null;
-                $allowedVenues = $registration->courseInstance->allowedVenues();
-                $venue = count($allowedVenues) === 1 ? $allowedVenues[0] : SchoolVenue::tryFrom((string) ($class['venue'] ?? ''));
+            $instance = $registration->courseInstance;
+            $allowedVenues = $instance->allowedVenues();
+            $venue = count($allowedVenues) === 1 ? $allowedVenues[0] : SchoolVenue::tryFrom((string) ($class['venue'] ?? ''));
+            $schoolType = SchoolType::tryFrom((string) $class['school_type']);
+            $maxClassSize = $instance->maxClassSize();
 
-                if ($class === null || ! in_array($venue, $allowedVenues, true)) {
-                    throw new ReservationException('Bitte füllen Sie die Angaben für jeden Termin aus.');
-                }
+            if (! in_array($venue, $allowedVenues, true)) {
+                throw new ReservationException('Bitte wählen Sie den Ort.');
+            }
 
-                $registration->update([
-                    'contact_id' => $booker->id,
-                    'school_id' => $school->id,
-                    'email' => $booker->email,
-                    'contact_name' => trim($class['teacher_name']),
-                    'phone' => filled($class['teacher_phone'] ?? null) ? trim($class['teacher_phone']) : $booker->phone,
-                    'message' => filled($class['topic'] ?? null) ? trim($class['topic']) : null,
-                    'school_class_data' => [
-                        'class_name' => trim($class['class_name']),
-                        'students' => (int) $class['students'],
-                        'teacher_name' => trim($class['teacher_name']),
-                        'teacher_email' => $booker->email,
-                        'teacher_phone' => filled($class['teacher_phone'] ?? null) ? trim($class['teacher_phone']) : $booker->phone,
-                        'topic' => filled($class['topic'] ?? null) ? trim($class['topic']) : null,
-                    ],
-                    'venue' => $venue,
-                    'status' => RegistrationStatus::Requested,
-                    'checked_out_at' => now(),
+            if (! in_array($schoolType, $instance->course->allowedSchoolTypes(), true) || ! in_array((int) $class['grade'], $instance->course->allowedGrades(), true)) {
+                throw new ReservationException('Dieser Kurs ist nicht für diese Schulart oder Klassenstufe gedacht.');
+            }
+
+            if ($maxClassSize !== null && (int) $class['students'] > $maxClassSize) {
+                throw new ReservationException("Für diesen Kurs sind höchstens {$maxClassSize} Kinder möglich.");
+            }
+
+            $teacherPhone = trim($class['teacher_phone']);
+
+            $registration->update([
+                'contact_id' => $booker->id,
+                'school_id' => $school->id,
+                'email' => $booker->email,
+                'contact_name' => trim($class['teacher_name']),
+                'phone' => $teacherPhone,
+                'message' => filled($class['topic'] ?? null) ? trim($class['topic']) : null,
+                'school_class_data' => [
+                    'class_name' => trim($class['class_name']),
+                    'grade' => (int) $class['grade'],
+                    'school_type' => $schoolType->value,
+                    'students' => (int) $class['students'],
+                    'teacher_name' => trim($class['teacher_name']),
+                    'teacher_email' => $booker->email,
+                    'teacher_phone' => $teacherPhone,
+                    'topic' => filled($class['topic'] ?? null) ? trim($class['topic']) : null,
+                ],
+                'venue' => $venue,
+                'status' => RegistrationStatus::Requested,
+                'hold_token_hash' => null,
+                'checked_out_at' => now(),
+                'expires_at' => null,
+            ]);
+
+            $registration->enrollments()
+                ->where('status', EnrollmentStatus::Held)
+                ->update([
+                    'kid_name' => 'Klasse '.trim($class['class_name']),
+                    'status' => EnrollmentStatus::Requested,
                     'expires_at' => null,
                 ]);
-
-                $registration->enrollments()
-                    ->where('status', EnrollmentStatus::Held)
-                    ->update([
-                        'kid_name' => 'Klasse '.trim($class['class_name']),
-                        'status' => EnrollmentStatus::Requested,
-                        'expires_at' => null,
-                    ]);
-            }
-
-            return $registrations;
         });
 
-        $registrations = $registrations->map(fn (Registration $registration): Registration => $this->fresh($registration));
+        $registration = $this->fresh($registration);
 
-        $this->sendToTeacher($registrations->first(), new SchoolRequestReceivedMail($registrations));
+        $this->sendToTeacher($registration, new SchoolRequestReceivedMail(collect([$registration])));
+        $this->sendRequestToCourseLead($registration);
 
-        foreach ($registrations as $registration) {
-            $this->sendRequestToCourseLead($registration);
-        }
+        return $registration;
+    }
 
-        return $registrations;
+    /**
+     * The school type and grade a school entered for its most recent class, to prefill the next booking.
+     *
+     * @return array{school_type: ?string, grade: ?int}
+     */
+    public function lastClassDetails(Contact $school): array
+    {
+        $data = Registration::query()
+            ->where('school_id', $school->id)
+            ->whereNotNull('school_class_data')
+            ->latest('checked_out_at')
+            ->value('school_class_data');
+
+        $data = is_string($data) ? json_decode($data, true) : ($data ?? []);
+
+        return [
+            'school_type' => $data['school_type'] ?? null,
+            'grade' => isset($data['grade']) ? (int) $data['grade'] : null,
+        ];
     }
 
     /**

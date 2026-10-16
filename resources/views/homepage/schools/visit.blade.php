@@ -28,7 +28,7 @@
             <dt class="font-medium text-gray-500">Schule</dt>
             <dd>{{ $registration->school?->name }}</dd>
             <dt class="font-medium text-gray-500">Klasse</dt>
-            <dd>{{ $class['class_name'] }}</dd>
+            <dd>{{ $class['class_name'] }}@if ($registration->schoolClassLevel()) ({{ $registration->schoolClassLevel() }})@endif</dd>
             <dt class="font-medium text-gray-500">Lehrkraft</dt>
             <dd>{{ $class['teacher_name'] }}</dd>
             @if ($class['topic'])
@@ -50,8 +50,8 @@
                 <form method="POST" action="{{ $confirmUrl }}" class="mt-4 flex flex-col gap-4">
                     @csrf
                     <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">
-                        Anzahl Schüler*innen
-                        <input type="number" name="students" min="1" max="200" value="{{ old('students', $class['students']) }}" required class="rounded-lg border-gray-300">
+                        Anzahl Kinder
+                        <input type="number" name="students" min="1" max="{{ $registration->courseInstance->maxClassSize() ?? 200 }}" value="{{ old('students', $class['students']) }}" required class="rounded-lg border-gray-300">
                         @error('students')<span class="text-sm text-red-600">{{ $message }}</span>@enderror
                     </label>
                     <label class="flex flex-col gap-1 text-sm font-medium text-gray-700">

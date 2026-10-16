@@ -10,7 +10,6 @@ use App\Filament\Resources\Registrations\Pages\ViewRegistration;
 use App\Mail\ApprovalRequestMail;
 use App\Mail\RegistrationAwaitingApprovalMail;
 use App\Mail\RegistrationConfirmationMail;
-use App\Models\Cart;
 use App\Models\CompanySetting;
 use App\Models\Course;
 use App\Models\CourseInstance;
@@ -47,11 +46,10 @@ class ApprovalTest extends TestCase
 
     protected function book(array $kidNames, string $email): Registration
     {
-        $cart = Cart::factory()->create();
-        $registration = $this->reservations->hold($this->instance, count($kidNames), $cart);
-        $this->reservations->checkout($cart, ['email' => $email, 'name' => 'Familie'], [
-            $registration->id => array_map(fn (string $name): array => ['name' => $name, 'birthdate' => now()->subYears(10)->toDateString()], $kidNames),
-        ]);
+        [$registration] = $this->reservations->hold($this->instance, count($kidNames));
+        $this->reservations->checkout($registration, ['email' => $email, 'name' => 'Familie', 'phone' => '0911 123456'],
+            array_map(fn (string $name): array => ['name' => $name, 'birthdate' => now()->subYears(10)->toDateString()], $kidNames),
+        );
         $token = basename(parse_url(Mail::sent(RegistrationConfirmationMail::class)->last()->confirmationUrl, PHP_URL_PATH));
         $this->reservations->confirm($token);
 

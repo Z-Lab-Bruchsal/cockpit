@@ -5,6 +5,10 @@
             <a href="{{ route('homepage.schools.calendar') }}" class="text-sm font-semibold text-brand hover:underline">Im Kalender anzeigen</a>
         </div>
 
+        @if (session('status'))
+            <p class="mb-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('status') }}</p>
+        @endif
+
         @if (session('school_error'))
             <p class="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ session('school_error') }}</p>
         @endif
@@ -22,6 +26,9 @@
             <section class="mb-8" aria-labelledby="kurs-{{ $course->id }}">
                 <h2 id="kurs-{{ $course->id }}" class="text-xl font-semibold text-gray-900">{{ $course->name }}</h2>
                 <p class="text-sm text-gray-600">{{ $course->effectiveSchoolFormat()->getLabel() }}@if ($course->teaser) · {{ $course->teaser }}@endif</p>
+                @if ($course->audienceLabel() || $course->max_class_size)
+                    <p class="text-sm text-gray-600">{{ collect([$course->audienceLabel(), $course->max_class_size ? "max. {$course->max_class_size} Kinder" : null])->filter()->implode(' · ') }}</p>
+                @endif
 
                 <ul class="mt-3 flex flex-col gap-2">
                     @foreach ($instances as $instance)
@@ -38,9 +45,9 @@
                                 <p class="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700"><span class="size-2.5 rounded-full" style="background-color: {{ $state->hexColor() }}"></span>{{ $state->getLabel() }}</p>
                             </div>
                             @if ($state === \App\Enums\SchoolSlotState::Free && $contact?->canBookForSchool())
-                                <form method="POST" action="{{ route('homepage.schools.cart.add', $instance) }}">
+                                <form method="POST" action="{{ route('homepage.schools.booking.start', $instance) }}">
                                     @csrf
-                                    <button type="submit" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-contrast hover:opacity-90">In den Warenkorb</button>
+                                    <button type="submit" class="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-contrast hover:opacity-90">Buchen</button>
                                 </form>
                             @endif
                         </li>
