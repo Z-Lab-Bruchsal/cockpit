@@ -17,6 +17,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
 use Filament\Navigation\NavigationGroup;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         CompanySetting::applyToConfig();
+        URL::forceRootUrl('https://hp-reboot.z-lab-bruchsal.de/');
+        URL::forceScheme('https');
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
         RateLimiter::for('magic-link', function (Request $request): array {

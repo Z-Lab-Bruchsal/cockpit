@@ -48,7 +48,7 @@ services:
       assets:
         condition: service_completed_successfully
     ports:
-      - "${APP_PORT:-8000}:80"
+      - "127.0.0.1:${APP_PORT:-8000}:80"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/up"]
       interval: 10s
