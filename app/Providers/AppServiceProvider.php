@@ -99,8 +99,8 @@ class AppServiceProvider extends ServiceProvider
                 NavigationGroup::make()->label('Homepage'),
                 NavigationGroup::make()->label('Kurse und Kinder'),
                 NavigationGroup::make()->label('Kontakte'),
-                NavigationGroup::make()->label('Verwaltung')->collaped(),
-                NavigationGroup::make()->label('Zeiterfassung')
+                NavigationGroup::make()->label('Verwaltung')->collapsed(),
+                NavigationGroup::make()->label('Zeiterfassung')->collapsed()
             ]);
         });
 
