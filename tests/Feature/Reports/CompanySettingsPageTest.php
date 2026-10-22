@@ -176,6 +176,12 @@ class CompanySettingsPageTest extends TestCase
         $this->assertSame('red', CompanySetting::darken('red', 0.5));
     }
 
+    public function test_migrations_set_the_z_lab_pink_as_homepage_color(): void
+    {
+        $this->assertSame('#e41f6c', CompanySetting::current()->primary_color);
+        $this->assertSame('#e41f6c', CompanySetting::current()->homepageCssVariables()['--brand']);
+    }
+
     public function test_homepage_uses_configured_colors(): void
     {
         CompanySetting::current()->update(['primary_color' => '#1d4ed8', 'secondary_color' => '#0f172a']);
