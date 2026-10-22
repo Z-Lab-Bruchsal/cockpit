@@ -9,6 +9,7 @@ use App\Models\Section;
 use App\Models\User;
 use Database\Seeders\ShieldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -180,6 +181,60 @@ class CompanySettingsPageTest extends TestCase
     {
         $this->assertSame('#e41f6c', CompanySetting::current()->primary_color);
         $this->assertSame('#e41f6c', CompanySetting::current()->homepageCssVariables()['--brand']);
+    }
+
+    public function test_migrations_set_the_z_lab_logo_and_ribbon_links(): void
+    {
+        $settings = CompanySetting::current();
+
+        $this->assertSame('company/z-lab-logo.svg', $settings->logo_path);
+        $this->assertSame('Logo Z-LAB Zukunftslabor', $settings->logo_alt);
+        $this->assertTrue(Storage::disk('public')->exists('company/z-lab-logo.svg'));
+        $this->assertSame('https://www.auerbach-stiftung.de/newsletter-12-de', $settings->newsletter_url);
+        $this->assertSame('https://www.auerbach-stiftung.de/spenden-11-de', $settings->donation_url);
+    }
+
+    public function test_homepage_shows_logo_and_ribbons(): void
+    {
+        $this->withoutVite()->get('/')
+            ->assertSee('company/z-lab-logo.svg', false)
+            ->assertSee('alt="Logo Z-LAB Zukunftslabor"', false)
+            ->assertSee('href="https://www.auerbach-stiftung.de/newsletter-12-de"', false)
+            ->assertSee('href="https://www.auerbach-stiftung.de/spenden-11-de"', false)
+            ->assertSee('Jetzt spenden');
+    }
+
+    public function test_header_ribbons_skip_empty_and_unsafe_links(): void
+    {
+        CompanySetting::current()->update(['newsletter_url' => null, 'donation_url' => 'javascript:alert(1)']);
+
+        $this->assertSame([], CompanySetting::current()->headerRibbons());
+
+        $this->withoutVite()->get('/')
+            ->assertDontSee('javascript:alert(1)', false)
+            ->assertDontSee('Jetzt spenden')
+            ->assertDontSee('Zum Newsletter');
+    }
+
+    public function test_boss_can_set_ribbon_links_and_invalid_urls_are_rejected(): void
+    {
+        $boss = User::factory()->create();
+        $boss->assignRole('Z-Lab-Boss');
+        $this->actingAs($boss);
+
+        Livewire::test(CompanySettingsPage::class)
+            ->fillForm(['donation_url' => 'kein link'])
+            ->call('save')
+            ->assertHasFormErrors(['donation_url' => 'url']);
+
+        Livewire::test(CompanySettingsPage::class)
+            ->fillForm(['newsletter_url' => 'https://example.test/newsletter', 'donation_url' => null])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame([
+            ['label' => 'Zum Newsletter', 'url' => 'https://example.test/newsletter', 'isDonation' => false],
+        ], CompanySetting::current()->headerRibbons());
     }
 
     public function test_homepage_uses_configured_colors(): void

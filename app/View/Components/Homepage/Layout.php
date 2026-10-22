@@ -26,6 +26,8 @@ class Layout extends Component
 
     public bool $isSchoolContact;
 
+    public bool $isAccountPage;
+
     public function __construct(public ?string $title = null)
     {
         $this->settings = CompanySetting::current();
@@ -46,6 +48,7 @@ class Layout extends Component
             $this->isLoggedIn => 'homepage.account',
             default => 'homepage.login',
         });
+        $this->isAccountPage = request()->routeIs('homepage.account', 'homepage.login', 'homepage.schools.account');
     }
 
     public function pageTitle(): string

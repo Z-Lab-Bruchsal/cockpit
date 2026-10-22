@@ -137,8 +137,18 @@ class CompanySettingsPage extends Page
                                     ->required(),
                                 static::colorPicker('secondary_color')
                                     ->label('Akzentfarbe')
-                                    ->helperText('Hintergrund von Kopfbereich und Footer')
+                                    ->helperText('Wird vom aktuellen Homepage-Layout nicht verwendet')
                                     ->required(),
+                                TextInput::make('newsletter_url')
+                                    ->label('Link „Zum Newsletter“')
+                                    ->helperText('Wimpel unter dem Kopfbereich. Leer = kein Wimpel.')
+                                    ->url()
+                                    ->maxLength(500),
+                                TextInput::make('donation_url')
+                                    ->label('Link „Jetzt spenden“')
+                                    ->helperText('Wimpel unter dem Kopfbereich. Leer = kein Wimpel.')
+                                    ->url()
+                                    ->maxLength(500),
                             ])
                             ->columns(2),
                         Tab::make('Footer')

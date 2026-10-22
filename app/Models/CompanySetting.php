@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours', 'booking_limit_per_hour', 'booking_limit_per_day', 'max_seats_per_registration', 'digest_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days', 'directions_document_path'])]
+#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours', 'booking_limit_per_hour', 'booking_limit_per_day', 'max_seats_per_registration', 'digest_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days', 'directions_document_path', 'newsletter_url', 'donation_url'])]
 class CompanySetting extends Model
 {
     /**
@@ -325,6 +325,22 @@ class CompanySetting extends Model
                 ? ['label' => self::SOCIAL_PLATFORMS[$link['platform'] ?? 'other'] ?? 'Link', 'url' => $url]
                 : null)
             ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Ribbons hanging below the homepage header; only those with a valid link are returned.
+     *
+     * @return list<array{label: string, url: string, isDonation: bool}>
+     */
+    public function headerRibbons(): array
+    {
+        return collect([
+            ['label' => 'Zum Newsletter', 'url' => Str::sanitizeUrl($this->newsletter_url), 'isDonation' => false],
+            ['label' => 'Jetzt spenden', 'url' => Str::sanitizeUrl($this->donation_url), 'isDonation' => true],
+        ])
+            ->filter(fn (array $ribbon): bool => filled($ribbon['url']))
             ->values()
             ->all();
     }

@@ -1,4 +1,9 @@
 // Entry point for the public homepage. Alpine is provided by Livewire.
+// Open Sans like auerbach-stiftung.de, self-hosted (latin only) instead of Google Fonts.
+import '@fontsource/open-sans/latin-300.css';
+import '@fontsource/open-sans/latin-400.css';
+import '@fontsource/open-sans/latin-600.css';
+import '@fontsource/open-sans/latin-700.css';
 import { Calendar } from '@fullcalendar/core';
 import deLocale from '@fullcalendar/core/locales/de';
 import dayGridPlugin from '@fullcalendar/daygrid';
