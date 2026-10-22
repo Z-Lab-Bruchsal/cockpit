@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\CompanySetting;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Navigation\NavigationGroup;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
@@ -13,11 +15,9 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Filament\Facades\Filament;
-use Filament\Navigation\NavigationGroup;
-use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,8 +35,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         CompanySetting::applyToConfig();
-        URL::forceRootUrl('https://hp-reboot.z-lab-bruchsal.de/');
-        URL::forceScheme('https');
+        // URL::forceRootUrl('https://hp-reboot.z-lab-bruchsal.de/');
+        // URL::forceScheme('https');
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
         RateLimiter::for('magic-link', function (Request $request): array {
@@ -100,7 +100,7 @@ class AppServiceProvider extends ServiceProvider
                 NavigationGroup::make()->label('Kurse und Kinder'),
                 NavigationGroup::make()->label('Kontakte'),
                 NavigationGroup::make()->label('Verwaltung')->collapsed(),
-                NavigationGroup::make()->label('Zeiterfassung')->collapsed()
+                NavigationGroup::make()->label('Zeiterfassung')->collapsed(),
             ]);
         });
 

@@ -60,11 +60,11 @@
             </label>
 
             <label class="flex items-start gap-3 text-sm text-gray-700">
-                <input type="checkbox" name="privacy" value="1" @checked(old('privacy')) required class="mt-0.5 rounded border-gray-300 text-brand">
+                <input type="checkbox" name="privacy" value="1" @checked(old('privacy')) required class="mt-0.5 rounded border-gray-300 text-brand-ink">
                 <span>
                     Ich bin einverstanden, dass meine Angaben zur Bearbeitung meiner Anfrage verwendet werden.
                     @if ($privacySection)
-                        Mehr dazu in der <a href="{{ $privacySection->url() }}" class="text-brand underline">Datenschutzerklärung</a>.
+                        Mehr dazu in der <a href="{{ $privacySection->url() }}" class="text-brand-ink underline">Datenschutzerklärung</a>.
                     @endif
                 </span>
             </label>

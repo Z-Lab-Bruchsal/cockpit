@@ -5,7 +5,7 @@
     data-course-calendar
     data-events-url="{{ route('homepage.calendar.events', array_filter(['zielgruppe' => $audience])) }}"
 >
-    <noscript>Für den Kalender wird JavaScript benötigt. Alle Kurse findest du auch in der <a href="{{ route('homepage.courses.index') }}" class="text-brand underline">Kursübersicht</a>.</noscript>
+    <noscript>Für den Kalender wird JavaScript benötigt. Alle Kurse findest du auch in der <a href="{{ route('homepage.courses.index') }}" class="text-brand-ink underline">Kursübersicht</a>.</noscript>
 </div>
 
 <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600" aria-label="Legende">

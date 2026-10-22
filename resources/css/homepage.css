@@ -15,8 +15,101 @@
 @theme inline {
     --color-brand: var(--brand, #f59e0b);
     --color-brand-contrast: var(--brand-contrast, #111827);
+    /* Text colors derived from the brand color, computed in CompanySetting::brandCssVariables(). */
+    --color-brand-heading: var(--brand-heading, #b45309);
+    --color-brand-ink: var(--brand-ink, #b45309);
     --color-accent: var(--accent, #fff7ed);
     --color-accent-contrast: var(--accent-contrast, #111827);
+    /* Lower edge of the "key" cards and buttons and their hover background, tinted with the brand color. */
+    --color-key-edge: color-mix(in srgb, var(--brand, #f59e0b) 10%, #ebebeb);
+    --color-key-edge-strong: color-mix(in srgb, var(--brand, #f59e0b) 10%, #c8c8c8);
+    --color-key-hover: color-mix(in srgb, var(--brand, #f59e0b) 5%, white);
+}
+
+@theme {
+    --color-page: #f1eff4;
+    --color-ink: #25252b;
+    --color-footer: #302a31;
+    --color-footer-ink: #f6f2f5;
+    --color-footer-muted: #d4cbd2;
+    --color-footer-hover: #ff94b9;
+}
+
+/* White card that looks like a pressable key: a solid lower edge plus a soft shadow. */
+@utility key-card {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-key-edge);
+    border-radius: 0.875rem;
+    box-shadow:
+        0 6px 0 var(--color-key-edge),
+        0 10px 20px rgb(70 25 45 / 0.08);
+}
+
+/* Hover/press feedback for key cards that act as a link. */
+@utility key-card-interactive {
+    transition:
+        background-color 0.15s,
+        border-color 0.15s,
+        box-shadow 0.15s,
+        transform 0.15s;
+
+    &:hover {
+        background-color: var(--color-key-hover);
+        border-color: var(--color-brand);
+    }
+
+    &:active {
+        transform: translateY(4px);
+        box-shadow:
+            0 2px 0 var(--color-key-edge),
+            0 4px 10px rgb(70 25 45 / 0.08);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &:active {
+            transform: none;
+        }
+    }
+}
+
+/* Small white key button, e.g. footer links. */
+@utility key-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-key-edge);
+    border-radius: 0.5rem;
+    background-color: var(--color-white);
+    color: var(--color-brand-ink);
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 4px 0 var(--color-key-edge-strong);
+    transition:
+        background-color 0.15s,
+        box-shadow 0.15s,
+        transform 0.15s;
+
+    &:hover {
+        background-color: var(--color-key-hover);
+        border-color: var(--color-brand);
+    }
+
+    &:active {
+        transform: translateY(3px);
+        box-shadow: 0 1px 0 var(--color-key-edge-strong);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &:active {
+            transform: none;
+        }
+    }
 }
 
 html {

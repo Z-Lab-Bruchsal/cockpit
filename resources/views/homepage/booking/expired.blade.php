@@ -1,6 +1,6 @@
 <x-homepage.layout title="Zeit abgelaufen">
     <div class="mx-auto max-w-lg px-4 py-12 text-center sm:py-16">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Die Zeit ist abgelaufen</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Die Zeit ist abgelaufen</h1>
         <p class="mt-3 text-gray-600">
             @if ($isSchool)
                 Diese Buchung wurde nicht rechtzeitig abgeschickt oder abgebrochen. Der Termin wurde wieder freigegeben – bitte starten Sie die Buchung neu.

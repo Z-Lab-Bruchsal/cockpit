@@ -1,6 +1,6 @@
 <x-homepage.layout title="Termin verschieben">
     <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Termin verschieben</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Termin verschieben</h1>
         <p class="mt-3 text-gray-600">
             Bisher gebucht: <strong>{{ $registration->courseInstance->displayTitle() }}</strong> am {{ $registration->courseInstance->dates->first()?->formattedRange() }}.
             Wählen Sie einen neuen Termin. Ihr bisheriger Termin bleibt bestehen, bis die Kursleitung den neuen bestätigt hat.
@@ -23,10 +23,10 @@
                     </form>
                 </li>
             @empty
-                <li class="rounded-2xl bg-gray-50 px-6 py-8 text-center text-gray-600">Für diesen Kurs gibt es gerade keine anderen freien Termine. Bitte sprechen Sie uns an.</li>
+                <li class="rounded-2xl bg-white px-6 py-8 text-center text-gray-600">Für diesen Kurs gibt es gerade keine anderen freien Termine. Bitte sprechen Sie uns an.</li>
             @endforelse
         </ul>
 
-        <a href="{{ route('homepage.schools.account') }}" class="mt-6 inline-block text-sm font-semibold text-brand hover:underline">Zurück zum Schulkonto</a>
+        <a href="{{ route('homepage.schools.account') }}" class="mt-6 inline-block text-sm font-semibold text-brand-ink hover:underline">Zurück zum Schulkonto</a>
     </div>
 </x-homepage.layout>

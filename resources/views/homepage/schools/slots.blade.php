@@ -1,8 +1,8 @@
 <x-homepage.layout title="Freie Termine für Schulen">
     <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Termine für Schulklassen</h1>
-            <a href="{{ route('homepage.schools.calendar') }}" class="text-sm font-semibold text-brand hover:underline">Im Kalender anzeigen</a>
+            <h1 class="text-3xl font-bold tracking-tight text-brand-heading sm:text-4xl">Termine für Schulklassen</h1>
+            <a href="{{ route('homepage.schools.calendar') }}" class="text-sm font-semibold text-brand-ink hover:underline">Im Kalender anzeigen</a>
         </div>
 
         @if (session('status'))
@@ -16,8 +16,8 @@
         @unless ($contact?->canBookForSchool())
             <p class="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
                 Zum Buchen brauchen Sie ein Schulkonto.
-                <a href="{{ route('homepage.login', ['weiter' => route('homepage.schools.slots', absolute: false)]) }}" class="font-semibold text-brand hover:underline">Anmelden</a> oder
-                <a href="{{ route('homepage.schools.register') }}" class="font-semibold text-brand hover:underline">Schule registrieren</a>.
+                <a href="{{ route('homepage.login', ['weiter' => route('homepage.schools.slots', absolute: false)]) }}" class="font-semibold text-brand-ink hover:underline">Anmelden</a> oder
+                <a href="{{ route('homepage.schools.register') }}" class="font-semibold text-brand-ink hover:underline">Schule registrieren</a>.
             </p>
         @endunless
 
@@ -55,7 +55,7 @@
                 </ul>
             </section>
         @empty
-            <div class="rounded-2xl bg-gray-50 px-6 py-12 text-center text-gray-600">Zurzeit sind keine Termine für Schulklassen geplant.</div>
+            <div class="rounded-2xl bg-white px-6 py-12 text-center text-gray-600">Zurzeit sind keine Termine für Schulklassen geplant.</div>
         @endforelse
     </div>
 </x-homepage.layout>

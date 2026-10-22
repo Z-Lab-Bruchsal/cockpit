@@ -10,7 +10,7 @@
 <article
     style="{{ $template->accentStyle() }}"
     @class([
-        'group relative flex overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
+        'key-card key-card-interactive group relative flex overflow-hidden',
         'flex-col' => $style !== \App\Enums\CourseCardStyle::ImageLeft,
         'flex-col sm:flex-row' => $style === \App\Enums\CourseCardStyle::ImageLeft,
         'border-l-4 border-l-brand' => $style === \App\Enums\CourseCardStyle::Compact,
@@ -38,7 +38,7 @@
             @endif
         </div>
 
-        <h3 class="text-lg font-semibold text-gray-900">{{ $course->name }}</h3>
+        <h3 class="text-lg font-bold">{{ $course->name }}</h3>
 
         @if ($course->teaser)
             <p class="text-sm text-gray-600">{{ $course->teaser }}</p>
@@ -52,9 +52,10 @@
             @endif
         </p>
 
-        <a href="{{ $course->url() }}" class="mt-auto inline-flex items-center gap-1 pt-2 text-sm font-semibold text-brand after:absolute after:inset-0">
-            Mehr Infos
-            <svg class="size-4 transition group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.64l-4.22-4.22a.75.75 0 1 1 1.06-1.06l5.5 5.5a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 1 1-1.06-1.06l4.22-4.22H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd"/></svg>
-        </a>
+        <div class="mt-auto pt-3">
+            <a href="{{ $course->url() }}" class="inline-flex items-center rounded-lg border-2 border-brand-ink px-4 py-2 text-sm font-bold text-brand-ink after:absolute after:inset-0">
+                Mehr erfahren
+            </a>
+        </div>
     </div>
 </article>

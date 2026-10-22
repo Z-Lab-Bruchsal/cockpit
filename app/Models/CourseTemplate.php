@@ -73,6 +73,12 @@ class CourseTemplate extends Model
     {
         $color = Str::sanitizeCssColor($this->accent_color);
 
-        return $color ? "--brand: {$color}; --brand-contrast: ".CompanySetting::contrastTextColor($color) : '';
+        if (! $color) {
+            return '';
+        }
+
+        return collect(CompanySetting::brandCssVariables($color))
+            ->map(fn (string $value, string $name): string => "{$name}: {$value}")
+            ->implode('; ');
     }
 }

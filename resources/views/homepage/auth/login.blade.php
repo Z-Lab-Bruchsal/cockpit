@@ -1,6 +1,6 @@
 <x-homepage.layout title="Anmelden">
     <div class="mx-auto max-w-md px-4 py-12 sm:py-16">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Anmelden oder registrieren</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Anmelden oder registrieren</h1>
 
         @if (session('magic_link_sent'))
             <div class="mt-6 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-900" role="status">
@@ -36,7 +36,7 @@
             <button type="submit" class="rounded-lg bg-brand px-4 py-3 font-semibold text-brand-contrast hover:opacity-90">Anmeldelink schicken</button>
         </form>
 
-        <p class="mt-6 text-sm text-gray-500">Kein Zugriff mehr auf die E-Mail-Adresse deines Kontos? <a href="{{ route('homepage.contact-form', ['anliegen' => \App\Enums\ContactFormTopic::LostEmailAccess->value]) }}" class="font-medium text-brand hover:underline">Schreib uns</a>.</p>
+        <p class="mt-6 text-sm text-gray-500">Kein Zugriff mehr auf die E-Mail-Adresse deines Kontos? <a href="{{ route('homepage.contact-form', ['anliegen' => \App\Enums\ContactFormTopic::LostEmailAccess->value]) }}" class="font-medium text-brand-ink hover:underline">Schreib uns</a>.</p>
 
         <p class="mt-3 text-sm text-gray-500">Ein Konto ist freiwillig. Für eine Kursanmeldung brauchst du keins – mit Konto musst du deine Daten aber nur einmal eingeben.</p>
     </div>

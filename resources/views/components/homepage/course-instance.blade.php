@@ -2,7 +2,7 @@
 
 @php($availability = $instance->availability())
 
-<article id="durchfuehrung-{{ $instance->id }}" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+<article id="durchfuehrung-{{ $instance->id }}" class="key-card p-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <h3 class="text-lg font-semibold text-gray-900">{{ $instance->title ?: ($instance->dates->count() > 1 ? $instance->dates->count().' Termine' : 'Termin') }}</h3>

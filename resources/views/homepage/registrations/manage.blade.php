@@ -1,6 +1,6 @@
 <x-homepage.layout title="Anmeldung verwalten">
     <div class="mx-auto max-w-lg px-4 py-12 sm:py-16">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Deine Anmeldung</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Deine Anmeldung</h1>
 
         @if (session('status'))
             <p class="mt-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('status') }}</p>

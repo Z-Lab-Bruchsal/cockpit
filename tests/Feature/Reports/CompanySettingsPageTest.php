@@ -4,6 +4,7 @@ namespace Tests\Feature\Reports;
 
 use App\Filament\Pages\CompanySettingsPage;
 use App\Models\CompanySetting;
+use App\Models\CourseTemplate;
 use App\Models\Section;
 use App\Models\User;
 use Database\Seeders\ShieldSeeder;
@@ -70,7 +71,9 @@ class CompanySettingsPageTest extends TestCase
         $this->assertSame('Z-Lab Bruchsal Verwaltung', config('app.name'));
         $this->assertSame('Z-Lab Bruchsal Verwaltung', config('mail.from.name'));
 
-        $this->withoutVite()->get('/cockpit/login')->assertSee('Z-Lab Bruchsal Verwaltung');
+        $this->actingAs(User::factory()->create());
+
+        $this->withoutVite()->get('/cockpit')->assertSee('Z-Lab Bruchsal Verwaltung');
     }
 
     public function test_app_title_is_required(): void
@@ -144,12 +147,49 @@ class CompanySettingsPageTest extends TestCase
         $this->assertSame('#ffffff', CompanySetting::contrastTextColor('#000'));
     }
 
+    public function test_brand_text_color_is_darkened_until_readable_on_white(): void
+    {
+        $this->assertSame('#1d4ed8', CompanySetting::readableOnWhite('#1d4ed8'));
+        $this->assertSame('rgb(0 0 0)', CompanySetting::readableOnWhite('rgb(0 0 0)'));
+
+        foreach (['#ffd600', '#e41f6c', '#fff', '#ffffff80'] as $color) {
+            $readable = CompanySetting::readableOnWhite($color);
+
+            $this->assertNotSame($color, $readable);
+            $this->assertGreaterThanOrEqual(4.5, 1.05 / (CompanySetting::relativeLuminance($readable) + 0.05), $color);
+        }
+
+        $this->assertSame('#ffd600', CompanySetting::readableOnWhite('#ffd600', 1.0));
+        $this->assertGreaterThanOrEqual(3.0, 1.05 / (CompanySetting::relativeLuminance(CompanySetting::readableOnWhite('#ffd600', 3.0)) + 0.05));
+    }
+
+    public function test_brand_variables_match_the_z_lab_pink(): void
+    {
+        $this->assertSame([
+            '--brand' => '#e41f6c',
+            '--brand-contrast' => '#ffffff',
+            '--brand-heading' => '#e41f6c',
+            '--brand-ink' => '#c41b5d',
+        ], CompanySetting::brandCssVariables('#e41f6c'));
+
+        $this->assertSame('#c41b5d', CompanySetting::darken('#e41f6c', 0.86));
+        $this->assertSame('red', CompanySetting::darken('red', 0.5));
+    }
+
     public function test_homepage_uses_configured_colors(): void
     {
         CompanySetting::current()->update(['primary_color' => '#1d4ed8', 'secondary_color' => '#0f172a']);
 
         $this->withoutVite()->get('/')
-            ->assertSee('--brand: #1d4ed8; --brand-contrast: #ffffff; --accent: #0f172a; --accent-contrast: #ffffff', false);
+            ->assertSee('--brand: #1d4ed8; --brand-contrast: #ffffff; --brand-heading: #1d4ed8; --brand-ink: #1943ba; --accent: #0f172a; --accent-contrast: #ffffff', false);
+    }
+
+    public function test_course_template_accent_color_overrides_all_brand_variables(): void
+    {
+        $template = new CourseTemplate(['accent_color' => '#e41f6c']);
+
+        $this->assertSame('--brand: #e41f6c; --brand-contrast: #ffffff; --brand-heading: #e41f6c; --brand-ink: #c41b5d', $template->accentStyle());
+        $this->assertSame('', (new CourseTemplate)->accentStyle());
     }
 
     public function test_boss_can_configure_footer(): void

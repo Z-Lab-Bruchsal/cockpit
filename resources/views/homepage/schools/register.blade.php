@@ -1,6 +1,6 @@
 <x-homepage.layout title="Schule registrieren">
     <div class="mx-auto max-w-xl px-4 py-12 sm:py-16">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Schule registrieren</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Schule registrieren</h1>
 
         @if (session('school_registration_sent'))
             <div class="mt-6 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-900" role="status">
@@ -54,7 +54,7 @@
             </label>
 
             <label class="flex items-start gap-3 text-sm text-gray-700 sm:col-span-2">
-                <input type="checkbox" name="accepts_privacy" value="1" @checked(old('accepts_privacy')) class="mt-0.5 rounded border-gray-300 text-brand">
+                <input type="checkbox" name="accepts_privacy" value="1" @checked(old('accepts_privacy')) class="mt-0.5 rounded border-gray-300 text-brand-ink">
                 <span>Ich bin einverstanden, dass die Angaben zur Organisation der Kurse gespeichert werden.</span>
             </label>
             @error('accepts_privacy')<span class="text-sm text-red-600 sm:col-span-2">{{ $message }}</span>@enderror
@@ -63,6 +63,6 @@
             <button type="submit" class="rounded-lg bg-brand px-4 py-3 font-semibold text-brand-contrast hover:opacity-90 sm:col-span-2">Schule registrieren</button>
         </form>
 
-        <p class="mt-6 text-sm text-gray-500">Ihre Schule ist schon registriert? <a href="{{ route('homepage.login', ['weiter' => route('homepage.schools.account', absolute: false)]) }}" class="font-medium text-brand hover:underline">Anmelden</a> – Lehrkräfte bekommen eine Einladung von ihrer Schule.</p>
+        <p class="mt-6 text-sm text-gray-500">Ihre Schule ist schon registriert? <a href="{{ route('homepage.login', ['weiter' => route('homepage.schools.account', absolute: false)]) }}" class="font-medium text-brand-ink hover:underline">Anmelden</a> – Lehrkräfte bekommen eine Einladung von ihrer Schule.</p>
     </div>
 </x-homepage.layout>

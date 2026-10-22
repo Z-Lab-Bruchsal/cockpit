@@ -13,7 +13,7 @@
         </nav>
 
         @if ($section->show_title)
-            <h1 class="mb-6 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{{ $section->title }}</h1>
+            <h1 class="mb-6 text-3xl font-bold tracking-tight text-brand-heading sm:text-4xl">{{ $section->title }}</h1>
         @endif
 
         @if (! empty($section->content))
@@ -27,7 +27,7 @@
         <x-homepage.tiles :tiles="$tiles" @class(['mt-10' => ! empty($section->content)]) />
 
         <div class="mt-10">
-            <a href="{{ count($ancestors) ? end($ancestors)->url() : route('homepage.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline">
+            <a href="{{ count($ancestors) ? end($ancestors)->url() : route('homepage.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-ink hover:underline">
                 <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M17 10a.75.75 0 0 1-.75.75H5.61l4.22 4.22a.75.75 0 1 1-1.06 1.06l-5.5-5.5a.75.75 0 0 1 0-1.06l5.5-5.5a.75.75 0 1 1 1.06 1.06L5.61 9.25h10.64A.75.75 0 0 1 17 10Z" clip-rule="evenodd"/></svg>
                 Zurück
             </a>

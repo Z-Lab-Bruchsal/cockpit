@@ -9,9 +9,9 @@
 @endphp
 
 @if ($isSchoolCourse)
-    <p>Dieser Kurs ist für Schulklassen und wird über den <a href="{{ route('homepage.schools.slots') }}#termin-{{ $instance->id }}" class="font-semibold text-brand hover:underline">Bereich für Schulen</a> gebucht.</p>
+    <p>Dieser Kurs ist für Schulklassen und wird über den <a href="{{ route('homepage.schools.slots') }}#termin-{{ $instance->id }}" class="font-semibold text-brand-ink hover:underline">Bereich für Schulen</a> gebucht.</p>
 @elseif ($isSchoolContact)
-    <p>Mit einem Schulkonto können keine Kurse für einzelne Kinder gebucht werden. Bitte melden Sie sich dafür ab oder buchen Sie über den <a href="{{ route('homepage.schools.slots') }}" class="font-semibold text-brand hover:underline">Bereich für Schulen</a>.</p>
+    <p>Mit einem Schulkonto können keine Kurse für einzelne Kinder gebucht werden. Bitte melden Sie sich dafür ab oder buchen Sie über den <a href="{{ route('homepage.schools.slots') }}" class="font-semibold text-brand-ink hover:underline">Bereich für Schulen</a>.</p>
 @elseif ($availability === \App\Enums\CourseAvailability::Reserved)
     <p>Gerade sind alle Plätze in Reservierung. Schau in ein paar Minuten noch einmal vorbei – nicht abgeschlossene Anmeldungen werden wieder frei.</p>
 @elseif ($availability->acceptsRegistrations() && $maxSeats > 0)

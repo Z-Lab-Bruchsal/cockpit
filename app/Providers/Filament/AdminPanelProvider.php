@@ -38,7 +38,6 @@ class AdminPanelProvider extends PanelProvider
             ->unsavedChangesAlerts()
             ->databaseNotifications()
             ->profile()
-            ->passwordReset()
             ->font(
                 'Bunny',
                 provider: LocalFontProvider::class,
@@ -72,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make()->navigationGroup('Administration'),
-                FilamentOauth2Plugin::make()->localLogin(),
+                FilamentOauth2Plugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,

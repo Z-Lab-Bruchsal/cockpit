@@ -53,6 +53,26 @@ class Layout extends Component
         return collect([$this->title, $this->settings->homepageTitle()])->filter()->implode(' – ');
     }
 
+    /**
+     * Main navigation: visible root sections followed by the fixed app pages.
+     *
+     * @return list<array{label: string, url: string, active: bool}>
+     */
+    public function mainLinks(): array
+    {
+        return $this->navigation
+            ->map(fn (Section $item): array => [
+                'label' => $item->title,
+                'url' => $item->url(),
+                'active' => request()->is($item->slug),
+            ])
+            ->push(['label' => 'Kurse', 'url' => route('homepage.courses.index'), 'active' => request()->routeIs('homepage.courses.*')])
+            ->push(['label' => 'Kalender', 'url' => route('homepage.calendar'), 'active' => request()->routeIs('homepage.calendar')])
+            ->push(['label' => 'Schulen', 'url' => route('homepage.schools.index'), 'active' => request()->routeIs('homepage.schools.*')])
+            ->values()
+            ->all();
+    }
+
     public function render(): View|Closure|string
     {
         return view('components.homepage.layout');

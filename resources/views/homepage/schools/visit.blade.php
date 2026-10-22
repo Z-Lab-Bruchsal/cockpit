@@ -6,7 +6,7 @@
 
 <x-homepage.layout title="Ihr Termin">
     <div class="mx-auto max-w-xl px-4 py-12 sm:py-16">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ $instance->displayTitle() }}</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading">{{ $instance->displayTitle() }}</h1>
 
         @if (session('status'))
             <p class="mt-6 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('status') }}</p>
@@ -65,7 +65,7 @@
         @endif
 
         @if ($canChange)
-            <section class="mt-8 rounded-2xl bg-gray-50 p-5" aria-labelledby="aendern">
+            <section class="mt-8 rounded-2xl bg-white p-5" aria-labelledby="aendern">
                 <h2 id="aendern" class="text-lg font-semibold text-gray-900">Etwas ist dazwischengekommen?</h2>
                 <p class="mt-1 text-sm text-gray-600">Bis zum {{ $instance->rescheduleDeadline()->format('d.m.Y') }} können Sie den Termin selbst stornieren oder auf einen anderen Termin verschieben.</p>
                 <div class="mt-4 flex flex-wrap gap-3">

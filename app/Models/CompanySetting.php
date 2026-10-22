@@ -173,10 +173,25 @@ class CompanySetting extends Model
         $secondary = Str::sanitizeCssColor($this->secondary_color) ?? '#fff7ed';
 
         return [
-            '--brand' => $primary,
-            '--brand-contrast' => static::contrastTextColor($primary),
+            ...static::brandCssVariables($primary),
             '--accent' => $secondary,
             '--accent-contrast' => static::contrastTextColor($secondary),
+        ];
+    }
+
+    /**
+     * The brand color plus the text colors derived from it: on top of it (contrast), for headings
+     * on white (at least 3:1, large text) and for small text on white (14 % darker, at least 4.5:1).
+     *
+     * @return array{'--brand': string, '--brand-contrast': string, '--brand-heading': string, '--brand-ink': string}
+     */
+    public static function brandCssVariables(string $color): array
+    {
+        return [
+            '--brand' => $color,
+            '--brand-contrast' => static::contrastTextColor($color),
+            '--brand-heading' => static::readableOnWhite($color, 3.0),
+            '--brand-ink' => static::readableOnWhite(static::darken($color, 0.86)),
         ];
     }
 
@@ -185,6 +200,76 @@ class CompanySetting extends Model
      */
     public static function contrastTextColor(string $hexColor): string
     {
+        $luminance = static::relativeLuminance($hexColor);
+
+        if ($luminance === null) {
+            return '#111827';
+        }
+
+        // Contrast against white vs. against near-black (#111827, luminance ~0.0089).
+        return (1.05 / ($luminance + 0.05)) >= (($luminance + 0.05) / 0.0589) ? '#ffffff' : '#111827';
+    }
+
+    /**
+     * The given hex color, darkened until it reaches the WCAG contrast as text on white
+     * (4.5:1 for normal text, 3:1 for large text). Dark enough colors and non-hex values are returned unchanged.
+     */
+    public static function readableOnWhite(string $hexColor, float $minContrast = 4.5): string
+    {
+        $color = $hexColor;
+
+        if (static::hexChannels($color) === null) {
+            return $color;
+        }
+
+        while (1.05 / (static::relativeLuminance($color) + 0.05) < $minContrast) {
+            $color = static::darken($color, 0.9);
+        }
+
+        return $color;
+    }
+
+    /**
+     * The given hex color with all channels multiplied by the factor (0–1); non-hex values are returned unchanged.
+     */
+    public static function darken(string $hexColor, float $factor): string
+    {
+        $channels = static::hexChannels($hexColor);
+
+        if ($channels === null) {
+            return $hexColor;
+        }
+
+        return vsprintf('#%02x%02x%02x', array_map(fn (int $channel): int => (int) round($channel * $factor), $channels));
+    }
+
+    /**
+     * WCAG relative luminance (0–1) of a hex color, or null if it is not a hex color.
+     */
+    public static function relativeLuminance(string $hexColor): ?float
+    {
+        $channels = static::hexChannels($hexColor);
+
+        if ($channels === null) {
+            return null;
+        }
+
+        [$red, $green, $blue] = array_map(function (int $channel): float {
+            $value = $channel / 255;
+
+            return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        }, $channels);
+
+        return 0.2126 * $red + 0.7152 * $green + 0.0722 * $blue;
+    }
+
+    /**
+     * RGB channels (0–255) of a #rgb, #rgba, #rrggbb or #rrggbbaa color; alpha is ignored.
+     *
+     * @return array{int, int, int}|null
+     */
+    protected static function hexChannels(string $hexColor): ?array
+    {
         $hex = ltrim($hexColor, '#');
 
         if (strlen($hex) === 3 || strlen($hex) === 4) {
@@ -192,19 +277,10 @@ class CompanySetting extends Model
         }
 
         if (! preg_match('/^[0-9a-fA-F]{6}/', $hex)) {
-            return '#111827';
+            return null;
         }
 
-        $channels = array_map(function (string $channel): float {
-            $value = hexdec($channel) / 255;
-
-            return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
-        }, str_split(substr($hex, 0, 6), 2));
-
-        $luminance = 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
-
-        // Contrast against white vs. against near-black (#111827, luminance ~0.0089).
-        return (1.05 / ($luminance + 0.05)) >= (($luminance + 0.05) / 0.0589) ? '#ffffff' : '#111827';
+        return array_map(fn (string $channel): int => (int) hexdec($channel), str_split(substr($hex, 0, 6), 2));
     }
 
     /**

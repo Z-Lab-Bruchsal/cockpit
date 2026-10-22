@@ -1,6 +1,6 @@
 <x-homepage.layout title="Für Schulen">
     <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Für Schulklassen</h1>
+        <h1 class="text-3xl font-bold tracking-tight text-brand-heading sm:text-4xl">Für Schulklassen</h1>
         <p class="mt-3 text-gray-600">Buchen Sie einen Kurs für Ihre Klasse – je nach Kurs bei uns im Z-LAB oder bei Ihnen an der Schule. Freie Termine finden Sie im Kalender und in der Terminliste. Jede Buchung ist zunächst eine Reservierung, die unsere Kursleitung bestätigt.</p>
 
         @if (session('school_notice'))
@@ -18,7 +18,7 @@
             </a>
         </div>
 
-        <section class="mt-10 rounded-2xl bg-gray-50 p-6" aria-labelledby="zugang">
+        <section class="mt-10 rounded-2xl bg-white p-6" aria-labelledby="zugang">
             <h2 id="zugang" class="text-xl font-semibold text-gray-900">Zugang für Schulen</h2>
 
             @if ($contact?->canBookForSchool())

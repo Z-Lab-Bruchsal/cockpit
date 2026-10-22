@@ -4,8 +4,8 @@
         <h2 id="anmeldungen" class="mb-4 text-2xl font-bold tracking-tight text-gray-900">Meine Anmeldungen</h2>
 
         @if ($registrations->isEmpty())
-            <p class="rounded-2xl bg-gray-50 px-6 py-8 text-center text-gray-500">
-                Keine anstehenden Kurse. <a href="{{ route('homepage.courses.index') }}" class="font-semibold text-brand hover:underline">Jetzt Kurse entdecken</a>
+            <p class="rounded-2xl bg-white px-6 py-8 text-center text-gray-500">
+                Keine anstehenden Kurse. <a href="{{ route('homepage.courses.index') }}" class="font-semibold text-brand-ink hover:underline">Jetzt Kurse entdecken</a>
             </p>
         @else
             <ul class="flex flex-col gap-4">
@@ -75,7 +75,7 @@
                         <div class="mt-2 flex flex-wrap gap-2">
                             @foreach ($this->interests as $interest)
                                 <label wire:key="interest-{{ $interest->id }}" class="flex cursor-pointer items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand/10">
-                                    <input type="checkbox" wire:model="kidInterestIds" value="{{ $interest->id }}" class="rounded border-gray-300 text-brand">
+                                    <input type="checkbox" wire:model="kidInterestIds" value="{{ $interest->id }}" class="rounded border-gray-300 text-brand-ink">
                                     {{ $interest->name }}
                                 </label>
                             @endforeach
@@ -92,7 +92,7 @@
         @endif
 
         @if ($this->kids->isEmpty())
-            <p class="rounded-2xl bg-gray-50 px-6 py-8 text-center text-gray-500">Du hast noch keine Kinder hinterlegt.</p>
+            <p class="rounded-2xl bg-white px-6 py-8 text-center text-gray-500">Du hast noch keine Kinder hinterlegt.</p>
         @else
             <ul class="grid gap-4 sm:grid-cols-2">
                 @foreach ($this->kids as $kid)
@@ -111,7 +111,7 @@
                             </div>
                         @endif
                         <div class="mt-auto flex gap-3 text-sm">
-                            <button type="button" wire:click="editKid({{ $kid->id }})" class="font-semibold text-brand hover:underline">Bearbeiten</button>
+                            <button type="button" wire:click="editKid({{ $kid->id }})" class="font-semibold text-brand-ink hover:underline">Bearbeiten</button>
                             <button type="button" wire:click="removeKid({{ $kid->id }})" wire:confirm="{{ $kid->name }} wirklich aus deinem Konto entfernen?" class="text-gray-500 hover:text-red-600 hover:underline">Entfernen</button>
                         </div>
                     </li>
@@ -156,7 +156,7 @@
             </div>
 
             <label class="flex items-start gap-3 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-                <input type="checkbox" wire:model="wantsInterestMails" class="mt-0.5 rounded border-gray-300 text-brand">
+                <input type="checkbox" wire:model="wantsInterestMails" class="mt-0.5 rounded border-gray-300 text-brand-ink">
                 <span>Ja, informiert mich per E-Mail über neue Kurse, die zu den Interessen und dem Alter meiner Kinder passen. Die Einwilligung kann ich jederzeit hier oder über den Link in jeder E-Mail widerrufen.</span>
             </label>
 
@@ -225,7 +225,7 @@
             <p class="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
                 <strong>Kein Zugriff mehr auf {{ $contact->email }}?</strong>
                 Dann kannst du die Änderung nicht selbst bestätigen.
-                <a href="{{ route('homepage.contact-form', ['anliegen' => \App\Enums\ContactFormTopic::LostEmailAccess->value]) }}" class="font-semibold text-brand hover:underline">Schreib uns über das Kontaktformular</a>
+                <a href="{{ route('homepage.contact-form', ['anliegen' => \App\Enums\ContactFormTopic::LostEmailAccess->value]) }}" class="font-semibold text-brand-ink hover:underline">Schreib uns über das Kontaktformular</a>
                 – wir helfen dir weiter.
             </p>
         </div>

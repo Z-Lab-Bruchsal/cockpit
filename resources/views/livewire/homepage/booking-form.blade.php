@@ -4,7 +4,7 @@
     @enderror
 
     @if ($this->registration === null)
-        <div class="rounded-2xl bg-gray-50 px-6 py-12 text-center">
+        <div class="rounded-2xl bg-white px-6 py-12 text-center">
             <p class="text-gray-600">Die Zeit für diese Buchung ist abgelaufen, die Plätze wurden wieder freigegeben.</p>
             <a href="{{ route('homepage.booking.show', $token) }}" class="mt-4 inline-block rounded-lg bg-brand px-4 py-2 font-semibold text-brand-contrast hover:opacity-90">Neu starten</a>
         </div>
@@ -32,7 +32,7 @@
                 </div>
 
                 @foreach ($kids as $index => $kid)
-                    <fieldset wire:key="kid-{{ $index }}" class="grid gap-3 rounded-xl bg-gray-50 p-4 sm:grid-cols-2">
+                    <fieldset wire:key="kid-{{ $index }}" class="grid gap-3 rounded-xl bg-white p-4 sm:grid-cols-2">
                         <legend class="sr-only">Kind {{ $index + 1 }}</legend>
                         <p class="text-sm font-semibold text-gray-700 sm:col-span-2">Kind {{ $index + 1 }}</p>
 
@@ -83,7 +83,7 @@
                 <h2 id="kontaktdaten" class="text-lg font-semibold text-gray-900">Deine Kontaktdaten</h2>
 
                 @guest('contact')
-                    <p class="text-sm text-gray-600">Du hast schon ein Konto? <a href="{{ route('homepage.login', ['weiter' => route('homepage.booking.show', $token, absolute: false)]) }}" class="font-semibold text-brand hover:underline">Melde dich an</a>, dann sind deine Daten und Kinder schon ausgefüllt. Ein Konto ist aber nicht nötig.</p>
+                    <p class="text-sm text-gray-600">Du hast schon ein Konto? <a href="{{ route('homepage.login', ['weiter' => route('homepage.booking.show', $token, absolute: false)]) }}" class="font-semibold text-brand-ink hover:underline">Melde dich an</a>, dann sind deine Daten und Kinder schon ausgefüllt. Ein Konto ist aber nicht nötig.</p>
                 @endguest
 
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -110,16 +110,16 @@
                 </div>
 
                 <label class="flex items-start gap-3 text-sm text-gray-700">
-                    <input type="checkbox" wire:model="wantsInterestMails" class="mt-0.5 rounded border-gray-300 text-brand">
+                    <input type="checkbox" wire:model="wantsInterestMails" class="mt-0.5 rounded border-gray-300 text-brand-ink">
                     <span>Informiert mich per E-Mail über neue Kurse, die zu meinen Kindern passen (jederzeit abbestellbar).</span>
                 </label>
 
                 <label class="flex items-start gap-3 text-sm text-gray-700">
-                    <input type="checkbox" wire:model="acceptsPrivacy" class="mt-0.5 rounded border-gray-300 text-brand">
+                    <input type="checkbox" wire:model="acceptsPrivacy" class="mt-0.5 rounded border-gray-300 text-brand-ink">
                     <span>
                         Ich bin einverstanden, dass meine Angaben und die meiner Kinder zur Durchführung der Kurse gespeichert werden.
                         @if ($privacySection = \App\Models\Section::query()->where('slug', 'datenschutz')->where('is_visible', true)->first())
-                            Mehr in der <a href="{{ $privacySection->url() }}" class="text-brand underline" target="_blank">Datenschutzerklärung</a>.
+                            Mehr in der <a href="{{ $privacySection->url() }}" class="text-brand-ink underline" target="_blank">Datenschutzerklärung</a>.
                         @endif
                     </span>
                 </label>

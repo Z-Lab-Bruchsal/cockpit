@@ -2,18 +2,18 @@
     <div class="mx-auto max-w-lg px-4 py-12 sm:py-16">
         @if ($confirmed)
             <div class="text-center">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Vielen Dank!</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Vielen Dank!</h1>
                 <p class="mt-3 text-gray-600">Die Anmeldung ist bestätigt. Eine Zusammenfassung mit allen Terminen haben wir dir per E-Mail geschickt.</p>
                 <a href="{{ route('homepage.courses.index') }}" class="mt-8 inline-block rounded-lg bg-brand px-4 py-3 font-semibold text-brand-contrast hover:opacity-90">Weitere Kurse ansehen</a>
             </div>
         @elseif ($registrations->isEmpty())
             <div class="text-center">
-                <h1 class="text-3xl font-bold tracking-tight text-gray-900">Link nicht mehr gültig</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-brand-heading">Link nicht mehr gültig</h1>
                 <p class="mt-3 text-gray-600">Dieser Link ist abgelaufen oder wurde schon verwendet. Falls die Plätze verfallen sind, melde dich bitte einfach neu an.</p>
                 <a href="{{ route('homepage.courses.index') }}" class="mt-8 inline-block rounded-lg bg-brand px-4 py-3 font-semibold text-brand-contrast hover:opacity-90">Zu den Kursen</a>
             </div>
         @else
-            <h1 class="text-center text-3xl font-bold tracking-tight text-gray-900">Anmeldung bestätigen</h1>
+            <h1 class="text-center text-3xl font-bold tracking-tight text-brand-heading">Anmeldung bestätigen</h1>
 
             <ul class="mt-6 flex flex-col gap-3">
                 @foreach ($registrations as $registration)
