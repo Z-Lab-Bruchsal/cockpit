@@ -9,6 +9,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class EditOrder extends EditRecord
 {
@@ -18,6 +19,7 @@ class EditOrder extends EditRecord
     {
         return [
             Action::make('bestellt_single')
+                ->authorize('update')
                 ->icon(Heroicon::ShoppingCart)->label('Bestellt')->action(function (Model $record) {
                     $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
                     $record->orderstatus()->associate($orderstatusBestellt);
@@ -27,6 +29,7 @@ class EditOrder extends EditRecord
                     return $record->orderstatus->name == 'erfasst';
                 }),
             Action::make('angekommen_single')
+                ->authorize('update')
                 ->icon(Heroicon::BuildingOffice)->label('Angekommen')->action(function (Model $record) {
                     $orderstatusAngekommen = Orderstatus::where('name', 'angekommen')->first();
                     $record->orderstatus()->associate($orderstatusAngekommen);
@@ -36,6 +39,7 @@ class EditOrder extends EditRecord
                     return $record->orderstatus->name == 'bestellt';
                 }),
             Action::make('genommen_single')
+                ->authorize('update')
                 ->icon(Heroicon::Check)->label('Genommen')->action(function (Model $record) {
                     $orderstatusGenommen = Orderstatus::where('name', 'genommen')->first();
                     $record->orderstatus()->associate($orderstatusGenommen);
@@ -45,7 +49,7 @@ class EditOrder extends EditRecord
                     return $record->orderstatus->name == 'angekommen';
                 }),
             Action::make('url_oeffnen')->icon(Heroicon::Link)->label('URL öffnen')->url(function (Model $record) {
-                return $record->url;
+                return Str::sanitizeUrl($record->url);
             }, true),
             DeleteAction::make(),
         ];

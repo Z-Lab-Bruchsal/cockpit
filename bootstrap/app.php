@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // One-click unsubscribe from mail clients (RFC 8058) cannot send a CSRF token; the secret token in the URL protects it.
         $middleware->validateCsrfTokens(except: ['abmelden/*']);
+
+        $middleware->append(AddSecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

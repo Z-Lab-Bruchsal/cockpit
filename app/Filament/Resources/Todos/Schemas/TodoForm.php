@@ -6,7 +6,6 @@ use App\Filament\Forms\RecipientSelect;
 use App\Models\Todo;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,7 +25,6 @@ class TodoForm
                     ->label('Titel')
                     ->required(),
                 Select::make('user.name')->relationship('user', 'name')->label('Benutzer')->hiddenOn(['create'])->disabledOn(['edit']),
-                Hidden::make('user_id')->default(filament()->auth()->user()->id),
                 RichEditor::make('content')
                     ->label('Todo')
                     ->columnSpanFull(),

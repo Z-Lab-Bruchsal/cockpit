@@ -17,7 +17,9 @@ class MyOrdersWidget extends TableWidget
     #[Override]
     public static function canView(): bool
     {
-        return parent::canView() && User::find(filament()->auth()->user()->id)->can("View:MyOrdersWidget");
+        $user = User::find(filament()->auth()->id());
+
+        return parent::canView() && $user->can('View:MyOrdersWidget') && $user->can('viewAny', Order::class);
     }
 
     public function table(Table $table): Table

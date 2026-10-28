@@ -25,9 +25,13 @@ class User extends Authenticatable implements FilamentUser
 
     use HasRoles;
 
+    /**
+     * Only staff with a role or a direct permission may enter the cockpit,
+     * so a bare account at the OAuth2 server is not enough.
+     */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->roles()->exists() || $this->permissions()->exists();
     }
 
     /**

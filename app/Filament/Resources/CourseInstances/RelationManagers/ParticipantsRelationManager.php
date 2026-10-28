@@ -42,6 +42,14 @@ class ParticipantsRelationManager extends RelationManager
         return false;
     }
 
+    /**
+     * Enrollments have no policy of their own; changing them means changing the course instance.
+     */
+    protected function canManageParticipants(): bool
+    {
+        return auth()->user()?->can('update', $this->getOwnerRecord()) ?? false;
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -91,6 +99,7 @@ class ParticipantsRelationManager extends RelationManager
                 Action::make('registerKid')
                     ->label('Kind anmelden')
                     ->icon(Heroicon::OutlinedUserPlus)
+                    ->authorize(fn (): bool => $this->canManageParticipants())
                     ->schema([
                         Select::make('kid_id')
                             ->label('Kind')
@@ -138,6 +147,7 @@ class ParticipantsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->modalDescription('Das Kind bekommt sofort einen festen Platz – auch wenn der Kurs dadurch überbucht ist.')
                     ->visible(fn (Enrollment $record): bool => in_array($record->status, [EnrollmentStatus::Waitlisted, EnrollmentStatus::Offered], true))
+                    ->authorize(fn (Enrollment $record): bool => auth()->user()?->can('update', $record->registration) ?? false)
                     ->action(fn (Enrollment $record) => $record->update(['status' => EnrollmentStatus::Confirmed, 'expires_at' => null])),
                 Action::make('cancelEnrollment')
                     ->label('Abmelden')
@@ -150,6 +160,7 @@ class ParticipantsRelationManager extends RelationManager
                             ->default(true),
                     ])
                     ->visible(fn (Enrollment $record): bool => ! in_array($record->status, [EnrollmentStatus::Cancelled, EnrollmentStatus::Expired], true))
+                    ->authorize(fn (Enrollment $record): bool => auth()->user()?->can('update', $record->registration) ?? false)
                     ->action(function (Enrollment $record, array $data): void {
                         app(CourseReservationService::class)->cancel($record->registration, $record, notify: (bool) $data['notify']);
 

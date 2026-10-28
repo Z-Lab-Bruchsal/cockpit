@@ -38,6 +38,14 @@ class AttendanceRelationManager extends RelationManager
         return false;
     }
 
+    /**
+     * Attendances have no policy of their own; recording them means changing the course instance.
+     */
+    protected function canRecordAttendance(): bool
+    {
+        return auth()->user()?->can('update', $this->getOwnerRecord()) ?? false;
+    }
+
     public function table(Table $table): Table
     {
         /** @var CourseInstance $instance */
@@ -58,6 +66,7 @@ class AttendanceRelationManager extends RelationManager
                     ->tooltip($date->formattedRange())
                     ->alignCenter()
                     ->toggleable(false)
+                    ->disabled(fn (): bool => ! $this->canRecordAttendance())
                     ->state(fn (Enrollment $record): bool => (bool) $record->attendances->firstWhere('course_date_id', $date->id)?->attended)
                     ->updateStateUsing(function (Enrollment $record, bool $state) use ($date): bool {
                         $this->markAttendance($record, $date, $state);
@@ -72,6 +81,7 @@ class AttendanceRelationManager extends RelationManager
                 Action::make('markAllPresent')
                     ->label('Alle anwesend')
                     ->icon(Heroicon::OutlinedCheckBadge)
+                    ->authorize(fn (): bool => $this->canRecordAttendance())
                     ->schema([
                         Select::make('course_date_id')
                             ->label('Termin')

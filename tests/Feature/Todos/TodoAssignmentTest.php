@@ -229,4 +229,32 @@ class TodoAssignmentTest extends TestCase
 
         $this->assertTrue($todo->fresh()->individual_completion);
     }
+
+    public function test_creator_cannot_be_forged(): void
+    {
+        $this->actingAs($this->creator);
+
+        Livewire::test(CreateTodo::class)
+            ->fillForm([
+                'name' => 'Gefälscht',
+                'user_id' => $this->anna->id,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($this->creator->id, Todo::query()->sole()->user_id);
+    }
+
+    public function test_rich_text_in_todo_mail_is_sanitized(): void
+    {
+        $todo = Todo::factory()->create([
+            'user_id' => $this->creator->id,
+            'content' => '<p>Bitte erledigen</p><script>alert(1)</script>',
+        ]);
+
+        $html = (new TodoMail($todo, 'Betreff', 'Hallo'))->render();
+
+        $this->assertStringContainsString('Bitte erledigen', $html);
+        $this->assertStringNotContainsString('<script', $html);
+    }
 }

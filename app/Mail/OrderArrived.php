@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Http\Controllers\OrderController;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -10,7 +11,6 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\URL;
 
 class OrderArrived extends Mailable
 {
@@ -44,7 +44,7 @@ class OrderArrived extends Mailable
             markdown: 'mail.order-arrived',
             with: [
                 'url_order' => OrderResource::getUrl('edit', ['record' => $this->order]),
-                'url_taken' => URL::to('/updateOrderstatusTaken/'.$this->order->public_uuid),
+                'url_taken' => OrderController::statusUrl($this->order, 'genommen'),
                 'order' => $this->order,
             ],
         );

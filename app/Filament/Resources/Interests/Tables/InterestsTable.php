@@ -9,6 +9,7 @@ use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class InterestsTable
 {
@@ -28,7 +29,8 @@ class InterestsTable
                     ->counts('courses')
                     ->sortable(),
                 ToggleColumn::make('is_active')
-                    ->label('Aktiv'),
+                    ->label('Aktiv')
+                    ->disabled(fn (Model $record): bool => ! auth()->user()?->can('update', $record)),
             ])
             ->recordActions([
                 EditAction::make(),

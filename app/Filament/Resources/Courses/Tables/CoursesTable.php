@@ -15,6 +15,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class CoursesTable
 {
@@ -62,7 +63,8 @@ class CoursesTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 ToggleColumn::make('is_published')
-                    ->label('Veröffentlicht'),
+                    ->label('Veröffentlicht')
+                    ->disabled(fn (Model $record): bool => ! auth()->user()?->can('update', $record)),
             ])
             ->filters([
                 SelectFilter::make('audience')

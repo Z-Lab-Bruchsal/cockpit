@@ -15,6 +15,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class SectionsTable
 {
@@ -43,7 +44,8 @@ class SectionsTable
                     ->badge()
                     ->toggleable(isToggledHiddenByDefault: true),
                 ToggleColumn::make('is_visible')
-                    ->label('Sichtbar'),
+                    ->label('Sichtbar')
+                    ->disabled(fn (Model $record): bool => ! auth()->user()?->can('update', $record)),
                 IconColumn::make('show_in_navigation')
                     ->label('Kopfzeile')
                     ->boolean(),

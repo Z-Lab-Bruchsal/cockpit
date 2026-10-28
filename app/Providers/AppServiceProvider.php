@@ -7,6 +7,8 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
 use Filament\Navigation\NavigationGroup;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -35,8 +37,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         CompanySetting::applyToConfig();
-        // URL::forceRootUrl('https://hp-reboot.z-lab-bruchsal.de/');
-        // URL::forceScheme('https');
+
+        if ($this->app->isProduction()) {
+            URL::forceScheme('https');
+        }
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
         RateLimiter::for('magic-link', function (Request $request): array {
@@ -77,6 +81,14 @@ class AppServiceProvider extends ServiceProvider
         });
         Column::configureUsing(function (Column $column): void {
             $column->toggleable();
+        });
+
+        // Uploaded file paths come back from the browser; only accept paths this component stored itself.
+        FileUpload::configureUsing(function (FileUpload $component): void {
+            $component->preventFilePathTampering();
+        });
+        RichEditor::configureUsing(function (RichEditor $component): void {
+            $component->preventFileAttachmentPathTampering();
         });
 
         // German date format for every DatePicker/DateTimePicker in the app.

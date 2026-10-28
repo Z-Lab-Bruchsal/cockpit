@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class OrdersTable
 {
@@ -84,6 +85,7 @@ class OrdersTable
             ])
             ->recordActions([
                 Action::make('bestellt_single')
+                    ->authorize('update')
                     ->icon(Heroicon::ShoppingCart)->iconButton()->label('Bestellt')->action(function (Model $record) {
                         $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
                         $record->orderstatus_id = $orderstatusBestellt->id;
@@ -94,6 +96,7 @@ class OrdersTable
                         return $orderstatusErfasst->id == $record->orderstatus_id;
                     }),
                 Action::make('angekommen_single')
+                    ->authorize('update')
                     ->icon(Heroicon::BuildingOffice)->iconButton()->label('Angekommen')->action(function (Model $record) {
                         $orderstatusAngekommen = Orderstatus::where('name', 'angekommen')->first();
                         $record->orderstatus_id = $orderstatusAngekommen->id;
@@ -104,6 +107,7 @@ class OrdersTable
                         return $orderstatusBestellt->id == $record->orderstatus_id;
                     }),
                 Action::make('genommen_single')
+                    ->authorize('update')
                     ->icon(Heroicon::Check)->iconButton()->label('Genommen')->action(function (Model $record) {
                         $orderstatusGenommen = Orderstatus::where('name', 'genommen')->first();
                         $record->orderstatus_id = $orderstatusGenommen->id;
@@ -114,7 +118,7 @@ class OrdersTable
                         return $orderstatusAngekommen->id == $record->orderstatus_id;
                     }),
                 Action::make('url_oeffnen')->icon(Heroicon::Link)->iconButton()->label('URL öffnen')->url(function (Model $record) {
-                    return $record->url;
+                    return Str::sanitizeUrl($record->url);
                 }, true),
                 EditAction::make()->iconButton(),
                 DeleteAction::make()->iconButton(),
@@ -123,6 +127,7 @@ class OrdersTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     Action::make('bestellt_bulk')
+                        ->authorizeIndividualRecords('update')
                         ->label('Ausgewählte bestellt')
                         ->accessSelectedRecords()
                         ->action(function (Collection $selectedRecords) {
@@ -134,6 +139,7 @@ class OrdersTable
                             );
                         })->requiresConfirmation()->icon(Heroicon::ShoppingCart),
                     Action::make('angekommen_bulk')
+                        ->authorizeIndividualRecords('update')
                         ->label('Ausgewählte angekommen')
                         ->accessSelectedRecords()
                         ->action(function (Collection $selectedRecords) {
