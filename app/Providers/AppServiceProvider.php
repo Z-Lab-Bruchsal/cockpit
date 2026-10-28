@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
+	    URL::forceRootUrl(config('app.url'));
         }
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.

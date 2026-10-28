@@ -71,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make()->navigationGroup('Administration'),
-                FilamentOauth2Plugin::make(),
+//                FilamentOauth2Plugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,
