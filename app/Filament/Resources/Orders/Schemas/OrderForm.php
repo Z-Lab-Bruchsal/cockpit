@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\Order;
 use App\Models\Orderstatus;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -29,8 +30,10 @@ class OrderForm
                     ->default(1),
                 TextInput::make('url')
                     ->label('URL')->inlineLabel()
-                    ->suffixIcon(Heroicon::GlobeAlt)
-                    ->url()
+                    ->suffixAction(
+                        Action::make('openURL')->url(fn(Order $order) => $order->url)
+                            ->openUrlInNewTab()
+                    )
                     ->columnSpan(1),
                 Select::make('user_id')
                     ->label('Bestellt von')->inlineLabel()
