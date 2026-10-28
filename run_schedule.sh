@@ -1,2 +1,2 @@
 #//bin/sh
-/usr/bin/php artisan schedule:work
+/usr/bin/php artisan schedule:run
