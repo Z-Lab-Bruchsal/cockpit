@@ -8,6 +8,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ReplicateAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -116,6 +117,14 @@ class OrdersTable
                 Action::make('url_oeffnen')->icon(Heroicon::Link)->iconButton()->label('URL öffnen')->url(function (Model $record) {
                     return $record->url;
                 }, true),
+                ReplicateAction::make()->iconButton()
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        $data['user_id'] = filament()->auth()->id();
+                        $data['orderdatetime'] = null;
+                        $data['orderstatus_id'] = Orderstatus::where('name', 'erfasst')->first()->id;
+
+                        return $data;
+                }),
                 EditAction::make()->iconButton(),
                 DeleteAction::make()->iconButton(),
             ], position: RecordActionsPosition::BeforeColumns)
