@@ -118,7 +118,7 @@ class ImageAltTextTest extends TestCase
                 'title' => 'Galerie',
                 'slug' => 'galerie',
                 'content' => [
-                    ['type' => 'image', 'data' => ['image' => ['homepage/bild.jpg'], 'alt' => 'Werkstatt von innen']],
+                    ['type' => 'image', 'data' => ['image' => [UploadedFile::fake()->image('bild.jpg')], 'alt' => 'Werkstatt von innen']],
                 ],
             ])
             ->call('create')

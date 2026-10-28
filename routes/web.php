@@ -15,8 +15,15 @@ use App\Http\Middleware\EnsureSchoolContact;
 use App\Models\Section;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/updateOrderstatusOrdered/{uuid}', [OrderController::class, 'ordered']);
-Route::get('/updateOrderstatusTaken/{uuid}', [OrderController::class, 'taken']);
+// Signed status links from order mails.
+Route::middleware(['signed', 'throttle:10,1'])->group(function (): void {
+    Route::get('/bestellung/{order:public_uuid}/{status}', [OrderController::class, 'show'])
+        ->whereIn('status', ['bestellt', 'genommen'])
+        ->name('orders.status.show');
+    Route::post('/bestellung/{order:public_uuid}/{status}', [OrderController::class, 'update'])
+        ->whereIn('status', ['bestellt', 'genommen'])
+        ->name('orders.status.update');
+});
 
 Route::redirect('/admin', '/cockpit');
 

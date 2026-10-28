@@ -4,6 +4,7 @@ namespace Tests\Feature\TerminalApi;
 
 use App\Enums\BookingSource;
 use App\Enums\TerminalEventResult;
+use App\Http\Middleware\AuthenticateTerminal;
 use App\Models\Booking;
 use App\Models\Chip;
 use App\Models\Terminal;
@@ -206,5 +207,19 @@ class TerminalApiTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 2);
         $this->assertSame(TerminalEventResult::Info, TerminalEvent::latest('id')->first()->result);
+    }
+
+    public function test_failed_logins_are_throttled_per_ip(): void
+    {
+        for ($attempt = 1; $attempt <= AuthenticateTerminal::MAX_FAILED_ATTEMPTS_PER_MINUTE; $attempt++) {
+            $this->callTerminal('/api/v1/bookinginfo/04A1B2C3', 'term1', 'wrong')->assertUnauthorized();
+        }
+
+        $this->callTerminal('/api/v1/bookinginfo/04A1B2C3', 'term1', 'wrong')->assertTooManyRequests();
+        $this->callTerminal('/api/v1/bookinginfo/04A1B2C3')->assertTooManyRequests();
+
+        Carbon::setTestNow(now()->addMinutes(2));
+
+        $this->callTerminal('/api/v1/bookinginfo/04A1B2C3')->assertOk();
     }
 }

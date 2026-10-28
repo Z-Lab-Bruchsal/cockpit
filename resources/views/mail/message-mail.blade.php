@@ -7,7 +7,7 @@ du hast eine neue Nachricht von {{ $internalMessage->sender->name }} im Cockpit.
 
 An: {{ $internalMessage->recipientNames() }}
 
-{!! $internalMessage->body !!}
+{{ \Filament\Forms\Components\RichEditor\RichContentRenderer::make($internalMessage->body) }}
 
 <x-mail::button :url="$message_url" color="primary">
 Nachricht im Cockpit lesen

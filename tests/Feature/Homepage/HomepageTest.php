@@ -215,4 +215,22 @@ class HomepageTest extends TestCase
         $this->get('/impressum')->assertOk()->assertSee('Angaben gemäß § 5 DDG');
         $this->get('/datenschutz')->assertOk();
     }
+
+    public function test_call_to_action_with_javascript_url_is_not_linked(): void
+    {
+        Section::factory()->create([
+            'title' => 'Mitmachen',
+            'slug' => 'mitmachen',
+            'content' => [
+                ['type' => 'call_to_action', 'data' => ['heading' => 'Komm vorbei', 'button_label' => 'Los', 'button_url' => 'javascript:alert(1)']],
+                ['type' => 'call_to_action', 'data' => ['heading' => 'Schreib uns', 'button_label' => 'Mail', 'button_url' => 'mailto:info@example.com']],
+            ],
+        ]);
+
+        $this->get(route('homepage.section', 'mitmachen'))
+            ->assertOk()
+            ->assertSee('Komm vorbei')
+            ->assertDontSee('javascript:alert(1)', false)
+            ->assertSee('href="mailto:info@example.com"', false);
+    }
 }

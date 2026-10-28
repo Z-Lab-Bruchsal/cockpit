@@ -5,7 +5,7 @@
             <p class="mt-1 opacity-85">{{ $data['text'] }}</p>
         @endif
     </div>
-    @if (filled($data['button_url'] ?? null))
-        <a href="{{ $data['button_url'] }}" class="shrink-0 rounded-lg bg-white px-5 py-3 font-semibold text-gray-900 shadow hover:bg-gray-100">{{ $data['button_label'] ?? 'Mehr' }}</a>
+    @if (filled($buttonUrl = \Illuminate\Support\Str::sanitizeUrl($data['button_url'] ?? null, ['http', 'https', 'mailto', 'tel'])))
+        <a href="{{ $buttonUrl }}" class="shrink-0 rounded-lg bg-white px-5 py-3 font-semibold text-gray-900 shadow hover:bg-gray-100">{{ $data['button_label'] ?? 'Mehr' }}</a>
     @endif
 </div>

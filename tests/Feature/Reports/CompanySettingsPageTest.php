@@ -72,7 +72,9 @@ class CompanySettingsPageTest extends TestCase
         $this->assertSame('Z-Lab Bruchsal Verwaltung', config('app.name'));
         $this->assertSame('Z-Lab Bruchsal Verwaltung', config('mail.from.name'));
 
-        $this->actingAs(User::factory()->create());
+        $user = User::factory()->create();
+        $user->assignRole('Z-Lab-Crew');
+        $this->actingAs($user);
 
         $this->withoutVite()->get('/cockpit')->assertSee('Z-Lab Bruchsal Verwaltung');
     }

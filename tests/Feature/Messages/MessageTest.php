@@ -199,4 +199,17 @@ class MessageTest extends TestCase
                 'subject' => "Re: {$message->subject}",
             ]);
     }
+
+    public function test_rich_text_in_message_mail_is_sanitized(): void
+    {
+        $message = Message::factory()->create([
+            'user_id' => $this->sender->id,
+            'body' => '<p>Hallo Team</p><script>alert(1)</script>',
+        ]);
+
+        $html = (new MessageMail($message))->render();
+
+        $this->assertStringContainsString('Hallo Team', $html);
+        $this->assertStringNotContainsString('<script', $html);
+    }
 }

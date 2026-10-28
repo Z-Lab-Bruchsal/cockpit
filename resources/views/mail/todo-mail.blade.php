@@ -13,7 +13,7 @@ Erstellt von: {{ $todo->user->name }}
 Zugewiesen: {{ $todo->assigneeNames() }}
 
 Inhalt:
-{!! $todo->content !!}
+{{ \Filament\Forms\Components\RichEditor\RichContentRenderer::make($todo->content) }}
 
 <x-mail::button :url="$todo_url" color="primary">
 Todo im Cockpit ansehen
