@@ -31,7 +31,7 @@ class OrderForm
                 TextInput::make('url')
                     ->label('URL')->inlineLabel()
                     ->suffixAction(
-                        Action::make('openURL')->url(fn(Order $order) => $order->url)
+                        Action::make('openURL')->url(fn(?Order $order) => $order?->url)
                             ->openUrlInNewTab()
                     )
                     ->columnSpan(1),
@@ -72,7 +72,8 @@ class OrderForm
                             })->visible(function (Model $record) {
                                 return $record->orderstatus->name == 'angekommen';
                             }),
-                        Action::make('url_oeffnen')->icon(Heroicon::Link)->label('URL öffnen')->url(function (Model $record) {
+                        Action::make('url_oeffnen')->icon(Heroicon::Link)->label('URL öffnen')->url(function (?Model $record) {
+                            if($record == null) return;
                             return $record->url;
                         }, true),
                     ]),
