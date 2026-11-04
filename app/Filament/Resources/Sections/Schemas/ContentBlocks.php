@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Sections\Schemas;
 
 use App\Enums\ContactFormTopic;
 use App\Enums\CourseAudience;
+use App\Enums\TeamArea;
 use App\Models\Interest;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
@@ -146,6 +147,20 @@ class ContentBlocks
                         ->options(ContactFormTopic::class)
                         ->placeholder('Allgemeine Frage'),
                 ]),
+            Block::make('team')
+                ->label('Team')
+                ->icon(Heroicon::OutlinedUserGroup)
+                ->schema([
+                    Select::make('areas')
+                        ->label('Nur diese Teambereiche')
+                        ->placeholder('Alle')
+                        ->options(TeamArea::class)
+                        ->multiple(),
+                    Toggle::make('show_area_headings')
+                        ->label('Überschriften je Teambereich anzeigen')
+                        ->default(true),
+                ])
+                ->columns(2),
             Block::make('contact')
                 ->label('Kontakt / Adresse')
                 ->icon(Heroicon::OutlinedMapPin)

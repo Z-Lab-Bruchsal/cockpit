@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
@@ -37,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->spa()
             ->unsavedChangesAlerts()
             ->databaseNotifications()
-            ->profile()
+            ->profile(EditProfile::class)
             ->font(
                 'Bunny',
                 provider: LocalFontProvider::class,
@@ -71,7 +72,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make()->navigationGroup('Administration'),
-//                FilamentOauth2Plugin::make(),
+                //                FilamentOauth2Plugin::make(),
             ])
             ->authMiddleware([
                 Authenticate::class,

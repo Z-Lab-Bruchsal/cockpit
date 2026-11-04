@@ -44,6 +44,14 @@ class UserForm
                         return GroupForm::configure($schema);
                     })
                     ->multiple(),
+                Section::make('Teamprofil (Homepage)')
+                    ->schema([
+                        ...TeamProfileFields::adminOnly(),
+                        ...TeamProfileFields::selfEditable(),
+                    ])
+                    ->columns(3)
+                    ->collapsible()
+                    ->columnSpanFull(),
                 Select::make('roles')
                     ->relationship('roles', 'name')
                     ->label('Rollen')

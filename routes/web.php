@@ -10,6 +10,7 @@ use App\Http\Controllers\Homepage\HomepageController;
 use App\Http\Controllers\Homepage\NewsController;
 use App\Http\Controllers\Homepage\RegistrationController;
 use App\Http\Controllers\Homepage\SchoolController;
+use App\Http\Controllers\Homepage\TeamContactController;
 use App\Http\Controllers\Homepage\UnsubscribeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Middleware\EnsureSchoolContact;
@@ -80,6 +81,11 @@ Route::name('homepage.')->group(function (): void {
     Route::post('/kontaktformular', [ContactFormController::class, 'send'])
         ->middleware('throttle:contact-form')
         ->name('contact-form.send');
+
+    Route::post('/team/{member}/nachricht', [TeamContactController::class, 'send'])
+        ->whereNumber('member')
+        ->middleware('throttle:contact-form')
+        ->name('team.contact');
 
     Route::get('/anmelden', [ContactAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/anmelden', [ContactAuthController::class, 'sendLink'])

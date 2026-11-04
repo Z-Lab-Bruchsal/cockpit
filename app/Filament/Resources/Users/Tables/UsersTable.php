@@ -7,7 +7,9 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class UsersTable
@@ -33,6 +35,15 @@ class UsersTable
                 TextColumn::make('roles.name')
                     ->label('Rollen')
                     ->toggleable(),
+                IconColumn::make('team_visible')
+                    ->label('Homepage')
+                    ->boolean()
+                    ->hiddenOn(UsersRelationManager::class)
+                    ->toggleable(),
+                TextColumn::make('team_area')
+                    ->label('Teambereich')
+                    ->hiddenOn(UsersRelationManager::class)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
                     ->label('Erstellt')
                     ->dateTime()
@@ -45,7 +56,8 @@ class UsersTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                TernaryFilter::make('team_visible')
+                    ->label('Auf der Homepage'),
             ])
             ->recordActions([
                 ViewAction::make(),

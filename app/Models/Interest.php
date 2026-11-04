@@ -31,6 +31,14 @@ class Interest extends Model
     }
 
     /**
+     * Team members who stand for this topic.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
+    }
+
+    /**
      * @param  Builder<Interest>  $query
      */
     public function scopeActive(Builder $query): void
