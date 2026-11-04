@@ -15,6 +15,7 @@ use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -32,6 +33,20 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Use the X-Forwarded-* headers of the reverse proxy, so rate limits see the real client IP.
+     */
+    protected function trustConfiguredProxies(): void
+    {
+        $proxies = trim((string) config('app.trusted_proxies'));
+
+        if ($proxies === '') {
+            return;
+        }
+
+        TrustProxies::at($proxies === '*' ? '*' : array_values(array_filter(array_map(trim(...), explode(',', $proxies)))));
+    }
+
+    /**
      * Bootstrap any application services.
      */
     public function boot(): void
@@ -40,8 +55,10 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
-    	    URL::forceRootUrl(config('app.url'));
+            URL::forceRootUrl(config('app.url'));
         }
+
+        $this->trustConfiguredProxies();
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
         RateLimiter::for('magic-link', function (Request $request): array {

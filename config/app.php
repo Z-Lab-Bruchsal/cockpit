@@ -83,6 +83,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Trusted Proxies
+    |--------------------------------------------------------------------------
+    |
+    | Reverse proxies in front of the app, as comma separated IPs or CIDR
+    | ranges ("*" trusts every direct peer). Their X-Forwarded-* headers are
+    | used for the client IP (rate limits) and HTTPS detection. Empty: none.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
