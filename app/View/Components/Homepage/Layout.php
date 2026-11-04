@@ -71,6 +71,7 @@ class Layout extends Component
             ])
             ->push(['label' => 'Kurse', 'url' => route('homepage.courses.index'), 'active' => request()->routeIs('homepage.courses.*')])
             ->push(['label' => 'Kalender', 'url' => route('homepage.calendar'), 'active' => request()->routeIs('homepage.calendar')])
+            ->push(['label' => 'News', 'url' => route('homepage.news.index'), 'active' => request()->routeIs('homepage.news.*')])
             ->push(['label' => 'Schulen', 'url' => route('homepage.schools.index'), 'active' => request()->routeIs('homepage.schools.*')])
             ->values()
             ->all();

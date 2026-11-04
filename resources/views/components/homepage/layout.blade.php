@@ -8,6 +8,7 @@
     @if ($settings->homepage_tagline)
         <meta name="description" content="{{ $settings->homepage_tagline }}">
     @endif
+    <x-feed-links />
     @vite(['resources/css/homepage.css', 'resources/js/homepage.js'])
     @livewireStyles
 </head>

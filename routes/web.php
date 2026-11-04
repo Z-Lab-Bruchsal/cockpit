@@ -7,6 +7,7 @@ use App\Http\Controllers\Homepage\CourseCalendarController;
 use App\Http\Controllers\Homepage\CourseController;
 use App\Http\Controllers\Homepage\EmailChangeController;
 use App\Http\Controllers\Homepage\HomepageController;
+use App\Http\Controllers\Homepage\NewsController;
 use App\Http\Controllers\Homepage\RegistrationController;
 use App\Http\Controllers\Homepage\SchoolController;
 use App\Http\Controllers\Homepage\UnsubscribeController;
@@ -33,12 +34,17 @@ Route::middleware('signed')->group(function (): void {
     Route::post('/freigabe/{registration}', [ApprovalController::class, 'decide'])->name('approvals.decide');
 });
 
+// RSS feed of the news posts (/news/feed), see config/feed.php.
+Route::feeds();
+
 Route::name('homepage.')->group(function (): void {
     Route::get('/', [HomepageController::class, 'index'])->name('index');
 
     Route::get('/kurse', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/kurse/{slug}', [CourseController::class, 'show'])->name('courses.show');
     Route::get('/kalender', [CourseCalendarController::class, 'index'])->name('calendar');
+    Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+    Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
     Route::get('/kalender/events', [CourseCalendarController::class, 'events'])
         ->middleware('throttle:60,1')
         ->name('calendar.events');
