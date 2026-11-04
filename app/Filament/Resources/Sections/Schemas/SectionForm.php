@@ -50,7 +50,7 @@ class SectionForm
                             ->options(fn (?Section $record): array => static::parentOptions($record))
                             ->searchable(),
                         Select::make('layout')
-                            ->label('Kachel-Darstellung')
+                            ->label('Kachelfarbe')
                             ->options(SectionLayout::class)
                             ->default(SectionLayout::Standard)
                             ->required(),
@@ -80,6 +80,17 @@ class SectionForm
                         ContentBlocks::imageUpload('tile_image_path')
                             ->label('Kachelbild'),
                         ContentBlocks::altText('tile_image_alt', 'tile_image_path'),
+                        Select::make('tile_width')
+                            ->label('Kachelbreite')
+                            ->helperText('Auf dem Handy immer volle Breite. Lässt sich auch direkt auf der Homepage ziehen.')
+                            ->options(Section::TILE_WIDTHS)
+                            ->default(2)
+                            ->required(),
+                        Select::make('tile_height')
+                            ->label('Kachelhöhe')
+                            ->options(Section::TILE_HEIGHTS)
+                            ->default(1)
+                            ->required(),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),

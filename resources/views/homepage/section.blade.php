@@ -1,4 +1,4 @@
-<x-homepage.layout :title="$section->title">
+<x-homepage.layout :title="$section->title" :is-preview="$preview ?? false">
     <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <nav aria-label="Brotkrümel" class="mb-6 text-sm text-gray-500">
             <ol class="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <x-homepage.tiles :tiles="$tiles" @class(['mt-10' => ! empty($section->content)]) />
+        <x-homepage.tiles :tiles="$tiles" :parent-id="$section->id" @class(['mt-10' => ! empty($section->content)]) />
 
         <div class="mt-10">
             <a href="{{ count($ancestors) ? end($ancestors)->url() : route('homepage.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-ink hover:underline">

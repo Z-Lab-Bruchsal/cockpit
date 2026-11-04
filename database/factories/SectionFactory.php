@@ -31,6 +31,8 @@ class SectionFactory extends Factory
             'show_in_navigation' => true,
             'is_standalone' => false,
             'layout' => SectionLayout::Standard,
+            'tile_width' => 2,
+            'tile_height' => 1,
             'content' => [
                 [
                     'type' => 'text',

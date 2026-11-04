@@ -9,7 +9,7 @@
             @endif
         </div>
 
-        @if ($tiles->isEmpty())
+        @if ($tiles->isEmpty() && ! request()->boolean('anordnen'))
             <p class="py-12 text-center text-gray-500">Hier entsteht gerade etwas Neues.</p>
         @else
             <x-homepage.tiles :tiles="$tiles" />

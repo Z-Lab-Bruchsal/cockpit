@@ -8,6 +8,7 @@ use App\Http\Controllers\Homepage\CourseController;
 use App\Http\Controllers\Homepage\EmailChangeController;
 use App\Http\Controllers\Homepage\HomepageController;
 use App\Http\Controllers\Homepage\NewsController;
+use App\Http\Controllers\Homepage\PreviewController;
 use App\Http\Controllers\Homepage\RegistrationController;
 use App\Http\Controllers\Homepage\SchoolController;
 use App\Http\Controllers\Homepage\TeamContactController;
@@ -40,6 +41,12 @@ Route::feeds();
 
 Route::name('homepage.')->group(function (): void {
     Route::get('/', [HomepageController::class, 'index'])->name('index');
+
+    // Cockpit previews of courses and sections with unsaved form state.
+    Route::get('/vorschau/{token}/{variant}', [PreviewController::class, 'show'])
+        ->where('token', '[A-Za-z0-9]{40}')
+        ->whereIn('variant', ['karte', 'seite'])
+        ->name('preview');
 
     Route::get('/kurse', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/kurse/{slug}', [CourseController::class, 'show'])->name('courses.show');

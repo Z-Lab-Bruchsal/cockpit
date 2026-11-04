@@ -40,8 +40,12 @@ class SectionsTable
                     ->label('Kurzname')
                     ->toggleable(),
                 TextColumn::make('layout')
-                    ->label('Kachel')
+                    ->label('Kachelfarbe')
                     ->badge()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('tile_width')
+                    ->label('Größe')
+                    ->formatStateUsing(fn (Section $record): string => (Section::TILE_WIDTHS[$record->tile_width] ?? $record->tile_width).($record->tile_height > 1 ? ', doppelt hoch' : ''))
                     ->toggleable(isToggledHiddenByDefault: true),
                 ToggleColumn::make('is_visible')
                     ->label('Sichtbar')
@@ -79,6 +83,14 @@ class SectionsTable
                     ->url(fn (Section $record): string => $record->url())
                     ->openUrlInNewTab()
                     ->visible(fn (Section $record): bool => $record->isPubliclyVisible()),
+                Action::make('arrangeTiles')
+                    ->label('Unterkacheln anordnen')
+                    ->icon(Heroicon::OutlinedSquares2x2)
+                    ->url(fn (Section $record): string => $record->url().'?anordnen=1')
+                    ->openUrlInNewTab()
+                    ->visible(fn (Section $record): bool => $record->isPubliclyVisible()
+                        && $record->tileChildren()->isNotEmpty()
+                        && (bool) auth()->user()?->can('reorder', Section::class)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

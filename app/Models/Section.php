@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'layout', 'content'])]
+#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'layout', 'tile_width', 'tile_height', 'content'])]
 class Section extends Model
 {
     /** @use HasFactory<SectionFactory> */
@@ -27,8 +27,22 @@ class Section extends Model
         'cockpit', 'api', 'livewire', 'storage', 'build', 'up',
         'kurse', 'kalender', 'konto', 'anmelden', 'abmelden', 'login', 'logout',
         'schulen', 'buchung', 'warenkorb', 'bestaetigen', 'email-aendern', 'kontaktformular', 'anmeldung', 'freigabe',
-        'bestellung', 'team', 'news',
+        'bestellung', 'vorschau', 'team', 'news',
     ];
+
+    /**
+     * Tile widths in columns of the 6-column homepage grid: one third, half, two thirds, full.
+     *
+     * @var array<int, string>
+     */
+    public const TILE_WIDTHS = [2 => '⅓ Breite', 3 => '½ Breite', 4 => '⅔ Breite', 6 => 'Ganze Breite'];
+
+    /**
+     * Tile heights in grid rows.
+     *
+     * @var array<int, string>
+     */
+    public const TILE_HEIGHTS = [1 => 'Normal', 2 => 'Doppelt hoch'];
 
     /**
      * @return array<string, string>
@@ -41,6 +55,8 @@ class Section extends Model
             'show_in_navigation' => 'boolean',
             'is_standalone' => 'boolean',
             'layout' => SectionLayout::class,
+            'tile_width' => 'integer',
+            'tile_height' => 'integer',
             'content' => 'array',
         ];
     }

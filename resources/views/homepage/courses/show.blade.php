@@ -3,7 +3,7 @@
     $image = $layout === \App\Enums\CourseDetailLayout::Minimal ? null : $course->detailImage();
 @endphp
 
-<x-homepage.layout :title="$course->name">
+<x-homepage.layout :title="$course->name" :is-preview="$preview ?? false">
     <div style="{{ $template->accentStyle() }}">
         @if ($image && $layout === \App\Enums\CourseDetailLayout::HeroImage)
             <div class="relative h-56 overflow-hidden bg-gray-100 sm:h-80 lg:h-96">
@@ -65,7 +65,7 @@
                 @else
                     <div class="grid gap-4 lg:grid-cols-2">
                         @foreach ($course->upcomingInstances as $instance)
-                            <x-homepage.course-instance :instance="$instance" :template="$template" />
+                            <x-homepage.course-instance :instance="$instance" :template="$template" :bookable="! ($preview ?? false)" />
                         @endforeach
                     </div>
                 @endif

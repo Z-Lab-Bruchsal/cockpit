@@ -6,6 +6,7 @@ use App\Enums\CourseAudience;
 use App\Enums\CourseInstanceStatus;
 use App\Enums\SchoolCourseFormat;
 use App\Enums\SchoolType;
+use App\Services\Homepage\HomepageImage;
 use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Course extends Model
@@ -207,7 +207,7 @@ class Course extends Model
      */
     protected static function image(string $path, ?string $alt): array
     {
-        return ['url' => Storage::disk('public')->url($path), 'alt' => (string) $alt];
+        return ['url' => HomepageImage::url($path), 'alt' => (string) $alt];
     }
 
     /**

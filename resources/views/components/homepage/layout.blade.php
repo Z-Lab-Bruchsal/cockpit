@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle() }}</title>
+    @if ($isPreview)
+        <meta name="robots" content="noindex, nofollow">
+    @endif
     @if ($settings->homepage_tagline)
         <meta name="description" content="{{ $settings->homepage_tagline }}">
     @endif
@@ -13,6 +16,9 @@
     @livewireStyles
 </head>
 <body class="flex min-h-screen flex-col bg-page font-sans text-ink antialiased">
+    @if ($isPreview)
+        <div class="sticky top-0 z-50 bg-ink px-4 py-2 text-center text-sm font-semibold text-white">Vorschau – so würde es aussehen. Noch nicht gespeicherte Änderungen sind enthalten.</div>
+    @endif
     <header x-data="{ open: false }" class="relative z-40 px-2 pt-2 sm:px-3 sm:pt-3 lg:pt-7">
         <div class="key-card rounded-2xl">
             <div class="flex min-h-20 items-center justify-center gap-8 px-6 py-3 lg:h-[5.75rem] lg:justify-start lg:py-0 lg:pr-[7.5%] lg:pl-[8.8%]">
@@ -125,6 +131,18 @@
             <p class="border-t border-white/15 py-4 text-xs text-footer-muted">{{ $settings->copyrightText() }}</p>
         </div>
     </footer>
+
+    @if ($showsArrangeToolbar())
+        <div class="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-xl bg-ink/90 p-2 text-sm text-white shadow-lg backdrop-blur">
+            @if ($isArranging)
+                <span class="hidden px-2 sm:inline">Anordnen-Modus</span>
+                <a href="{{ request()->fullUrlWithoutQuery('anordnen') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
+            @else
+                <a href="{{ request()->fullUrlWithQuery(['anordnen' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Kacheln anordnen</a>
+            @endif
+            <a href="{{ route('filament.admin.resources.sections.index') }}" class="rounded-lg px-3 py-1.5 hover:bg-white/15">Cockpit</a>
+        </div>
+    @endif
 
     @livewireScripts
 </body>

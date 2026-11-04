@@ -4,6 +4,7 @@
 
 @source '../views/homepage/**/*.blade.php';
 @source '../views/components/homepage/**/*.blade.php';
+@source '../views/livewire/homepage/**/*.blade.php';
 @source '../js/homepage.js';
 
 @theme {

@@ -69,6 +69,24 @@ class SectionResourceTest extends TestCase
         ]);
     }
 
+    public function test_can_set_tile_size(): void
+    {
+        $section = Section::factory()->create();
+
+        Livewire::test(EditSection::class, ['record' => $section->getRouteKey()])
+            ->fillForm(['tile_width' => 6, 'tile_height' => 2])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(6, $section->fresh()->tile_width);
+        $this->assertSame(2, $section->fresh()->tile_height);
+
+        Livewire::test(EditSection::class, ['record' => $section->getRouteKey()])
+            ->fillForm(['tile_width' => 5])
+            ->call('save')
+            ->assertHasFormErrors(['tile_width']);
+    }
+
     public function test_slug_must_not_be_reserved_or_duplicate(): void
     {
         Section::factory()->create(['slug' => 'vorhanden']);

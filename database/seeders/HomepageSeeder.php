@@ -128,7 +128,7 @@ class HomepageSeeder extends Seeder
             'parent_id' => $root->id,
             'title' => 'Der Begeisterbus',
             'sort' => 1,
-            'layout' => SectionLayout::FullWidth,
+            'tile_width' => 6,
             'teaser' => 'Unser mobiles Klassenzimmer kommt an Schulen im Umkreis von 20 km.',
             'content' => [
                 $this->text('<p>Der Begeisterbus ist ein mobiles Klassenzimmer, das wir gemeinsam mit der Hopp-Foundation betreiben. Er besucht Schulen im Umkreis von etwa 20 km um Bruchsal und bringt Workshops zu Informatik, Robotik, Klima und Natur direkt auf den Schulhof.</p>'),

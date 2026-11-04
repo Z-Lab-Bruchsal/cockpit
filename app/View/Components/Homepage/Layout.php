@@ -28,7 +28,14 @@ class Layout extends Component
 
     public bool $isAccountPage;
 
-    public function __construct(public ?string $title = null)
+    /**
+     * Cockpit users (guard "web") who may arrange the homepage tiles in place.
+     */
+    public bool $canArrangeTiles;
+
+    public bool $isArranging;
+
+    public function __construct(public ?string $title = null, public bool $isPreview = false)
     {
         $this->settings = CompanySetting::current();
 
@@ -49,6 +56,16 @@ class Layout extends Component
             default => 'homepage.login',
         });
         $this->isAccountPage = request()->routeIs('homepage.account', 'homepage.login', 'homepage.schools.account');
+        $this->canArrangeTiles = (bool) Auth::guard('web')->user()?->can('reorder', Section::class);
+        $this->isArranging = $this->canArrangeTiles && request()->boolean('anordnen');
+    }
+
+    /**
+     * Tiles exist on the start page and on section pages only.
+     */
+    public function showsArrangeToolbar(): bool
+    {
+        return $this->canArrangeTiles && ! $this->isPreview && request()->routeIs('homepage.index', 'homepage.section');
     }
 
     public function pageTitle(): string

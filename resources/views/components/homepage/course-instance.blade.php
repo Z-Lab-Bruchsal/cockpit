@@ -1,4 +1,4 @@
-@props(['instance', 'template'])
+@props(['instance', 'template', 'bookable' => true])
 
 @php($availability = $instance->availability())
 
@@ -30,7 +30,9 @@
     </ul>
 
     <div class="mt-4 text-sm text-gray-600">
-        @if ($availability === \App\Enums\CourseAvailability::NotYetOpen)
+        @if (! $bookable)
+            <span class="italic">Die Anmeldung ist in der Vorschau deaktiviert.</span>
+        @elseif ($availability === \App\Enums\CourseAvailability::NotYetOpen)
             Anmeldung ab {{ $instance->registration_opens_at->locale('de')->isoFormat('dd, DD.MM.YYYY, HH:mm') }} Uhr möglich.
         @else
             <x-homepage.course-registration-form :instance="$instance" :availability="$availability" />
