@@ -3,7 +3,7 @@
 
 Hi,
 
-du hast eine neue Nachricht von {{ $internalMessage->sender->name }} im Cockpit.
+du hast eine neue interne Nachricht von {{ $internalMessage->sender->name }} im Cockpit.
 
 An: {{ $internalMessage->recipientNames() }}
 

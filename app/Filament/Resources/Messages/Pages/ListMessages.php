@@ -16,7 +16,7 @@ class ListMessages extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label('Neue Nachricht'),
+            CreateAction::make()->label('Neue interne Nachricht'),
         ];
     }
 

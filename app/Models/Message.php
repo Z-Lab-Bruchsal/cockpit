@@ -162,7 +162,7 @@ class Message extends Model
     protected function notify(User $receiver): void
     {
         Notification::make()
-            ->title("Neue Nachricht von {$this->sender->name}")
+            ->title("Neue interne Nachricht von {$this->sender->name}")
             ->body($this->subject)
             ->icon('heroicon-o-envelope')
             ->actions([

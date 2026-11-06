@@ -45,7 +45,7 @@ class CreateMessage extends CreateRecord
 
     protected function getCreatedNotificationTitle(): ?string
     {
-        return 'Nachricht gesendet';
+        return 'Interne Nachricht gesendet';
     }
 
     protected function getRedirectUrl(): string

@@ -24,11 +24,11 @@ class MessageResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $navigationLabel = 'Nachrichten';
+    protected static ?string $navigationLabel = 'Interne Nachrichten';
 
-    protected static ?string $modelLabel = 'Nachricht';
+    protected static ?string $modelLabel = 'interne Nachricht';
 
-    protected static ?string $pluralModelLabel = 'Nachrichten';
+    protected static ?string $pluralModelLabel = 'Interne Nachrichten';
 
     protected static ?string $recordTitleAttribute = 'subject';
 
@@ -53,7 +53,7 @@ class MessageResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return 'Ungelesene Nachrichten';
+        return 'Ungelesene interne Nachrichten';
     }
 
     public static function form(Schema $schema): Schema

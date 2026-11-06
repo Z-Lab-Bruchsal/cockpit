@@ -10,6 +10,7 @@ use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -45,6 +46,15 @@ class ContentBlocks
                 ->schema([
                     static::richEditor('body')
                         ->label('Text')
+                        ->required(),
+                ]),
+            Block::make('free')
+                ->label('Freies Schreiben')
+                ->icon(Heroicon::OutlinedPencilSquare)
+                ->schema([
+                    static::fullRichEditor('body')
+                        ->label('Inhalt')
+                        ->helperText('Bilder per Büroklammer einfügen, Spalten über das Raster-Symbol. Tabellen- und Spalten-Werkzeuge erscheinen, sobald der Cursor darin steht.')
                         ->required(),
                 ]),
             Block::make('image')
@@ -197,6 +207,40 @@ class ContentBlocks
                 ['bulletList', 'orderedList', 'blockquote'],
                 ['undo', 'redo'],
             ]);
+    }
+
+    /**
+     * Editor with everything TipTap offers in Filament: images, tables, columns, colors, alignment, collapsible sections.
+     */
+    public static function fullRichEditor(string $name): RichEditor
+    {
+        return RichEditor::make($name)
+            ->toolbarButtons([
+                ['bold', 'italic', 'underline', 'strike', 'subscript', 'superscript', 'link'],
+                ['textColor', 'highlight', 'clearFormatting'],
+                [ToolbarButtonGroup::make('Absatz', ['paragraph', 'h2', 'h3', 'h4', 'lead', 'small'])->textualButtons()],
+                [ToolbarButtonGroup::make('Ausrichtung', ['alignStart', 'alignCenter', 'alignEnd', 'alignJustify'])],
+                ['bulletList', 'orderedList', 'blockquote', 'details', 'horizontalRule'],
+                ['attachFiles', 'table', 'grid'],
+                ['undo', 'redo'],
+            ])
+            ->floatingToolbars([
+                'table' => [
+                    'tableAddColumnBefore', 'tableAddColumnAfter', 'tableDeleteColumn',
+                    'tableAddRowBefore', 'tableAddRowAfter', 'tableDeleteRow',
+                    'tableMergeCells', 'tableSplitCell',
+                    'tableToggleHeaderRow', 'tableToggleHeaderCell',
+                    'tableDelete',
+                ],
+                'grid' => [
+                    'gridAddColumnBefore', 'gridAddColumnAfter', 'gridDeleteColumn', 'gridDelete',
+                ],
+            ])
+            ->fileAttachmentsDisk('public')
+            ->fileAttachmentsDirectory('homepage')
+            ->fileAttachmentsVisibility('public')
+            ->fileAttachmentsAcceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
+            ->fileAttachmentsMaxSize(4096);
     }
 
     /**

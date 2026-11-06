@@ -76,7 +76,7 @@ class MessageTest extends TestCase
             ])
             ->call('create')
             ->assertHasNoFormErrors()
-            ->assertNotified('Nachricht gesendet');
+            ->assertNotified('Interne Nachricht gesendet');
 
         $message = Message::query()->sole();
 

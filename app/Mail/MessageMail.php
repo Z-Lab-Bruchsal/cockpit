@@ -33,7 +33,7 @@ class MessageMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Neue Nachricht: {$this->internalMessage->subject}",
+            subject: "Neue interne Nachricht: {$this->internalMessage->subject}",
         );
     }
 
