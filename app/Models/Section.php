@@ -169,6 +169,81 @@ class Section extends Model
     }
 
     /**
+     * Ids of all sections depth-first: each parent directly followed by its children, siblings by sort.
+     * Sections that cannot be reached from a root (broken parent chain) are appended at the end.
+     *
+     * @return list<int>
+     */
+    public static function idsInTreeOrder(): array
+    {
+        $sections = static::query()
+            ->orderBy('sort')
+            ->orderBy('id')
+            ->get(['id', 'parent_id']);
+
+        $childrenByParent = $sections->groupBy(fn (Section $section): string => (string) $section->parent_id);
+        $orderedIds = [];
+
+        $appendChildren = function (string $parentKey) use (&$appendChildren, &$orderedIds, $childrenByParent): void {
+            foreach ($childrenByParent->get($parentKey, []) as $child) {
+                if (isset($orderedIds[$child->id])) {
+                    continue;
+                }
+
+                $orderedIds[$child->id] = $child->id;
+                $appendChildren((string) $child->id);
+            }
+        };
+
+        $appendChildren('');
+
+        foreach ($sections as $section) {
+            $orderedIds[$section->id] ??= $section->id;
+        }
+
+        return array_values($orderedIds);
+    }
+
+    /**
+     * Rewrites the sort values so that sorting all sections flat by sort yields the tree order.
+     * The order among siblings is kept, so the homepage does not change.
+     */
+    public static function renumberInTreeOrder(): void
+    {
+        $currentSorts = static::query()->pluck('sort', 'id');
+
+        foreach (static::idsInTreeOrder() as $index => $id) {
+            if ($currentSorts[$id] !== $index + 1) {
+                static::query()->whereKey($id)->update(['sort' => $index + 1]);
+            }
+        }
+    }
+
+    /**
+     * Orders a query in tree order, see idsInTreeOrder().
+     *
+     * @param  Builder<Section>  $query
+     * @return Builder<Section>
+     */
+    public static function orderByTree(Builder $query): Builder
+    {
+        $ids = static::idsInTreeOrder();
+
+        if ($ids === []) {
+            return $query;
+        }
+
+        $cases = implode(' ', array_fill(0, count($ids), 'WHEN ? THEN ?'));
+        $bindings = [];
+
+        foreach ($ids as $position => $id) {
+            array_push($bindings, $id, $position);
+        }
+
+        return $query->orderByRaw("CASE {$query->qualifyColumn('id')} {$cases} ELSE ".count($ids).' END', $bindings);
+    }
+
+    /**
      * Child sections shown as tiles, i.e. visible and not only linked in the footer.
      *
      * @return Collection<int, Section>

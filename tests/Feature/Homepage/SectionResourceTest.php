@@ -124,4 +124,49 @@ class SectionResourceTest extends TestCase
         Livewire::test(ListSections::class)
             ->assertCanSeeTableRecords($sections);
     }
+
+    public function test_table_lists_children_directly_below_their_parent(): void
+    {
+        $about = Section::factory()->create(['title' => 'Über uns', 'sort' => 2]);
+        $courses = Section::factory()->create(['title' => 'Kurse', 'sort' => 1]);
+        $team = Section::factory()->create(['title' => 'Team', 'parent_id' => $about->id, 'sort' => 0]);
+        $robotics = Section::factory()->create(['title' => 'Robotik', 'parent_id' => $courses->id, 'sort' => 5]);
+        $drones = Section::factory()->create(['title' => 'Drohnen', 'parent_id' => $courses->id, 'sort' => 3]);
+        $history = Section::factory()->create(['title' => 'Geschichte', 'parent_id' => $team->id, 'sort' => 9]);
+
+        Livewire::test(ListSections::class)
+            ->assertCanSeeTableRecords([$courses, $drones, $robotics, $about, $team, $history], inOrder: true);
+    }
+
+    public function test_reordering_keeps_children_below_their_parent(): void
+    {
+        $first = Section::factory()->create(['title' => 'Erster', 'sort' => 1]);
+        $child = Section::factory()->create(['title' => 'Kind', 'parent_id' => $first->id, 'sort' => 1]);
+        $second = Section::factory()->create(['title' => 'Zweiter', 'sort' => 2]);
+
+        // Drag the first main section below the second one: its child moves along.
+        Livewire::test(ListSections::class)
+            ->call('toggleTableReordering')
+            ->call('reorderTable', [(string) $child->id, (string) $second->id, (string) $first->id])
+            ->call('toggleTableReordering')
+            ->assertCanSeeTableRecords([$second, $first, $child], inOrder: true);
+
+        $this->assertSame(
+            [$second->id, $first->id, $child->id],
+            Section::query()->orderBy('sort')->pluck('id')->all(),
+        );
+    }
+
+    public function test_entering_reorder_mode_aligns_sort_with_the_tree(): void
+    {
+        $parent = Section::factory()->create(['sort' => 5]);
+        $child = Section::factory()->create(['parent_id' => $parent->id, 'sort' => 0]);
+        $other = Section::factory()->create(['sort' => 6]);
+
+        Livewire::test(ListSections::class)
+            ->call('toggleTableReordering')
+            ->assertCanSeeTableRecords([$parent, $child, $other], inOrder: true);
+
+        $this->assertSame([1, 2, 3], [$parent->fresh()->sort, $child->fresh()->sort, $other->fresh()->sort]);
+    }
 }

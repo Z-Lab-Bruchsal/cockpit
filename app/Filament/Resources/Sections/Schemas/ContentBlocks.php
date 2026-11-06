@@ -159,6 +159,23 @@ class ContentBlocks
                     Toggle::make('show_area_headings')
                         ->label('Überschriften je Teambereich anzeigen')
                         ->default(true),
+                    static::anchor('team'),
+                ])
+                ->columns(2),
+            Block::make('news')
+                ->label('News')
+                ->icon(Heroicon::OutlinedMegaphone)
+                ->schema([
+                    TextInput::make('limit')
+                        ->label('Max. Anzahl')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(12)
+                        ->default(3),
+                    Toggle::make('show_all_link')
+                        ->label('Link „Alle News“ anzeigen')
+                        ->default(true),
+                    static::anchor('news'),
                 ])
                 ->columns(2),
             Block::make('contact')
@@ -180,6 +197,20 @@ class ContentBlocks
                 ['bulletList', 'orderedList', 'blockquote'],
                 ['undo', 'redo'],
             ]);
+    }
+
+    /**
+     * Optional jump mark, so that a block can be linked directly, e.g. /ueber-uns#team.
+     */
+    protected static function anchor(string $default): TextInput
+    {
+        return TextInput::make('anchor')
+            ->label('Anker für Links')
+            ->helperText(fn (?string $state): string => 'Damit lässt sich der Block direkt verlinken: …/bereich#'.($state ?: $default))
+            ->prefix('#')
+            ->default($default)
+            ->alphaDash()
+            ->maxLength(60);
     }
 
     /**

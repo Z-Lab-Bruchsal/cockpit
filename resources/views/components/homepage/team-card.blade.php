@@ -10,16 +10,87 @@
 <div
     id="team-{{ $member->id }}"
     class="scroll-mt-24"
-    x-data="{ writing: @js($isFormTarget && $formErrors->any()) }"
+    x-data="{
+        writing: @js($isFormTarget && $formErrors->any()),
+        preview: false,
+        previewTimer: null,
+        showPreview(delay = 150) {
+            clearTimeout(this.previewTimer);
+            this.previewTimer = setTimeout(() => this.preview = true, delay);
+        },
+        hidePreview() {
+            clearTimeout(this.previewTimer);
+            this.preview = false;
+        },
+        openCard() {
+            this.hidePreview();
+            this.$refs.card.showModal();
+        },
+    }"
     x-init="@js($openOnLoad) && $nextTick(() => $refs.card.showModal())"
 >
-    <button type="button" x-on:click="$refs.card.showModal()" class="group flex w-full flex-col items-center gap-2 text-center focus:outline-none">
+    <button
+        type="button"
+        x-ref="trigger"
+        x-on:click="openCard()"
+        x-on:pointerenter="$event.pointerType === 'mouse' && showPreview()"
+        x-on:pointerleave="hidePreview()"
+        x-on:focus="$el.matches(':focus-visible') && showPreview(0)"
+        x-on:blur="hidePreview()"
+        x-on:keydown.escape="hidePreview()"
+        aria-describedby="team-{{ $member->id }}-preview"
+        class="group flex w-full flex-col items-center gap-2 text-center focus:outline-none"
+    >
         <x-homepage.team-avatar :member="$member" class="size-24 text-2xl ring-4 ring-transparent transition group-hover:ring-brand group-focus-visible:ring-brand sm:size-28" />
         <span class="font-semibold leading-tight">{{ $member->name }}</span>
         @if ($member->team_role)
             <span class="text-sm leading-tight text-gray-600">{{ $member->team_role }}</span>
         @endif
     </button>
+
+    {{-- Business card preview on hover / keyboard focus; the full card opens on click. --}}
+    <div
+        id="team-{{ $member->id }}-preview"
+        role="tooltip"
+        x-show="preview"
+        x-cloak
+        x-anchor.bottom.offset.12="$refs.trigger"
+        x-transition:enter="transition duration-150 ease-out"
+        x-transition:enter-start="translate-y-1 opacity-0"
+        x-transition:leave="transition duration-100 ease-in"
+        x-transition:leave-end="opacity-0"
+        class="pointer-events-none z-30 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-xl"
+    >
+        <div class="h-1.5 bg-brand" aria-hidden="true"></div>
+        <div class="flex flex-col gap-3 p-5">
+            <div class="flex items-center gap-4">
+                <x-homepage.team-avatar :member="$member" class="size-16 shrink-0 text-lg" />
+                <div class="flex min-w-0 flex-col">
+                    <p class="font-bold leading-tight">{{ $member->name }}</p>
+                    @if ($member->team_role)
+                        <p class="text-sm leading-tight text-gray-700">{{ $member->team_role }}</p>
+                    @endif
+                    <p class="mt-0.5 text-xs uppercase tracking-wide text-gray-500">{{ $member->team_area?->getLabel() }}</p>
+                </div>
+            </div>
+
+            @if (filled($member->team_bio))
+                <p class="line-clamp-4 text-sm leading-relaxed text-gray-800">{{ $member->team_bio }}</p>
+            @endif
+
+            @if ($member->interests->isNotEmpty())
+                <div class="flex flex-wrap gap-1.5">
+                    @foreach ($member->interests->take(4) as $interest)
+                        <x-homepage.interest-badge :interest="$interest" />
+                    @endforeach
+                </div>
+            @endif
+
+            <p class="border-t border-gray-100 pt-3 text-xs font-semibold text-brand-ink">
+                {{ $member->isContactableViaHomepage() ? 'Klicken für Visitenkarte & Kontakt' : 'Klicken für die ganze Visitenkarte' }}
+            </p>
+        </div>
+    </div>
 
     <dialog
         x-ref="card"

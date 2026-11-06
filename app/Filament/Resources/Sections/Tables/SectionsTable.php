@@ -23,8 +23,11 @@ class SectionsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('parent.parent'))
-            ->defaultSort('sort')
+            ->defaultSort(fn (Builder $query): Builder => Section::orderByTree($query))
             ->reorderable('sort')
+            ->afterReordering(function (): void {
+                Section::renumberInTreeOrder();
+            })
             ->columns([
                 ImageColumn::make('tile_image_path')
                     ->label('Bild')
@@ -66,7 +69,7 @@ class SectionsTable
                 SelectFilter::make('parent_id')
                     ->label('Übergeordneter Bereich')
                     ->placeholder('Alle')
-                    ->options(fn (): array => ['root' => '— Nur Hauptbereiche —'] + Section::query()->orderBy('sort')->pluck('title', 'id')->all())
+                    ->options(fn (): array => ['root' => '— Nur Hauptbereiche —'] + Section::orderByTree(Section::query())->pluck('title', 'id')->all())
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
                             null, '' => $query,

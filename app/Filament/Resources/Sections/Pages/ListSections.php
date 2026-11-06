@@ -7,11 +7,25 @@ use App\Models\Section;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Components\Attributes\Exposed;
 use Filament\Support\Icons\Heroicon;
 
 class ListSections extends ListRecords
 {
     protected static string $resource = SectionResource::class;
+
+    /**
+     * Reordering sorts flat by the sort column, so it is aligned with the tree order first.
+     */
+    #[Exposed]
+    public function toggleTableReordering(): void
+    {
+        if (! $this->isTableReordering()) {
+            Section::renumberInTreeOrder();
+        }
+
+        parent::toggleTableReordering();
+    }
 
     protected function getHeaderActions(): array
     {

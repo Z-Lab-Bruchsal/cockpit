@@ -119,4 +119,50 @@ class TeamTest extends TestCase
 
         $this->get('/ueber-uns')->assertOk()->assertSee('SZ');
     }
+
+    public function test_team_block_can_be_linked_via_anchor(): void
+    {
+        User::factory()->teamMember()->create();
+        $this->teamSection(['anchor' => 'team']);
+
+        $this->get('/ueber-uns')
+            ->assertOk()
+            ->assertSee('id="team"', false);
+    }
+
+    public function test_anchor_is_sanitized_and_omitted_when_empty(): void
+    {
+        User::factory()->teamMember()->create();
+        $this->teamSection(['anchor' => '"><script>x</script>']);
+
+        $this->get('/ueber-uns')
+            ->assertOk()
+            ->assertDontSee('<script>x</script>', false)
+            ->assertSee('id="scriptxscript"', false);
+
+        Section::query()->delete();
+        $this->teamSection(['anchor' => '']);
+
+        $this->get('/ueber-uns')
+            ->assertOk()
+            ->assertDontSee('class="scroll-mt-24">', false);
+    }
+
+    public function test_hover_preview_shows_business_card_summary(): void
+    {
+        $member = User::factory()->teamMember()->create([
+            'team_role' => 'Drohnen und Elektronik',
+            'team_bio' => 'Ich baue Drohnen <b>gern</b>.',
+        ]);
+        $member->interests()->attach(Interest::factory()->create(['name' => 'Drohnen']));
+        $this->teamSection();
+
+        $this->get('/ueber-uns')
+            ->assertOk()
+            ->assertSee('id="team-'.$member->id.'-preview"', false)
+            ->assertSee('role="tooltip"', false)
+            ->assertSee('aria-describedby="team-'.$member->id.'-preview"', false)
+            ->assertSee('Ich baue Drohnen &lt;b&gt;gern&lt;/b&gt;.', false)
+            ->assertSee('Klicken für Visitenkarte &amp; Kontakt', false);
+    }
 }
