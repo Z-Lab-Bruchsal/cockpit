@@ -6,6 +6,8 @@ use App\Models\CompanySetting;
 use App\Models\Section;
 use Database\Seeders\HomepageSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class HomepageTest extends TestCase
@@ -198,6 +200,10 @@ class HomepageTest extends TestCase
 
     public function test_seeded_homepage_renders(): void
     {
+        Http::preventStrayRequests();
+        Http::fake(['*' => Http::response('', 404)]);
+        Storage::fake('public');
+
         $this->seed(HomepageSeeder::class);
         $this->seed(HomepageSeeder::class);
 

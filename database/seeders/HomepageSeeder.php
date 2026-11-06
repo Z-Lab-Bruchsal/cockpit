@@ -26,6 +26,8 @@ class HomepageSeeder extends Seeder
         $privacy = $this->seedPrivacy();
 
         $this->seedFooter($legalNotice, $privacy);
+
+        $this->call(NewsSeeder::class);
     }
 
     protected function seedCompanySettings(): void
