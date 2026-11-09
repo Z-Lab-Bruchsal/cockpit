@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "aab166a122e72727288428ae04376bc2",
+    "content-hash": "322b911ee65f139e9c7ef0b06ffae9ee",
     "packages": [
         {
             "name": "alexandergabriel/filament-dashboard-tabs",
@@ -41,6 +41,54 @@
                 }
             ],
             "description": "Per-user Filament dashboard with tabs, drag & drop widgets and half/full width.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "alexandergabriel/filament-mail-test-mode",
+            "version": "dev-homepageReboot",
+            "dist": {
+                "type": "path",
+                "url": "packages/filament-mail-test-mode",
+                "reference": "afb7139fd6960fdad6a8794df00a5bfc6415316a"
+            },
+            "require": {
+                "filament/filament": "^4.0|^5.0",
+                "php": "^8.2",
+                "spatie/laravel-package-tools": "^1.92"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AlexanderGabriel\\FilamentMailTestMode\\FilamentMailTestModeServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AlexanderGabriel\\FilamentMailTestMode\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Alexander Gabriel",
+                    "email": "alexander.gabriel@digital-infinity.de",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Redirect all outgoing mails of a Laravel/Filament application to a single test recipient.",
+            "keywords": [
+                "filament",
+                "laravel",
+                "mail",
+                "testing"
+            ],
             "transport-options": {
                 "symlink": true,
                 "relative": true
@@ -12092,7 +12140,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "alexandergabriel/filament-dashboard-tabs": 20
+        "alexandergabriel/filament-dashboard-tabs": 20,
+        "alexandergabriel/filament-mail-test-mode": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

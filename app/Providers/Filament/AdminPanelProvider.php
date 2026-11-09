@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use AlexanderGabriel\FilamentDashboardTabs\FilamentDashboardTabsPlugin;
+use AlexanderGabriel\FilamentMailTestMode\FilamentMailTestModePlugin;
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
@@ -70,6 +71,9 @@ class AdminPanelProvider extends PanelProvider
             ->plugins([
                 FilamentShieldPlugin::make()->navigationGroup('Administration'),
                 FilamentDashboardTabsPlugin::make(),
+                FilamentMailTestModePlugin::make()
+                    ->navigationGroup('Administration')
+                    ->authorize(fn (): bool => (bool) filament()->auth()->user()?->can('View:MailTestModePage')),
                 //                FilamentOauth2Plugin::make(),
             ])
             ->authMiddleware([

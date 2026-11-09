@@ -1,0 +1,32 @@
+{
+    "name": "alexandergabriel/filament-mail-test-mode",
+    "description": "Redirect all outgoing mails of a Laravel/Filament application to a single test recipient.",
+    "keywords": ["laravel", "filament", "mail", "testing"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alexander Gabriel",
+            "email": "alexander.gabriel@digital-infinity.de",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0|^5.0",
+        "spatie/laravel-package-tools": "^1.92"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlexanderGabriel\\FilamentMailTestMode\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AlexanderGabriel\\FilamentMailTestMode\\FilamentMailTestModeServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
