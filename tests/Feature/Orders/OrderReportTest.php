@@ -107,6 +107,12 @@ class OrderReportTest extends TestCase
 
         $this->actingAs($boss)->get(OrderReportsPage::getUrl())->assertOk();
 
+        Livewire::test(OrderReportsPage::class)
+            ->fillForm(['from' => '2026-11-02', 'to' => '2026-11-08'])
+            ->assertCanSeeTableRecords(Order::query()->whereIn('name', ['Lötzinn', 'Litze', 'Filament'])->get())
+            ->assertCanNotSeeTableRecords(Order::query()->whereIn('name', ['Nächste Woche', 'Noch nicht bestellt'])->get())
+            ->assertSee('35,00');
+
         foreach (['xlsx', 'csv', 'pdf'] as $format) {
             Livewire::test(OrderReportsPage::class)
                 ->fillForm(['from' => '2026-11-02', 'to' => '2026-11-08'])

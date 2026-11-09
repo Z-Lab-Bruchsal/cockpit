@@ -14,6 +14,14 @@ use Illuminate\Support\Carbon;
 class OrderProcessing
 {
     /**
+     * Whether the user places orders and records them for accounting.
+     */
+    public static function canProcess(?User $user): bool
+    {
+        return (bool) $user?->can('Orders:Process');
+    }
+
+    /**
      * @param  array{merchant_id: int|string, orderdatetime: string|Carbon, order_number?: string|null, total_price?: float|string|null}  $data
      */
     public static function markOrdered(Order $order, array $data, User $processor): void

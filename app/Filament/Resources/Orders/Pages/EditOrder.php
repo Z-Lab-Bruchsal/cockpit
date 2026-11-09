@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Filament\Resources\Orders\Actions\MarkOrderedAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Orderstatus;
 use Filament\Actions\Action;
@@ -18,16 +19,8 @@ class EditOrder extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('bestellt_single')
-                ->authorize('update')
-                ->icon(Heroicon::ShoppingCart)->label('Bestellt')->action(function (Model $record) {
-                    $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
-                    $record->orderstatus()->associate($orderstatusBestellt);
-                    $record->save();
-                    $this->refreshFormData(['orderstatus_id']);
-                })->visible(function (Model $record) {
-                    return $record->orderstatus->name == 'erfasst';
-                }),
+            MarkOrderedAction::make()
+                ->after(fn () => $this->refreshFormData(['orderstatus_id', 'orderdatetime', 'merchant_id', 'order_number', 'total_price'])),
             Action::make('angekommen_single')
                 ->authorize('update')
                 ->icon(Heroicon::BuildingOffice)->label('Angekommen')->action(function (Model $record) {

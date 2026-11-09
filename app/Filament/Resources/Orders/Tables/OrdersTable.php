@@ -2,12 +2,23 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Filament\Resources\Orders\Actions\MarkOrderedAction;
+use App\Filament\Resources\Orders\Schemas\OrderProcessingFields;
+use App\Models\Order;
 use App\Models\Orderstatus;
+use App\Models\User;
+use App\Services\Orders\MerchantResolver;
+use App\Services\Orders\OrderProcessing;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -28,6 +39,7 @@ class OrdersTable
             ->columns([
                 TextColumn::make('name')
                     ->label('Produktname')
+                    ->description(fn (Model $record): ?string => Str::limit((string) $record->description, 80) ?: null)
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('url')
@@ -35,6 +47,15 @@ class OrdersTable
                     ->searchable()
                     ->formatStateUsing(fn (string $state): string => substr($state, 0, 40))
                     ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('merchant')
+                    ->label('Händler')
+                    ->state(fn (Order $record): string => $record->merchant?->name
+                        ?? MerchantResolver::forUrl($record->url)?->name
+                        ?? 'neu: '.(MerchantResolver::suggestName($record->url) ?? '–'))
+                    ->badge()
+                    ->color(fn (string $state): string => str_starts_with($state, 'neu:') ? 'warning' : 'gray')
+                    ->visible(fn (): bool => static::canProcess())
+                    ->toggleable(),
                 TextColumn::make('count')
                     ->label('Anzahl')
                     ->numeric()
@@ -60,11 +81,16 @@ class OrdersTable
                     ->sortable()
                     ->toggleable(),
             ])->striped()->defaultSort('upated_at', 'desc')
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['merchant', 'orderstatus', 'user']))
             ->groups([
                 Group::make('orderstatus.name')->label('Bestellstatus'),
                 Group::make('user.name')->label('Bestellt von'),
             ])
             ->filters([
+                Filter::make('abarbeiten')
+                    ->label('Bestellungen abarbeiten')
+                    ->query(fn (Builder $query): Builder => $query->toProcess())
+                    ->visible(fn (): bool => static::canProcess()),
                 SelectFilter::make('orderstatus_id')->relationship('orderstatus', 'name')->label('Bestellstatus')->multiple(),
                 Filter::make('mine')->label('meine')
                     ->default()
@@ -84,17 +110,7 @@ class OrdersTable
                     }),
             ])
             ->recordActions([
-                Action::make('bestellt_single')
-                    ->authorize('update')
-                    ->icon(Heroicon::ShoppingCart)->iconButton()->label('Bestellt')->action(function (Model $record) {
-                        $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
-                        $record->orderstatus_id = $orderstatusBestellt->id;
-                        $record->save();
-                    })->visible(function (Model $record) {
-                        $orderstatusErfasst = Orderstatus::where('name', 'erfasst')->first();
-
-                        return $orderstatusErfasst->id == $record->orderstatus_id;
-                    }),
+                MarkOrderedAction::make()->iconButton(),
                 Action::make('angekommen_single')
                     ->authorize('update')
                     ->icon(Heroicon::BuildingOffice)->iconButton()->label('Angekommen')->action(function (Model $record) {
@@ -126,7 +142,9 @@ class OrdersTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    static::markOrderedTogetherAction(),
                     Action::make('bestellt_bulk')
+                        ->hidden(fn (): bool => static::canProcess())
                         ->authorizeIndividualRecords('update')
                         ->label('Ausgewählte bestellt')
                         ->accessSelectedRecords()
@@ -152,5 +170,70 @@ class OrdersTable
                         })->requiresConfirmation()->icon(Heroicon::BuildingOffice),
                 ]),
             ]);
+    }
+
+    /**
+     * Several requests placed in one order: merchant, date and order number are shared, the price is entered per article.
+     */
+    protected static function markOrderedTogetherAction(): BulkAction
+    {
+        return BulkAction::make('markOrderedTogether')
+            ->label('Gemeinsam bestellt')
+            ->icon(Heroicon::ShoppingCart)
+            ->visible(fn (): bool => static::canProcess())
+            ->authorizeIndividualRecords('update')
+            ->modalHeading('In einer Bestellung bestellt')
+            ->modalDescription('Händler, Datum und Bestellnummer gelten für alle ausgewählten Artikel, der Preis wird je Artikel eingetragen. Schon bestellte Artikel werden übersprungen.')
+            ->fillForm(fn (Collection $records): array => [
+                'merchant_id' => MerchantResolver::forUrl($records->first()?->url)?->id,
+                'orderdatetime' => now(),
+                'prices' => static::openRecords($records)->map(fn (Order $order): array => [
+                    'order_id' => $order->id,
+                    'name' => $order->count.' × '.$order->name,
+                    'total_price' => null,
+                ])->values()->all(),
+            ])
+            ->schema(fn (Collection $records): array => [
+                ...OrderProcessingFields::make(fn (?Model $record): ?string => $records->first()?->url, withPrice: false),
+                Repeater::make('prices')
+                    ->label('Preise')
+                    ->schema([
+                        Hidden::make('order_id'),
+                        OrderProcessingFields::price()
+                            ->label(fn (Get $get): string => (string) $get('name'))
+                            ->helperText(null),
+                        Hidden::make('name'),
+                    ])
+                    ->addable(false)
+                    ->deletable(false)
+                    ->reorderable(false),
+            ])
+            ->action(function (Collection $records, array $data): void {
+                $prices = collect($data['prices'] ?? [])->pluck('total_price', 'order_id');
+                $openRecords = static::openRecords($records);
+                $user = User::find(filament()->auth()->id());
+
+                $openRecords->each(fn (Order $order) => OrderProcessing::markOrdered($order, [
+                    ...$data,
+                    'total_price' => $prices[$order->id] ?? null,
+                ], $user));
+
+                Notification::make()->success()->title($openRecords->count().' Artikel als bestellt erfasst')->send();
+            })
+            ->deselectRecordsAfterCompletion();
+    }
+
+    /**
+     * @param  Collection<int, Order>  $records
+     * @return Collection<int, Order>
+     */
+    protected static function openRecords(Collection $records): Collection
+    {
+        return $records->filter(fn (Order $order): bool => $order->orderstatus?->name === 'erfasst')->values();
+    }
+
+    protected static function canProcess(): bool
+    {
+        return OrderProcessing::canProcess(User::find(filament()->auth()->id()));
     }
 }

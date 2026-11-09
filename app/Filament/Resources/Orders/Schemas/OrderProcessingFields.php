@@ -37,7 +37,7 @@ class OrderProcessingFields
                     TextInput::make('name')
                         ->label('Name')
                         ->required()
-                        ->unique(Merchant::class, 'name')
+                        ->unique(Merchant::class, 'name', ignoreRecord: false)
                         ->default(fn (?Model $record): ?string => MerchantResolver::suggestName($url($record))),
                     TextInput::make('domain')
                         ->label('Domain')

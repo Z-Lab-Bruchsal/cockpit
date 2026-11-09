@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\Orders\OrderResource;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\Reports\OrderReportService;
 use BackedEnum;
@@ -11,19 +13,28 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Override;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Report of placed orders for accounting, as Excel, CSV or PDF. The weekly mail is set up under Einstellungen → Wöchentlicher Bericht.
+ * Report of placed orders for accounting: shows the orders of the period, downloads them as Excel, CSV or PDF.
+ * The weekly mail is set up under Einstellungen → Wöchentlicher Bericht.
  *
  * @property-read Schema $form
  */
-class OrderReportsPage extends Page
+class OrderReportsPage extends Page implements HasTable
 {
-    protected string $view = 'filament.pages.company-settings-page';
+    use InteractsWithTable;
+
+    protected string $view = 'filament.pages.order-reports-page';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentChartBar;
 
@@ -63,20 +74,83 @@ class OrderReportsPage extends Page
                     ->schema([
                         DatePicker::make('from')
                             ->label('Von')
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetTable()),
                         DatePicker::make('to')
                             ->label('Bis')
                             ->required()
-                            ->afterOrEqual('from'),
+                            ->afterOrEqual('from')
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetTable()),
                     ])
                     ->columns(2),
             ])
             ->statePath('data');
     }
 
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(fn (): Builder => OrderReportService::query(...$this->period()))
+            ->defaultSort('orderdatetime')
+            ->paginated([25, 50, 100, 'all'])
+            ->emptyStateHeading('Keine Bestellungen in diesem Zeitraum')
+            ->columns([
+                TextColumn::make('orderdatetime')
+                    ->label('Bestellt am')
+                    ->date('d.m.Y')
+                    ->sortable(),
+                TextColumn::make('merchant.name')
+                    ->label('Händler')
+                    ->placeholder('Ohne Händler')
+                    ->sortable(),
+                TextColumn::make('order_number')
+                    ->label('Bestellnummer')
+                    ->searchable(),
+                TextColumn::make('name')
+                    ->label('Artikel')
+                    ->searchable()
+                    ->url(fn (Order $record): string => OrderResource::getUrl('edit', ['record' => $record])),
+                TextColumn::make('count')
+                    ->label('Anzahl')
+                    ->numeric(),
+                TextColumn::make('total_price')
+                    ->label('Preis')
+                    ->money('EUR', locale: 'de')
+                    ->placeholder('fehlt')
+                    ->sortable()
+                    ->summarize(Sum::make()->label('Summe')->money('EUR', locale: 'de')),
+                TextColumn::make('user.name')
+                    ->label('Angefragt von')
+                    ->toggleable(),
+                TextColumn::make('processedBy.name')
+                    ->label('Bestellt von')
+                    ->toggleable(),
+            ]);
+    }
+
+    /**
+     * Selected days as [start of the first day, start of the day after the last day]; invalid input falls back to last week.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function period(): array
+    {
+        $from = rescue(fn (): Carbon => Carbon::parse($this->data['from'] ?? null), now()->subWeek()->startOfWeek(), report: false);
+        $to = rescue(fn (): Carbon => Carbon::parse($this->data['to'] ?? null), now()->subWeek()->endOfWeek(), report: false);
+
+        return OrderReportService::forDays($from, $to->max($from));
+    }
+
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('orders')
+                ->label('Bestellungen')
+                ->icon(Heroicon::OutlinedShoppingBag)
+                ->color('gray')
+                ->url(fn (): string => OrderResource::getUrl()),
             $this->downloadAction('xlsx', 'Excel'),
             $this->downloadAction('csv', 'CSV'),
             $this->downloadAction('pdf', 'PDF'),

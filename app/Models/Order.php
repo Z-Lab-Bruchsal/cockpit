@@ -16,7 +16,7 @@ class Order extends Model
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'url', 'count', 'orderstatus_id', 'orderdatetime', 'user_id', 'merchant_id', 'order_number', 'total_price', 'processed_by_user_id'];
+    protected $fillable = ['name', 'url', 'description', 'count', 'orderstatus_id', 'orderdatetime', 'user_id', 'merchant_id', 'order_number', 'total_price', 'processed_by_user_id'];
 
     /**
      * @return array<string, string>

@@ -2,14 +2,19 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Resources\Orders\Actions\MarkOrderedAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Orderstatus;
 use App\Models\User;
+use App\Services\Orders\OrderProcessing;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
@@ -22,39 +27,38 @@ class OrderForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->label('Produktname')->inlineLabel()
+                    ->label('Produktname')
                     ->required()
-                    ->columnSpan(1),
+                    ->columnSpan(2),
                 TextInput::make('count')
-                    ->label('Anzahl')->inlineLabel()
+                    ->label('Anzahl')
                     ->required()
                     ->numeric()
                     ->default(1),
                 TextInput::make('url')
-                    ->label('URL')->inlineLabel()
+                    ->label('URL')
                     ->suffixIcon(Heroicon::GlobeAlt)
                     ->url()
-                    ->columnSpan(1),
+                    ->columnSpan(2),
                 Select::make('user_id')
-                    ->label('Bestellt von')->inlineLabel()
+                    ->label('Bestellt von')
                     ->relationship('user', 'name')
                     ->required()
                     ->default(filament()->auth()->user()->id),
+                Textarea::make('description')
+                    ->label('Beschreibung')
+                    ->placeholder('z. B. Farbe, Größe, wofür gebraucht')
+                    ->rows(2)
+                    ->maxLength(2000)
+                    ->columnSpanFull(),
                 Select::make('orderstatus_id')
-                    ->label('Bestellstatus')->inlineLabel()
+                    ->label('Bestellstatus')
+                    ->columnSpan(2)
                     ->relationship('orderstatus', 'name')
                     ->visibleOn(['edit'])
                     ->prefixActions([
-                        Action::make('bestellt_single')
-                            ->authorize('update')
-                            ->icon(Heroicon::ShoppingCart)->label('Bestellt')->action(function (Model $record) {
-                                $orderstatusBestellt = Orderstatus::where('name', 'bestellt')->first();
-                                $record->orderstatus_id = $orderstatusBestellt->id;
-                                $record->save();
-                                redirect(OrderResource::getUrl('edit', ['record' => $record->id]));
-                            })->visible(function (Model $record) {
-                                return $record->orderstatus->name == 'erfasst';
-                            }),
+                        MarkOrderedAction::make()
+                            ->after(fn (Model $record) => redirect(OrderResource::getUrl('edit', ['record' => $record->id]))),
                         Action::make('angekommen_single')
                             ->authorize('update')
                             ->icon(Heroicon::BuildingOffice)->label('Angekommen')->action(function (Model $record) {
@@ -80,22 +84,39 @@ class OrderForm
                         }, true),
                     ]),
                 DateTimePicker::make('orderdatetime')
-                    ->label('Bestellzeitpunkt')->inlineLabel()
+                    ->label('Bestellt am')
+                    ->helperText('Wird beim Klick auf „Bestellt“ gesetzt.')
+                    ->seconds(false)
                     ->visibleOn(['edit', 'view'])
-                    ->disabled()
-                    ->hidden(fn (): bool => static::canProcess()),
+                    ->hintAction(
+                        Action::make('justOrdered')
+                            ->label('Eben bestellt')
+                            ->icon(Heroicon::Clock)
+                            ->authorize('update')
+                            ->action(function (Get $get, Set $set): void {
+                                $set('orderdatetime', now()->format('Y-m-d H:i'));
+
+                                $recordedStatusId = Orderstatus::query()->where('name', 'erfasst')->value('id');
+
+                                if ((int) $get('orderstatus_id') === $recordedStatusId) {
+                                    $set('orderstatus_id', Orderstatus::query()->where('name', 'bestellt')->value('id'));
+                                }
+                            }),
+                    ),
                 Section::make('Bestellung für die Buchhaltung')
-                    ->description('Wo, wann und zu welchem Preis bestellt wurde. Erscheint im Bestellbericht.')
+                    ->description('Wo und zu welchem Preis bestellt wurde. Erscheint im Bestellbericht.')
                     ->schema(collect(OrderProcessingFields::make(OrderProcessingFields::orderUrl(...)))
-                        ->map(fn ($field) => $field->inlineLabel()->required(false))
+                        ->reject(fn ($field): bool => $field->getName() === 'orderdatetime')
+                        ->map(fn ($field) => $field->required(false))
                         ->all())
-                    ->visibleOn(['edit'])
-                    ->visible(fn (): bool => static::canProcess()),
-            ])->columns(1);
+                    ->columns(3)
+                    ->columnSpanFull()
+                    ->visible(fn (string $operation): bool => $operation === 'edit' && static::canProcess()),
+            ])->columns(3);
     }
 
     protected static function canProcess(): bool
     {
-        return (bool) User::find(filament()->auth()->id())?->can('Orders:Process');
+        return OrderProcessing::canProcess(User::find(filament()->auth()->id()));
     }
 }

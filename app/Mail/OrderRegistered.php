@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use App\Filament\Resources\Orders\OrderResource;
-use App\Filament\Resources\Orders\Pages\ProcessOrders;
 use App\Http\Controllers\OrderController;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
@@ -45,7 +44,7 @@ class OrderRegistered extends Mailable
             markdown: 'mail.order-registered',
             with: [
                 'url_order' => OrderResource::getUrl('edit', ['record' => $this->order]),
-                'url_process' => ProcessOrders::getUrl(),
+                'url_process' => OrderResource::processingUrl(),
                 'url_ordered' => OrderController::statusUrl($this->order, 'bestellt'),
                 'order' => $this->order,
             ],

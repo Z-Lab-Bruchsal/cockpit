@@ -6,6 +6,7 @@ use App\Models\CompanySetting;
 use App\Models\Order;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Number;
@@ -32,13 +33,23 @@ class OrderReportService
      */
     public function orders(CarbonInterface $from, CarbonInterface $to): Collection
     {
-        return Order::query()
-            ->with(['merchant', 'user', 'processedBy'])
-            ->where('orderdatetime', '>=', $from)
-            ->where('orderdatetime', '<', $to)
+        return static::query($from, $to)
             ->orderBy('orderdatetime')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Orders placed from $from (inclusive) until $to (exclusive), unsorted.
+     *
+     * @return Builder<Order>
+     */
+    public static function query(CarbonInterface $from, CarbonInterface $to): Builder
+    {
+        return Order::query()
+            ->with(['merchant', 'user', 'processedBy'])
+            ->where('orderdatetime', '>=', $from)
+            ->where('orderdatetime', '<', $to);
     }
 
     /**

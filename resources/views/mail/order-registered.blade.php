@@ -6,6 +6,9 @@ Hi,
 es gibt eine neue Bestellung:
 * Name: {{ $order->name }}
 * Anzahl: {{ $order->count }}
+@if (filled($order->description))
+* Beschreibung: {{ $order->description }}
+@endif
 * <a href="{{ $order->url }}">URL zum Artikel</a>
 * Bestellt von: {{ $order->user->name }}
 
@@ -17,7 +20,7 @@ Habe bestellt
 Bestellung im Cockpit ansehen
 </x-mail::button>
 
-Bestellt? Preis und Bestellnummer trägst du in der [Abarbeitungsliste]({{ $url_process }}) ein.
+Bestellt? Händler, Preis und Bestellnummer trägst du in den [offenen Bestellungen]({{ $url_process }}) über „Bestellt“ ein.
 
 Danke,<br>
 {{ config('app.name') }}

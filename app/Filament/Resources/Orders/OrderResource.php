@@ -5,12 +5,12 @@ namespace App\Filament\Resources\Orders;
 use App\Filament\Resources\Orders\Pages\CreateOrder;
 use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Pages\ListOrders;
-use App\Filament\Resources\Orders\Pages\ProcessOrders;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Models\Order;
+use App\Models\User;
+use App\Services\Orders\OrderProcessing;
 use BackedEnum;
-use Filament\Navigation\NavigationItem;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -54,28 +54,37 @@ class OrderResource extends Resource
         return [
             'index' => ListOrders::route('/'),
             'create' => CreateOrder::route('/create'),
-            'process' => ProcessOrders::route('/abarbeiten'),
             'edit' => EditOrder::route('/{record}/edit'),
         ];
     }
 
     /**
-     * Besides the list, people who place orders get the work list with the number of open requests.
-     *
-     * @return array<NavigationItem>
+     * People who place orders see how many requests are still open.
      */
-    public static function getNavigationItems(): array
+    public static function getNavigationBadge(): ?string
     {
-        return [
-            ...parent::getNavigationItems(),
-            NavigationItem::make('Bestellungen abarbeiten')
-                ->group(static::getNavigationGroup())
-                ->icon(Heroicon::OutlinedClipboardDocumentCheck)
-                ->sort((static::getNavigationSort() ?? 0) + 1)
-                ->url(fn (): string => ProcessOrders::getUrl())
-                ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteBaseName().'.process'))
-                ->badge(fn (): ?string => ($count = ProcessOrders::openCount()) > 0 ? (string) $count : null)
-                ->visible(fn (): bool => ProcessOrders::canAccess()),
-        ];
+        if (! OrderProcessing::canProcess(User::find(filament()->auth()->id()))) {
+            return null;
+        }
+
+        $count = Order::query()->toProcess()->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Noch zu bestellen';
+    }
+
+    /**
+     * The list filtered to the requests that still have to be ordered.
+     */
+    public static function processingUrl(): string
+    {
+        return static::getUrl('index', ['filters' => [
+            'abarbeiten' => ['isActive' => true],
+            'mine' => ['isActive' => false],
+        ]]);
     }
 }

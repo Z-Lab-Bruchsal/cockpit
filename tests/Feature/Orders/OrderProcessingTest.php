@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Orders;
 
+use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Pages\CreateOrder;
 use App\Filament\Resources\Orders\Pages\EditOrder;
-use App\Filament\Resources\Orders\Pages\ProcessOrders;
+use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Mail\OrderRegistered;
 use App\Models\Merchant;
 use App\Models\Order;
@@ -14,6 +16,7 @@ use App\Services\Orders\OrderProcessing;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -40,6 +43,11 @@ class OrderProcessingTest extends TestCase
         foreach (['ViewAny:Order', 'View:Order', 'Update:Order', 'Orders:Process'] as $permission) {
             $this->boss->givePermissionTo(Permission::findOrCreate($permission));
         }
+    }
+
+    protected function listOrders(): Testable
+    {
+        return Livewire::test(ListOrders::class)->removeTableFilters();
     }
 
     protected function statusName(Order $order): string
@@ -79,43 +87,51 @@ class OrderProcessingTest extends TestCase
         $this->assertNull(OrderProcessing::parsePrice('abc'));
     }
 
-    public function test_work_list_shows_only_open_requests(): void
+    public function test_processing_filter_shows_only_open_requests(): void
     {
         $open = Order::factory()->create(['name' => 'Lötzinn']);
         $placed = Order::factory()->ordered()->create(['name' => 'Schon bestellt']);
 
         $this->actingAs($this->boss);
 
-        $this->get(ProcessOrders::getUrl())->assertOk()->assertSee('Lötzinn');
+        $this->get(OrderResource::processingUrl())->assertOk()->assertSee('Lötzinn')->assertDontSee('Schon bestellt');
 
-        Livewire::test(ProcessOrders::class)
+        $this->listOrders()
+            ->assertCanSeeTableRecords([$open, $placed])
+            ->filterTable('abarbeiten')
             ->assertCanSeeTableRecords([$open])
             ->assertCanNotSeeTableRecords([$placed])
             ->assertSee('neu: Reichelt');
+
+        $this->assertSame('1', OrderResource::getNavigationBadge());
     }
 
-    public function test_work_list_needs_permission(): void
+    public function test_processing_filter_and_badge_need_permission(): void
     {
+        Order::factory()->create();
         $crew = User::factory()->create();
         $crew->givePermissionTo(Permission::findOrCreate('ViewAny:Order'));
 
-        $this->actingAs($crew)->get(ProcessOrders::getUrl())->assertForbidden();
+        $this->actingAs($crew);
+
+        Livewire::test(ListOrders::class)->assertTableFilterHidden('abarbeiten');
+        $this->assertNull(OrderResource::getNavigationBadge());
     }
 
-    public function test_recording_an_order_with_a_new_merchant_remembers_its_domain(): void
+    public function test_ordered_opens_the_form_for_merchant_price_date_and_number(): void
     {
         $order = Order::factory()->create(['url' => 'https://www.reichelt.de/loetzinn-p1.html']);
 
         $this->actingAs($this->boss);
 
-        Livewire::test(ProcessOrders::class)
-            ->mountTableAction('markOrdered', $order)
+        $this->listOrders()
+            ->mountAction(TestAction::make('bestellt_single')->table($order))
             ->assertMountedActionModalSee('Neuer Shop (reichelt.de)');
 
         $merchant = Merchant::query()->create(['name' => 'Reichelt']);
 
-        Livewire::test(ProcessOrders::class)
-            ->callAction(TestAction::make('markOrdered')->table($order), [
+        $this->listOrders()
+            ->callAction(TestAction::make('bestellt_single')->table($order), [
                 'merchant_id' => $merchant->id,
                 'orderdatetime' => '2026-11-09 10:30:00',
                 'order_number' => 'R-4711',
@@ -136,9 +152,55 @@ class OrderProcessingTest extends TestCase
 
         $next = Order::factory()->create(['url' => 'https://reichelt.de/anderes']);
 
-        Livewire::test(ProcessOrders::class)
-            ->mountTableAction('markOrdered', $next)
-            ->assertTableActionDataSet(['merchant_id' => $merchant->id]);
+        $this->listOrders()
+            ->mountAction(TestAction::make('bestellt_single')->table($next))
+            ->assertSchemaStateSet(['merchant_id' => $merchant->id], 'mountedActionSchema0');
+    }
+
+    public function test_new_merchant_is_created_from_the_ordered_form(): void
+    {
+        $order = Order::factory()->create(['url' => 'https://www.reichelt.de/loetzinn-p1.html']);
+        Merchant::query()->create(['name' => 'Amazon']);
+
+        $this->actingAs($this->boss);
+
+        $createMerchant = [
+            TestAction::make('bestellt_single')->table($order),
+            TestAction::make('createOption')->schemaComponent('merchant_id'),
+        ];
+
+        $this->listOrders()
+            ->callAction($createMerchant, ['name' => 'Amazon', 'domain' => 'reichelt.de'])
+            ->assertHasFormErrors(['name' => 'unique']);
+
+        $this->listOrders()
+            ->callAction($createMerchant, ['name' => 'Reichelt', 'domain' => 'Reichelt.de'])
+            ->assertHasNoFormErrors();
+
+        $merchant = Merchant::query()->where('name', 'Reichelt')->firstOrFail();
+
+        $this->assertSame(['reichelt.de'], $merchant->domains()->pluck('domain')->all());
+    }
+
+    public function test_ordered_without_processing_permission_only_changes_the_status(): void
+    {
+        $order = Order::factory()->create();
+        $editor = User::factory()->create();
+
+        foreach (['ViewAny:Order', 'View:Order', 'Update:Order'] as $permission) {
+            $editor->givePermissionTo(Permission::findOrCreate($permission));
+        }
+
+        $this->actingAs($editor);
+
+        Livewire::test(ListOrders::class)
+            ->removeTableFilters()
+            ->callAction(TestAction::make('bestellt_single')->table($order))
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('bestellt', $this->statusName($order));
+        $this->assertNull($order->fresh()->merchant_id);
+        $this->assertNotNull($order->fresh()->orderdatetime);
     }
 
     public function test_invalid_prices_are_rejected(): void
@@ -148,8 +210,8 @@ class OrderProcessingTest extends TestCase
 
         $this->actingAs($this->boss);
 
-        Livewire::test(ProcessOrders::class)
-            ->callAction(TestAction::make('markOrdered')->table($order), [
+        $this->listOrders()
+            ->callAction(TestAction::make('bestellt_single')->table($order), [
                 'merchant_id' => $merchant->id,
                 'orderdatetime' => '2026-11-09 10:30:00',
                 'total_price' => 'zwölf Euro',
@@ -164,11 +226,12 @@ class OrderProcessingTest extends TestCase
         $merchant = Merchant::factory()->withDomain('amazon.de')->create(['name' => 'Amazon']);
         $first = Order::factory()->create(['url' => 'https://www.amazon.de/a']);
         $second = Order::factory()->create(['url' => 'https://www.amazon.de/b']);
+        $alreadyPlaced = Order::factory()->ordered(['order_number' => 'ALT-1'])->create(['url' => 'https://www.amazon.de/c']);
 
         $this->actingAs($this->boss);
 
-        Livewire::test(ProcessOrders::class)
-            ->selectTableRecords([$first, $second])
+        $this->listOrders()
+            ->selectTableRecords([$first, $second, $alreadyPlaced])
             ->callAction(TestAction::make('markOrderedTogether')->table()->bulk(), [
                 'merchant_id' => $merchant->id,
                 'orderdatetime' => '2026-11-08 09:00:00',
@@ -183,6 +246,7 @@ class OrderProcessingTest extends TestCase
         $this->assertSame(['302-123', '302-123'], [$first->fresh()->order_number, $second->fresh()->order_number]);
         $this->assertSame(['5.00', '7.50'], [$first->fresh()->total_price, $second->fresh()->total_price]);
         $this->assertSame(['bestellt', 'bestellt'], [$this->statusName($first), $this->statusName($second)]);
+        $this->assertSame('ALT-1', $alreadyPlaced->fresh()->order_number);
     }
 
     public function test_quick_status_change_still_sets_the_order_date_but_keeps_an_entered_one(): void
@@ -217,13 +281,99 @@ class OrderProcessingTest extends TestCase
         $this->assertSame($merchant->id, $order->fresh()->merchant_id);
     }
 
-    public function test_new_order_mail_links_to_the_work_list(): void
+    public function test_recording_a_request_leaves_the_order_date_empty(): void
     {
+        $this->boss->givePermissionTo(Permission::findOrCreate('Create:Order'));
+        $this->actingAs($this->boss);
+
+        Livewire::test(CreateOrder::class)
+            ->assertFormFieldHidden('orderdatetime')
+            ->assertFormFieldHidden('merchant_id')
+            ->fillForm([
+                'name' => 'Lötzinn',
+                'count' => 2,
+                'url' => 'https://www.reichelt.de/loetzinn.html',
+                'description' => 'Bleifrei, 1 mm',
+                'user_id' => $this->boss->id,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $order = Order::query()->sole();
+        $this->assertNull($order->orderdatetime);
+        $this->assertNull($order->merchant_id);
+        $this->assertSame('Bleifrei, 1 mm', $order->description);
+        $this->assertSame('erfasst', $this->statusName($order));
+    }
+
+    public function test_just_ordered_sets_the_date_and_the_status(): void
+    {
+        $this->travelTo('2026-11-09 14:37:12');
         $order = Order::factory()->create();
+        $this->actingAs($this->boss);
+
+        Livewire::test(EditOrder::class, ['record' => $order->getRouteKey()])
+            ->assertSchemaStateSet(['orderdatetime' => null])
+            ->callAction(TestAction::make('justOrdered')->schemaComponent('orderdatetime'))
+            ->assertSchemaStateSet(['orderdatetime' => '2026-11-09 14:37'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('2026-11-09 14:37', $order->fresh()->orderdatetime->format('Y-m-d H:i'));
+        $this->assertSame('bestellt', $this->statusName($order));
+    }
+
+    public function test_ordered_header_action_sets_the_date(): void
+    {
+        $this->travelTo('2026-11-09 15:20:00');
+        $order = Order::factory()->create();
+        $this->actingAs($this->boss);
+
+        $merchant = Merchant::factory()->create();
+
+        Livewire::test(EditOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('bestellt_single', [
+                'merchant_id' => $merchant->id,
+                'orderdatetime' => now(),
+                'order_number' => 'B-1',
+                'total_price' => '3,20',
+            ])
+            ->assertHasNoFormErrors()
+            ->assertSchemaStateSet(['orderdatetime' => '2026-11-09 15:20', 'order_number' => 'B-1', 'merchant_id' => $merchant->id]);
+
+        $this->assertSame('2026-11-09 15:20', $order->fresh()->orderdatetime->format('Y-m-d H:i'));
+        $this->assertSame('bestellt', $this->statusName($order));
+    }
+
+    public function test_order_date_can_be_edited_without_processing_permission(): void
+    {
+        $order = Order::factory()->ordered()->create();
+        $editor = User::factory()->create();
+
+        foreach (['ViewAny:Order', 'View:Order', 'Update:Order'] as $permission) {
+            $editor->givePermissionTo(Permission::findOrCreate($permission));
+        }
+
+        $this->actingAs($editor);
+
+        Livewire::test(EditOrder::class, ['record' => $order->getRouteKey()])
+            ->assertFormFieldHidden('merchant_id')
+            ->fillForm(['orderdatetime' => '2026-10-01 09:15:00'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('2026-10-01 09:15', $order->fresh()->orderdatetime->format('Y-m-d H:i'));
+    }
+
+    public function test_new_order_mail_links_to_the_open_orders(): void
+    {
+        $order = Order::factory()->create(['description' => 'Bleifrei, 1 mm']);
 
         $mail = new OrderRegistered($order);
 
-        $this->assertSame(ProcessOrders::getUrl(), $mail->content()->with['url_process']);
-        $mail->assertSeeInHtml('Abarbeitungsliste');
+        $this->assertSame(OrderResource::processingUrl(), $mail->content()->with['url_process']);
+        $this->assertStringContainsString('filters', $mail->content()->with['url_process']);
+        $mail->assertSeeInHtml('offenen Bestellungen');
+        $mail->assertSeeInHtml('Bleifrei, 1 mm');
     }
 }
