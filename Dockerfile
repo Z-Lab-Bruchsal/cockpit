@@ -1,12 +1,25 @@
 # syntax=docker/dockerfile:1.7
 ARG PHP_VERSION=8.5
 
+# --- composer packages for the asset build ---------------------------------
+# The Filament theme imports CSS from vendor/ (Filament, Guava Calendar) and
+# scans the local packages, so the frontend build needs them installed.
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+COPY packages ./packages
+RUN --mount=type=secret,id=composer_auth,target=/app/auth.json \
+    composer install --no-dev --no-interaction --no-progress --no-scripts --no-autoloader --ignore-platform-reqs
+
 # --- frontend assets -------------------------------------------------------
 FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY vite.config.js ./
+COPY --from=vendor /app/vendor ./vendor
+COPY packages ./packages
+COPY app ./app
 COPY resources ./resources
 RUN npm run build
 
