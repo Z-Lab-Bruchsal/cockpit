@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Bookings\Widgets;
 
+use AlexanderGabriel\FilamentDashboardTabs\Contracts\HasDashboardLabel;
 use App\Enums\TimeClockState;
 use App\Services\WorkTime\TimeClockService;
 use App\Services\WorkTime\WorkTimeCalculator;
@@ -15,7 +16,7 @@ use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use RuntimeException;
 
-class TimeClockWidget extends Widget implements HasActions, HasSchemas
+class TimeClockWidget extends Widget implements HasActions, HasDashboardLabel, HasSchemas
 {
     use InteractsWithActions;
     use InteractsWithSchemas;
@@ -23,6 +24,11 @@ class TimeClockWidget extends Widget implements HasActions, HasSchemas
     protected string $view = 'filament.resources.bookings.widgets.time-clock-widget';
 
     protected int|string|array $columnSpan = 1;
+
+    public static function getDashboardLabel(): string
+    {
+        return 'Stempeluhr';
+    }
 
     public function getState(): TimeClockState
     {

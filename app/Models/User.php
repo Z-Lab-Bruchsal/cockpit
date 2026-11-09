@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use AlexanderGabriel\FilamentDashboardTabs\Concerns\HasDashboardTabs;
 use App\Enums\TeamArea;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -27,9 +28,10 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasAvatar
 {
+    use HasDashboardTabs;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
-
     use HasRoles;
 
     /**

@@ -4,8 +4,48 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f75dcdf8945c8d56295798185fc6f849",
+    "content-hash": "aab166a122e72727288428ae04376bc2",
     "packages": [
+        {
+            "name": "alexandergabriel/filament-dashboard-tabs",
+            "version": "dev-homepageReboot",
+            "dist": {
+                "type": "path",
+                "url": "packages/filament-dashboard-tabs",
+                "reference": "ceef55afba61ab27d4101cc3831f2dc685b5abd9"
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "AlexanderGabriel\\FilamentDashboardTabs\\FilamentDashboardTabsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AlexanderGabriel\\FilamentDashboardTabs\\": "src/",
+                    "AlexanderGabriel\\FilamentDashboardTabs\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Alexander Gabriel"
+                }
+            ],
+            "description": "Per-user Filament dashboard with tabs, drag & drop widgets and half/full width.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
         {
             "name": "alexandergabriel/filament-oauth2",
             "version": "v2.1.0",
@@ -12051,12 +12091,14 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "alexandergabriel/filament-dashboard-tabs": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.3"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.11.0"
 }

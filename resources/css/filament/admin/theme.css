@@ -2,6 +2,7 @@
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
+@source '../../../../packages/filament-dashboard-tabs/resources/views/**/*';
 @source '../../../../vendor/guava/calendar/resources/**/*';
 @import '../../../../vendor/guava/calendar/resources/css/theme.css';
 

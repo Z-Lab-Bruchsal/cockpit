@@ -1,0 +1,30 @@
+{
+    "name": "alexandergabriel/filament-dashboard-tabs",
+    "description": "Per-user Filament dashboard with tabs, drag & drop widgets and half/full width.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alexander Gabriel"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlexanderGabriel\\FilamentDashboardTabs\\": "src/",
+            "AlexanderGabriel\\FilamentDashboardTabs\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AlexanderGabriel\\FilamentDashboardTabs\\FilamentDashboardTabsServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
