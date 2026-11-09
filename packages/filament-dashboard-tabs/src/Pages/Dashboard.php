@@ -14,7 +14,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Components\Attributes\Unexposed;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -125,6 +128,20 @@ class Dashboard extends BaseDashboard
         $this->ownedWidget($id)->delete();
 
         $this->refreshState();
+    }
+
+    /**
+     * Single bar holding the heading, the tab switcher and the header actions.
+     */
+    #[Unexposed]
+    public function getHeader(): ?View
+    {
+        return view('filament-dashboard-tabs::components.header');
+    }
+
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
     }
 
     /**

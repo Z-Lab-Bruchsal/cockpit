@@ -14,6 +14,7 @@ use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\On;
 use RuntimeException;
 
 class TimeClockWidget extends Widget implements HasActions, HasDashboardLabel, HasSchemas
@@ -24,6 +25,11 @@ class TimeClockWidget extends Widget implements HasActions, HasDashboardLabel, H
     protected string $view = 'filament.resources.bookings.widgets.time-clock-widget';
 
     protected int|string|array $columnSpan = 1;
+
+    /**
+     * Renders only status and buttons in one line, e.g. inside the dashboard header bar.
+     */
+    public bool $compact = false;
 
     public static function getDashboardLabel(): string
     {
@@ -65,6 +71,12 @@ class TimeClockWidget extends Widget implements HasActions, HasDashboardLabel, H
             ->action(fn () => $this->recordAndRefresh('clockOut'));
     }
 
+    /**
+     * Re-renders every time clock on the page after one of them recorded a booking.
+     */
+    #[On('time-clock-updated')]
+    public function refreshTimeClock(): void {}
+
     private function recordAndRefresh(string $method): void
     {
         $user = filament()->auth()->user();
@@ -77,6 +89,10 @@ class TimeClockWidget extends Widget implements HasActions, HasDashboardLabel, H
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
+
+            return;
         }
+
+        $this->dispatch('time-clock-updated');
     }
 }

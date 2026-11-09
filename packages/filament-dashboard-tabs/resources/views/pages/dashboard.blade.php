@@ -3,37 +3,11 @@
 @endphp
 
 <x-filament-panels::page>
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-3">
         @if ($isEditing)
-            <x-filament::tabs wire:key="dashboard-tabs-editing" wire:sort="sortTabs">
-                @foreach ($this->tabs as $tab)
-                    <x-filament::tabs.item
-                        wire:key="dashboard-tab-editing-{{ $tab->id }}"
-                        wire:sort:item="{{ $tab->id }}"
-                        :active="$tab->id === $this->currentTab?->id"
-                        wire:click="$set('activeTab', {{ $tab->id }})"
-                        :icon="\Filament\Support\Icons\Heroicon::Bars2"
-                        class="cursor-grab active:cursor-grabbing"
-                    >
-                        {{ $tab->name }}
-                    </x-filament::tabs.item>
-                @endforeach
-            </x-filament::tabs>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 {{ __('filament-dashboard-tabs::dashboard-tabs.editing_hint') }}
             </p>
-        @elseif ($this->tabs->count() > 1)
-            <x-filament::tabs wire:key="dashboard-tabs">
-                @foreach ($this->tabs as $tab)
-                    <x-filament::tabs.item
-                        wire:key="dashboard-tab-{{ $tab->id }}"
-                        :active="$tab->id === $this->currentTab?->id"
-                        wire:click="$set('activeTab', {{ $tab->id }})"
-                    >
-                        {{ $tab->name }}
-                    </x-filament::tabs.item>
-                @endforeach
-            </x-filament::tabs>
         @endif
 
         @if ($this->currentWidgets->isEmpty())
@@ -48,7 +22,7 @@
             <div
                 wire:key="dashboard-grid-{{ $this->currentTab->id }}"
                 wire:sort="sortWidgets"
-                class="grid grid-cols-1 gap-6 lg:grid-cols-2"
+                class="grid grid-cols-1 gap-3 lg:grid-cols-2"
             >
                 @foreach ($this->currentWidgets as $row)
                     @php

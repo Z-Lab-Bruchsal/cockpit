@@ -1,9 +1,329 @@
 @import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../../vendor/guava/calendar/resources/css/theme.css';
 
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../packages/filament-dashboard-tabs/resources/views/**/*';
+@source '../../../../packages/alexandergabriel/filament-mail-test-mode/resources/views/**/*';
 @source '../../../../vendor/guava/calendar/resources/**/*';
-@import '../../../../vendor/guava/calendar/resources/css/theme.css';
 
+/*
+ * Compact layout overrides.
+ * Filament renders semantic classes (see https://filamentphp.com/docs/5.x/styling/overview)
+ * instead of raw Tailwind utilities, so we override those classes here to tighten
+ * the default vertical rhythm across pages, sections, tables, and forms.
+ */
 
+.fi-page-header-main-ctn {
+    @apply gap-y-1 py-1;
+}
+
+.fi-page-content,
+.fi-simple-page-content {
+    @apply gap-y-1;
+}
+
+/* Sections (used by forms, infolists, and widgets) */
+.fi-section:not(.fi-section-not-contained):not(.fi-divided):not(.fi-aside)
+    > .fi-section-content-ctn
+    > .fi-section-content {
+    @apply p-1.5;
+}
+
+.fi-section:not(.fi-section-not-contained):not(.fi-aside) > .fi-section-header {
+    @apply px-2 py-0.5;
+}
+
+.fi-section:not(.fi-section-not-contained) > .fi-section-content-ctn > .fi-section-footer {
+    @apply px-2 py-0.5;
+}
+
+/* Forms */
+.fi-sc-form {
+    @apply gap-1.5;
+}
+
+input.fi-input {
+    @apply py-0.5;
+}
+
+.fi-fo-textarea textarea {
+    @apply py-0.5;
+}
+
+/* Tables */
+.fi-ta-header {
+    @apply py-0.5 sm:px-2;
+}
+
+.fi-ta-header-toolbar {
+    @apply px-1 py-0.5 sm:px-2;
+}
+
+.fi-ta-header-cell {
+    @apply py-0.5;
+}
+
+.fi-ta-text:not(.fi-inline),
+.fi-ta-icon:not(.fi-inline) {
+    @apply py-0.5;
+}
+
+.fi-ta-cell:has(.fi-ta-actions),
+.fi-ta-cell:has(.fi-ta-record-checkbox),
+.fi-ta-cell.fi-ta-selection-cell {
+    @apply py-0.5;
+}
+
+.fi-ta-content-ctn .fi-ta-content.fi-ta-content-grid {
+    @apply gap-1 p-1;
+}
+
+.fi-ta-record-content-ctn {
+    @apply py-0.5;
+}
+
+.fi-pagination {
+    @apply py-0.5;
+}
+
+/* Table summaries (page/group summary rows, e.g. Sum summarizers on grouped tables) */
+.fi-ta-cell.fi-ta-summary-row-heading-cell,
+.fi-ta-cell.fi-ta-summary-header-cell {
+    @apply py-0.5;
+}
+
+.fi-ta-text-summary,
+.fi-ta-values-summary,
+.fi-ta-icon-count-summary,
+.fi-ta-range-summary {
+    @apply py-0.5;
+}
+
+/*
+ * Tabellen horizontal verdichten: Filament setzt px-3 je Zelle und ps-6/pe-6 an der ersten/letzten Spalte.
+ * Die Selektoren für gestapelte Tabellen (stackedOnMobile) spiegeln die Vendor-Spezifität, damit sie greifen.
+ */
+.fi-ta-header-cell,
+.fi-ta-header-group-cell {
+    @apply px-1.5 sm:first-of-type:ps-2 sm:last-of-type:pe-2;
+}
+
+.fi-ta-text:not(.fi-inline),
+.fi-ta-icon:not(.fi-inline),
+.fi-ta-color:not(.fi-inline),
+.fi-ta-image:not(.fi-inline),
+.fi-ta-text-input:not(.fi-inline),
+.fi-ta-select:not(.fi-inline),
+.fi-ta-checkbox:not(.fi-inline),
+.fi-ta-toggle:not(.fi-inline),
+.fi-ta-text-summary,
+.fi-ta-values-summary,
+.fi-ta-icon-count-summary,
+.fi-ta-range-summary {
+    @apply px-1.5;
+}
+
+.fi-ta-table-stacked-on-mobile :is(
+    .fi-ta-text,
+    .fi-ta-icon,
+    .fi-ta-color,
+    .fi-ta-image,
+    .fi-ta-text-input,
+    .fi-ta-select,
+    .fi-ta-checkbox,
+    .fi-ta-toggle,
+    .fi-ta-text-summary,
+    .fi-ta-values-summary,
+    .fi-ta-icon-count-summary,
+    .fi-ta-range-summary
+) {
+    @apply sm:px-1.5;
+}
+
+.fi-ta-cell {
+    @apply sm:first:ps-1 sm:last:pe-1;
+
+    &:has(.fi-ta-actions),
+    &:has(.fi-ta-record-checkbox),
+    &:has(.fi-ta-reorder-handle),
+    &.fi-ta-selection-cell,
+    &.fi-ta-group-selection-cell {
+        @apply px-1.5 first-of-type:ps-2 last-of-type:pe-2 sm:first-of-type:ps-2 sm:last-of-type:pe-2;
+    }
+
+    &.fi-ta-summary-row-heading-cell,
+    &.fi-ta-summary-header-cell,
+    &.fi-ta-individual-search-cell {
+        @apply px-1.5 sm:first:ps-2 sm:last:pe-2;
+    }
+}
+
+.fi-ta-table.fi-ta-table-stacked-on-mobile {
+    & > tbody > tr > .fi-ta-selection-cell {
+        @apply sm:px-1.5 sm:first-of-type:ps-2 sm:last-of-type:pe-2;
+    }
+
+    & > tbody > tr > .fi-ta-cell:not(.fi-ta-selection-cell) {
+        @variant sm {
+            &:first-child {
+                @apply ps-1;
+            }
+
+            &:last-child {
+                @apply pe-1;
+            }
+        }
+
+        &.fi-ta-summary-row-heading-cell,
+        &.fi-ta-summary-header-cell,
+        &.fi-ta-individual-search-cell,
+        &.fi-ta-group-selection-cell,
+        &:has(.fi-ta-reorder-handle),
+        &:has(.fi-ta-actions) {
+            @apply sm:px-1.5 sm:first:ps-2 sm:last:pe-2;
+        }
+
+        & > .fi-ta-actions {
+            @apply sm:gap-1.5;
+        }
+    }
+}
+
+/* Badge-Listen in Zellen enger setzen */
+.fi-ta-text-has-badges ul,
+ul.fi-ta-text-has-badges {
+    @apply gap-x-1;
+}
+
+.fi-fo-textarea {
+    @apply py-0.5;
+}
+
+.fi-sc-fieldset .fi-fieldset,
+.fi-sc-fieldset {
+    @apply py-0.5;
+}
+
+/* Navigation (sidebar) */
+.fi-sidebar-nav {
+    @apply gap-y-1 px-2 py-2;
+    padding-right: 0px;
+}
+
+.fi-sidebar-nav-groups {
+    @apply gap-y-2;
+}
+
+.fi-sidebar-group {
+    @apply gap-y-0.5;
+}
+
+.fi-sidebar-group-btn {
+    @apply p-1.5;
+    padding: 1px;
+    padding-left: 3px;
+}
+
+.fi-sidebar-group-items {
+    @apply gap-y-0.5;
+}
+
+.fi-sidebar-item-btn {
+    @apply p-1.5;
+    padding: 1px;
+    padding-left: 3px;
+}
+
+.fi-sidebar-database-notifications-btn {
+    @apply p-1.5;
+}
+
+.fi-sidebar-footer {
+    @apply mx-2 my-1.5 gap-y-1.5;
+}
+
+/* Buttons */
+.fi-btn {
+    @apply px-2.5 py-1;
+
+    &.fi-size-xs {
+        @apply px-1.5 py-0.5;
+    }
+
+    &.fi-size-sm {
+        @apply px-2 py-1;
+    }
+
+    &.fi-size-lg {
+        @apply px-3 py-1.5;
+    }
+
+    &.fi-size-xl {
+        @apply px-3.5 py-2;
+    }
+}
+
+/*
+ * Zusätzlicher Container-Breakpoint "@8xl" (90rem) für Schema-Grids, z. B. ->columns(['@8xl' => 3]).
+ * Filament liefert nur bis "@7xl" (80rem); bei Full HD ist der Inhaltsbereich gut 1500px breit.
+ */
+@theme {
+    --container-8xl: 90rem;
+}
+
+@supports (container-type: inline-size) {
+    .fi-grid:not(.fi-grid-direction-col).\@8xl\:fi-grid-cols {
+        @apply @8xl:grid-cols-(--cols-c8xl);
+    }
+
+    .fi-grid-col.\@8xl\:fi-grid-col-span {
+        @apply @8xl:col-(--col-span-c8xl);
+    }
+}
+
+.fi-main.fi-width-full {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.fi-tabs.fi-contained {
+    padding-top: 1px;
+    padding-bottom: 1px;
+}
+
+.fi-sc-tabs.fi-active {
+    padding: 0px;
+}
+
+/* Aktiven Tab deutlicher hervorheben: Filament setzt nur bg-gray-50 und eine Primärfarbe für Label/Icon */
+.fi-tabs-item.fi-active {
+    @apply bg-primary-100 font-semibold shadow-[inset_0_-2px_0_0_var(--primary-500)] dark:bg-primary-500/20;
+
+    & .fi-tabs-item-label,
+    & > .fi-icon {
+        @apply text-primary-800 dark:text-primary-300;
+    }
+}
+
+/* Kein vertikales Scrollen im Listenbereich (overflow-x-auto erzeugt sonst auch eine vertikale Scrollbar) */
+.fi-ta-content-ctn {
+    overflow-y: hidden;
+}
+
+/* Table filters (dropdown): kompaktere Abstände */
+.fi-ta-filters-dropdown .fi-ta-filters {
+    @apply p-3;
+}
+
+.fi-ta-filters {
+    @apply gap-y-2;
+}
+
+.fi-ta-filters .fi-sc-has-gap {
+    @apply gap-x-3 gap-y-2;
+}
+
+.fi-ta-filters .fi-fo-field {
+    @apply gap-y-0.5;
+}

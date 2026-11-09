@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use AlexanderGabriel\FilamentDashboardTabs\FilamentDashboardTabsPlugin;
+use AlexanderGabriel\FilamentDashboardTabs\Pages\Dashboard;
 use AlexanderGabriel\FilamentMailTestMode\FilamentMailTestModePlugin;
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Pages\Auth\EditProfile;
@@ -19,6 +20,8 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -57,6 +60,11 @@ class AdminPanelProvider extends PanelProvider
                 MyOrdersWidget::class,
                 // FilamentInfoWidget::class,
             ])
+            ->renderHook(
+                PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE,
+                fn (): View => view('filament.dashboard.time-clock-bar'),
+                scopes: Dashboard::class,
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
