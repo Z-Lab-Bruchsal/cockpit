@@ -83,7 +83,7 @@ Baut das vollständige Image (Code, `vendor/`, gebaute Assets) und startet drei 
 - **`queue`** – `php artisan queue:work`
 - **`scheduler`** – `php artisan schedule:work`
 
-`storage/` wird aus dem Projektverzeichnis eingebunden, damit Uploads, Logs und die SQLite-Datenbank Neustarts überleben. `auth.json` wird beim Bauen nur als BuildKit-Secret verwendet und landet nicht im Image.
+`storage/` und `database/` werden aus dem Projektverzeichnis eingebunden, damit Uploads, Logs und die SQLite-Datenbank (`database/database.sqlite`) Neustarts überleben. Die Migrationen kommen dadurch aus dem ausgecheckten Projektverzeichnis, nicht aus dem Image. `auth.json` wird beim Bauen nur als BuildKit-Secret verwendet und landet nicht im Image.
 
 ## Erster Start
 

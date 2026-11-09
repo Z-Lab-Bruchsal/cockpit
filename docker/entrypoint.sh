@@ -5,10 +5,13 @@ cd /var/www/html
 
 mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 
-if [ -n "$DB_DATABASE" ] && [ "$DB_CONNECTION" = "sqlite" ]; then
-    mkdir -p "$(dirname "$DB_DATABASE")"
-    touch -a "$DB_DATABASE"
-    chown www-data:www-data "$DB_DATABASE"
+# SQLite needs write access to the file and its directory (journal files).
+# Without DB_DATABASE Laravel uses database/database.sqlite.
+if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ] && [ "$DB_DATABASE" != ":memory:" ]; then
+    DB_FILE="${DB_DATABASE:-database/database.sqlite}"
+    mkdir -p "$(dirname "$DB_FILE")"
+    touch -a "$DB_FILE"
+    chown www-data:www-data "$DB_FILE" "$(dirname "$DB_FILE")"
 fi
 
 # Only the web process runs bootstrap steps, so the queue/scheduler

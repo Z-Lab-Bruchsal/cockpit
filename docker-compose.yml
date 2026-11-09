@@ -9,6 +9,9 @@ x-app: &app
   #   DB_DATABASE: /var/www/html/storage/app/database.sqlite
   volumes:
     - ./storage:/var/www/html/storage
+    # The SQLite database lives in database/ on the host (excluded from the
+    # image); the whole directory is mounted so journal files are shared too.
+    - ./database:/var/www/html/database
   depends_on:
     app:
       condition: service_healthy
