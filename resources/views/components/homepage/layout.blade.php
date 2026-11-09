@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" style="{{ collect($settings->homepageCssVariables())->map(fn ($value, $name) => $name.': '.$value)->implode('; ') }}">
+<html lang="de" style="{{ \App\Services\Homepage\DesignRoles::style(\App\Models\DesignTheme::rootCssVariables()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,7 +15,7 @@
     @vite(['resources/css/homepage.css', 'resources/js/homepage.js'])
     @livewireStyles
 </head>
-<body class="flex min-h-screen flex-col bg-page font-sans text-ink antialiased">
+<body class="flex min-h-screen flex-col bg-page font-sans text-ink antialiased" data-design-role="page-bg">
     @if ($isPreview)
         <div class="sticky top-0 z-50 bg-ink px-4 py-2 text-center text-sm font-semibold text-white">Vorschau – so würde es aussehen. Noch nicht gespeicherte Änderungen sind enthalten.</div>
     @endif
@@ -30,7 +30,7 @@
                     @endif
                 </a>
 
-                <nav class="hidden items-center text-[0.9375rem] font-light text-brand-heading lg:flex" aria-label="Hauptnavigation">
+                <nav class="hidden items-center text-[0.9375rem] font-light text-nav-link lg:flex" aria-label="Hauptnavigation" data-design-role="nav-link">
                     @foreach ($mainLinks() as $link)
                         @unless ($loop->first)
                             <span class="px-1 text-[#5a5a5a]" aria-hidden="true">|</span>
@@ -56,9 +56,9 @@
                 @foreach ($ribbons as $ribbon)
                     <a href="{{ $ribbon['url'] }}" target="_blank" rel="noopener" @class([
                         'ribbon',
-                        '[--ribbon-color:var(--color-brand)]' => $ribbon['isDonation'],
+                        '[--ribbon-color:var(--color-ribbon-donation)]' => $ribbon['isDonation'],
                         '[--ribbon-color:var(--color-ribbon-newsletter)]' => ! $ribbon['isDonation'],
-                    ])>
+                    ]) data-design-role="{{ $ribbon['isDonation'] ? 'ribbon-donation' : 'ribbon-newsletter' }}">
                         <span>
                             @foreach (explode(' ', $ribbon['label'], 2) as $line)
                                 <span class="block">{{ $line }}</span>
@@ -99,48 +99,72 @@
         {{ $slot }}
     </main>
 
-    <footer class="bg-footer text-footer-ink shadow-[0_-12px_24px_-12px_rgb(0_0_0/0.35)]">
-        <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm sm:px-6 lg:grid-cols-[1fr_2fr]">
-            <address class="not-italic leading-relaxed text-footer-muted">
-                <p class="font-semibold text-footer-ink">{{ $settings->name ?: $settings->homepageTitle() }}</p>
-                @if ($settings->street)<p>{{ $settings->street }}</p>@endif
-                @if ($settings->zip || $settings->city)<p>{{ trim($settings->zip.' '.$settings->city) }}</p>@endif
-                @if ($settings->contact_phone)
-                    <p class="mt-2"><a href="tel:{{ preg_replace('/[^0-9+]/', '', $settings->contact_phone) }}" class="hover:text-footer-hover">{{ $settings->contact_phone }}</a></p>
-                @endif
-                @if ($settings->contact_email)
-                    <p><a href="mailto:{{ $settings->contact_email }}" class="hover:text-footer-hover">{{ $settings->contact_email }}</a></p>
-                @endif
-            </address>
-
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                @if ($footerLinks = $settings->resolvedFooterLinks())
-                    <nav aria-label="Footer" class="contents">
-                        @foreach ($footerLinks as $link)
-                            <a href="{{ $link['url'] }}" class="key-button" @if ($link['external']) target="_blank" rel="noopener" @endif>{{ $link['label'] }}</a>
-                        @endforeach
-                    </nav>
-                @endif
-
-                @foreach ($settings->resolvedSocialLinks() as $link)
-                    <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="key-button">{{ $link['label'] }}</a>
+    <footer class="bg-footer text-footer-ink shadow-[0_-12px_24px_-12px_rgb(0_0_0/0.35)]" data-design-role="footer-bg">
+        @if ($isArranging && $canArrangeFooter)
+            <div class="mx-auto max-w-6xl px-4 py-10 text-sm sm:px-6">
+                <livewire:homepage.footer-editor />
+            </div>
+        @else
+            <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-10 text-sm sm:grid-cols-2 sm:px-6 lg:grid-cols-6">
+                @foreach ($settings->footerBlocks() as $block)
+                    <div class="{{ \App\Livewire\Homepage\FooterEditor::widthClass($block['data']['width'] ?? 2) }}">
+                        <x-homepage.footer.block :block="$block" :settings="$settings" />
+                    </div>
                 @endforeach
             </div>
-        </div>
+        @endif
         <div class="mx-auto max-w-6xl px-4 sm:px-6">
             <p class="border-t border-white/15 py-4 text-xs text-footer-muted">{{ $settings->copyrightText() }}</p>
         </div>
     </footer>
 
     @if ($showsArrangeToolbar())
-        <div class="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-xl bg-ink/90 p-2 text-sm text-white shadow-lg backdrop-blur">
+        <div class="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-xl bg-ink/90 p-2 text-sm text-white shadow-lg backdrop-blur" data-design-panel>
             @if ($isArranging)
                 <span class="hidden px-2 sm:inline">Anordnen-Modus</span>
                 <a href="{{ request()->fullUrlWithoutQuery('anordnen') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
+            @elseif ($isDesigning)
+                <span class="hidden px-2 sm:inline">Design-Modus</span>
+                <a href="{{ request()->fullUrlWithoutQuery('design') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
+            @elseif ($isEditingInline)
+                <span class="hidden px-2 sm:inline">Bearbeiten-Modus</span>
+                <a href="{{ request()->fullUrlWithoutQuery('bearbeiten') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
             @else
-                <a href="{{ request()->fullUrlWithQuery(['anordnen' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Kacheln anordnen</a>
+                @if ($canEditInline)
+                    <a href="{{ request()->fullUrlWithQuery(['bearbeiten' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Bearbeiten</a>
+                @endif
+                @if ($showsArrangeButton())
+                    <a href="{{ request()->fullUrlWithQuery(['anordnen' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">{{ $canArrangeTiles && request()->routeIs('homepage.index', 'homepage.section') ? 'Kacheln anordnen' : 'Footer anordnen' }}</a>
+                @endif
+                @if ($canDesign)
+                    <a href="{{ request()->fullUrlWithQuery(['design' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Farben gestalten</a>
+                @endif
             @endif
-            <a href="{{ route('filament.admin.resources.sections.index') }}" class="rounded-lg px-3 py-1.5 hover:bg-white/15">Cockpit</a>
+            <a href="{{ route('filament.admin.pages.dashboard') }}" class="rounded-lg px-3 py-1.5 hover:bg-white/15">Cockpit</a>
+        </div>
+    @endif
+
+    @if ($isDesigning)
+        <livewire:homepage.design-editor />
+    @endif
+
+    @if ($isEditingInline || ($isArranging && $canArrangeFooter))
+        <div
+            x-data="inlineEditor"
+            x-on:open-inline-editor.window="open($event.detail.url)"
+            x-on:message.window="receive($event)"
+        >
+            <dialog x-ref="dialog" x-on:close="url = null" class="m-auto h-[90vh] w-[min(64rem,calc(100vw-2rem))] max-w-none overflow-hidden rounded-2xl p-0 shadow-2xl backdrop:bg-ink/60">
+                <div class="flex h-full flex-col">
+                    <div class="flex items-center justify-between border-b border-gray-200 px-4 py-2 text-sm">
+                        <span class="font-semibold">Direkt bearbeiten</span>
+                        <button type="button" x-on:click="$refs.dialog.close()" class="rounded px-2 py-1 hover:bg-gray-100" aria-label="Schließen">✕</button>
+                    </div>
+                    <template x-if="url">
+                        <iframe x-bind:src="url" class="w-full grow" title="Bearbeiten"></iframe>
+                    </template>
+                </div>
+            </dialog>
         </div>
     @endif
 

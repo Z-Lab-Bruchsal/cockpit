@@ -123,23 +123,18 @@ class CompanySettingsPageTest extends TestCase
         $this->actingAs($boss);
 
         Livewire::test(CompanySettingsPage::class)
-            ->fillForm(['primary_color' => 'blau'])
+            ->fillForm(['cockpit_primary_color' => 'blau'])
             ->call('save')
-            ->assertHasFormErrors(['primary_color' => 'regex']);
+            ->assertHasFormErrors(['cockpit_primary_color' => 'regex']);
 
         Livewire::test(CompanySettingsPage::class)
-            ->fillForm([
-                'primary_color' => '#1d4ed8',
-                'secondary_color' => '#0f172a',
-                'cockpit_primary_color' => '#16a34a',
-            ])
+            ->assertSee('Farben der Homepage werden unter')
+            ->fillForm(['cockpit_primary_color' => '#16a34a'])
             ->call('save')
             ->assertHasNoFormErrors()
             ->assertRedirect();
 
-        $settings = CompanySetting::current();
-        $this->assertSame('#1d4ed8', $settings->primary_color);
-        $this->assertSame('#16a34a', $settings->cockpit_primary_color);
+        $this->assertSame('#16a34a', CompanySetting::current()->cockpit_primary_color);
     }
 
     public function test_text_color_on_colored_backgrounds_stays_readable(): void

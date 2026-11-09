@@ -17,6 +17,8 @@ Habe bestellt
 Bestellung im Cockpit ansehen
 </x-mail::button>
 
+Bestellt? Preis und Bestellnummer trägst du in der [Abarbeitungsliste]({{ $url_process }}) ein.
+
 Danke,<br>
 {{ config('app.name') }}
 </x-mail::message>

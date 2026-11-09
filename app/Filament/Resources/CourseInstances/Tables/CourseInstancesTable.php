@@ -44,6 +44,12 @@ class CourseInstancesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
+                TextColumn::make('participation')
+                    ->label('Teilnahme')
+                    ->badge()
+                    ->color(fn (CourseInstance $record): string => $record->isDropIn() ? 'success' : 'gray')
+                    ->description(fn (CourseInstance $record): ?string => $record->isFeatured() ? 'Große Karte' : null)
+                    ->toggleable(),
                 TextColumn::make('availability')
                     ->label('Anmeldung')
                     ->state(fn (CourseInstance $record) => $record->availability())

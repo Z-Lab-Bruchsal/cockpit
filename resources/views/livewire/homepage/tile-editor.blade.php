@@ -5,7 +5,7 @@
     </p>
 
     @if ($this->tiles->isEmpty())
-        <p class="py-12 text-center text-gray-500">Auf dieser Ebene gibt es keine sichtbaren Kacheln.</p>
+        <p class="py-12 text-center text-gray-500">In diesem Kachel-Raster gibt es keine sichtbaren Kacheln.</p>
     @else
         <div
             wire:sort="sort"
@@ -14,18 +14,19 @@
         >
             @foreach ($this->tiles as $tile)
                 @php
-                    $widthIndex = array_search($tile->tile_width, $widths, true);
-                    $height = $tile->tile_height ?: 1;
+                    $widthIndex = array_search($tile->width, $widths, true);
+                    $height = $tile->height;
+                    $label = $tile->heading ?: 'Kachel';
                 @endphp
 
                 <x-homepage.tile
-                    :section="$tile"
+                    :tile="$tile"
                     editing
                     wire:key="tile-{{ $tile->id }}"
                     wire:sort:item="{{ $tile->id }}"
-                    x-data="tileResizer({{ $tile->id }}, {{ (int) $tile->tile_width }}, {{ (int) $height }}, {{ json_encode($widths) }})"
+                    x-data="tileResizer({{ \Illuminate\Support\Js::from($tile->id) }}, {{ $tile->width }}, {{ $height }}, {{ json_encode($widths) }})"
                     x-bind:style="previewStyle"
-                    data-tile-width="{{ (int) $tile->tile_width }}"
+                    data-tile-width="{{ $tile->width }}"
                     data-tile-height="{{ (int) $height }}"
                     class="relative cursor-grab outline-2 outline-offset-2 outline-dashed outline-brand-ink/40 active:cursor-grabbing"
                 >
@@ -34,25 +35,25 @@
                             type="button"
                             class="rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-30"
                             title="Schmaler"
-                            aria-label="{{ $tile->title }} schmaler"
+                            aria-label="{{ $label }} schmaler"
                             @disabled($widthIndex === 0)
-                            wire:click="resize({{ $tile->id }}, {{ $widths[max(0, $widthIndex - 1)] }}, {{ $height }})"
+                            wire:click="resize({{ \Illuminate\Support\Js::from($tile->id) }}, {{ $widths[max(0, $widthIndex - 1)] }}, {{ $height }})"
                         >−</button>
-                        <span class="px-1 py-1 tabular-nums">{{ \App\Models\Section::TILE_WIDTHS[$tile->tile_width] ?? '' }}</span>
+                        <span class="px-1 py-1 tabular-nums">{{ \App\Models\Section::TILE_WIDTHS[$tile->width] ?? '' }}</span>
                         <button
                             type="button"
                             class="rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-30"
                             title="Breiter"
-                            aria-label="{{ $tile->title }} breiter"
+                            aria-label="{{ $label }} breiter"
                             @disabled($widthIndex === count($widths) - 1)
-                            wire:click="resize({{ $tile->id }}, {{ $widths[min(count($widths) - 1, $widthIndex + 1)] }}, {{ $height }})"
+                            wire:click="resize({{ \Illuminate\Support\Js::from($tile->id) }}, {{ $widths[min(count($widths) - 1, $widthIndex + 1)] }}, {{ $height }})"
                         >+</button>
                         <button
                             type="button"
                             class="rounded px-2 py-1 hover:bg-gray-100"
                             title="{{ $height === 2 ? 'Normale Höhe' : 'Doppelt hoch' }}"
-                            aria-label="{{ $tile->title }}: {{ $height === 2 ? 'normale Höhe' : 'doppelt hoch' }}"
-                            wire:click="resize({{ $tile->id }}, {{ $tile->tile_width }}, {{ $height === 2 ? 1 : 2 }})"
+                            aria-label="{{ $label }}: {{ $height === 2 ? 'normale Höhe' : 'doppelt hoch' }}"
+                            wire:click="resize({{ \Illuminate\Support\Js::from($tile->id) }}, {{ $tile->width }}, {{ $height === 2 ? 1 : 2 }})"
                         >{{ $height === 2 ? '↥' : '↧' }}</button>
                     </div>
 

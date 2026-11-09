@@ -37,27 +37,16 @@ class SectionsTable
                 TextColumn::make('title')
                     ->label('Titel')
                     ->formatStateUsing(fn (Section $record, string $state): string => str_repeat('— ', $record->depth()).$state)
-                    ->description(fn (Section $record): ?string => $record->parent?->title)
+                    ->description(fn (Section $record): ?string => $record->is_home ? 'Startseite' : $record->parent?->title)
                     ->searchable(),
                 TextColumn::make('slug')
                     ->label('Kurzname')
                     ->toggleable(),
-                TextColumn::make('layout')
-                    ->label('Kachelfarbe')
-                    ->badge()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('tile_width')
-                    ->label('Größe')
-                    ->formatStateUsing(fn (Section $record): string => (Section::TILE_WIDTHS[$record->tile_width] ?? $record->tile_width).($record->tile_height > 1 ? ', doppelt hoch' : ''))
-                    ->toggleable(isToggledHiddenByDefault: true),
                 ToggleColumn::make('is_visible')
                     ->label('Sichtbar')
                     ->disabled(fn (Model $record): bool => ! auth()->user()?->can('update', $record)),
                 IconColumn::make('show_in_navigation')
                     ->label('Kopfzeile')
-                    ->boolean(),
-                IconColumn::make('is_standalone')
-                    ->label('Keine Kachel')
                     ->boolean(),
                 TextColumn::make('updated_at')
                     ->label('Bearbeitet')
@@ -87,17 +76,18 @@ class SectionsTable
                     ->openUrlInNewTab()
                     ->visible(fn (Section $record): bool => $record->isPubliclyVisible()),
                 Action::make('arrangeTiles')
-                    ->label('Unterkacheln anordnen')
+                    ->label('Kacheln anordnen')
                     ->icon(Heroicon::OutlinedSquares2x2)
                     ->url(fn (Section $record): string => $record->url().'?anordnen=1')
                     ->openUrlInNewTab()
                     ->visible(fn (Section $record): bool => $record->isPubliclyVisible()
-                        && $record->tileChildren()->isNotEmpty()
+                        && $record->hasTiles()
                         && (bool) auth()->user()?->can('reorder', Section::class)),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorizeIndividualRecords('delete'),
                 ]),
             ]);
     }

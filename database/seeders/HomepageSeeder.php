@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\SectionLayout;
+use App\Enums\TileStyle;
 use App\Models\CompanySetting;
 use App\Models\Section;
+use App\Services\Homepage\LinkTarget;
 use Illuminate\Database\Seeder;
 
 /**
@@ -26,6 +28,8 @@ class HomepageSeeder extends Seeder
         $privacy = $this->seedPrivacy();
 
         $this->seedFooter($legalNotice, $privacy);
+        $this->seedTiles();
+        $this->seedHome();
 
         $this->call(NewsSeeder::class);
     }
@@ -89,7 +93,7 @@ class HomepageSeeder extends Seeder
             'teaser' => 'Datenanalyse, Lasercutter, Löten, elektronische Grußkarten und vieles mehr.',
             'content' => [
                 $this->text('<p>In unseren Nachmittagskursen lernen Kinder und Jugendliche in kleinen Gruppen über mehrere Termine hinweg ein Thema richtig kennen – zum Beispiel Datenanalyse, den Umgang mit dem Lasercutter, Löten für Anfänger oder elektronische Grußkarten. Dazu kommen Ferienkurse wie Nähen oder Astrofotografie.</p><p>Die Kurse sind kostenlos, die Plätze aber begrenzt. Ist ein Kurs voll, kommst du auf die Warteliste.</p>'),
-                ['type' => 'course_list', 'data' => ['interest_ids' => [], 'audience' => 'kids', 'limit' => 6, 'show_all_link' => true]],
+                ['type' => 'offers', 'data' => ['participations' => [], 'show_filter_tabs' => true, 'interest_ids' => [], 'audience' => 'kids', 'limit' => 24]],
                 ['type' => 'course_calendar', 'data' => ['audience' => 'kids']],
             ],
         ]);
@@ -228,7 +232,7 @@ class HomepageSeeder extends Seeder
             ],
         ]);
 
-        $this->section('team', [
+        $this->section('das-team', [
             'parent_id' => $root->id,
             'title' => 'Das Team',
             'sort' => 2,
@@ -322,6 +326,72 @@ class HomepageSeeder extends Seeder
     /**
      * @param  array<string, mixed>  $attributes
      */
+    /**
+     * Every section shows its (non-standalone) child sections as a tile grid at the end of its page.
+     */
+    protected function seedTiles(): void
+    {
+        Section::query()
+            ->with('children')
+            ->where('is_home', false)
+            ->get()
+            ->each(function (Section $section): void {
+                $children = $section->children->where('is_standalone', false);
+
+                if ($children->isEmpty() || $section->hasTiles()) {
+                    return;
+                }
+
+                $section->update(['content' => [...($section->content ?? []), Section::tilesBlockFor($children)]]);
+            });
+    }
+
+    /**
+     * Start page: a large introduction tile, one tile per main section and a link to the team.
+     */
+    protected function seedHome(): void
+    {
+        $roots = Section::query()->roots()->where('is_standalone', false)->where('is_home', false)->where('slug', '!=', 'kontakt')->get();
+        $team = Section::query()->where('slug', 'das-team')->first();
+
+        $content = [
+            [
+                'type' => 'tiles',
+                'data' => ['tiles' => [[
+                    'style' => TileStyle::Hero->value,
+                    'eyebrow' => 'Vom Land Baden-Württemberg offiziell anerkanntes außerschulisches Forschungszentrum',
+                    'heading' => 'Für eine Zukunft voller Chancen.',
+                    'text' => '<p>Das Z-LAB Bruchsal ist das Zukunftslabor der Auerbach Stiftung.</p><p><strong>Alle unsere MINT-Angebote sind kostenlos.</strong></p>',
+                    'target_type' => LinkTarget::NONE,
+                    'width' => 6,
+                    'height' => 1,
+                ]]],
+            ],
+            Section::tilesBlockFor($roots),
+        ];
+
+        if ($team !== null) {
+            $content[] = ['type' => 'button', 'data' => [
+                'label' => 'Unser Team kennenlernen',
+                'target_type' => LinkTarget::SECTION,
+                'section_id' => $team->id,
+                'align' => 'center',
+                'variant' => 'outline',
+            ]];
+        }
+
+        Section::query()->updateOrCreate(['is_home' => true], [
+            'title' => 'Startseite',
+            'slug' => 'startseite',
+            'sort' => 0,
+            'is_visible' => true,
+            'show_title' => false,
+            'show_in_navigation' => false,
+            'is_standalone' => true,
+            'content' => $content,
+        ]);
+    }
+
     protected function section(string $slug, array $attributes): Section
     {
         return Section::query()->updateOrCreate(['slug' => $slug], [

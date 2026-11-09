@@ -137,7 +137,7 @@ class HomepagePreviewTest extends TestCase
     public function test_section_previews_show_unsaved_state_of_hidden_section(): void
     {
         $section = Section::factory()->hidden()->create(['title' => 'Alt']);
-        Section::factory()->childOf($section)->create(['title' => 'Unterbereich']);
+        $child = Section::factory()->create(['title' => 'Unterbereich']);
 
         $state = [
             'title' => 'Workshops',
@@ -146,6 +146,9 @@ class HomepagePreviewTest extends TestCase
             'tile_height' => 1,
             'content' => [
                 'a1b2' => ['type' => 'text', 'data' => ['body' => '<p>Ungespeicherter Inhalt</p>']],
+                'c3d4' => ['type' => 'tiles', 'data' => ['tiles' => [
+                    'e5f6' => ['target_type' => 'section', 'section_id' => $child->id, 'heading' => null, 'image' => []],
+                ]]],
             ],
         ];
 

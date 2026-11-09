@@ -5,33 +5,34 @@ namespace App\Http\Controllers\Homepage;
 use App\Http\Controllers\Controller;
 use App\Models\Section;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class HomepageController extends Controller
 {
     public function index(): View
     {
-        $tiles = Section::query()
-            ->visible()
-            ->roots()
-            ->where('is_standalone', false)
-            ->get();
-
-        return view('homepage.index', ['tiles' => $tiles]);
+        return view('homepage.section', [
+            'section' => Section::home(),
+            'ancestors' => [],
+        ]);
     }
 
-    public function section(string $slug): View
+    public function section(string $slug): View|RedirectResponse
     {
         $section = Section::query()
             ->where('slug', $slug)
-            ->with(['visibleChildren', 'parent'])
+            ->with('parent')
             ->firstOrFail();
+
+        if ($section->is_home) {
+            return redirect()->route('homepage.index', status: 301);
+        }
 
         abort_unless($section->isPubliclyVisible(), 404);
 
         return view('homepage.section', [
             'section' => $section,
             'ancestors' => $section->ancestors(),
-            'tiles' => $section->tileChildren(),
         ]);
     }
 }

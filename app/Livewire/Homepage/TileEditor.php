@@ -4,8 +4,10 @@ namespace App\Livewire\Homepage;
 
 use App\Models\Section;
 use App\Models\User;
+use App\Services\Homepage\ContentIds;
+use App\Services\Homepage\Tile;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -15,68 +17,64 @@ use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 /**
- * Lets cockpit users arrange the tiles of one level (start page or a section page) directly on the homepage:
+ * Lets cockpit users arrange the tiles of one tile grid block directly on the homepage:
  * drag to reorder, drag the corner (or use the buttons) to resize. Every change is saved immediately.
  */
 class TileEditor extends Component
 {
     #[Locked]
-    public ?int $parentId = null;
+    public int $sectionId;
 
-    public function mount(?int $parentId = null): void
+    #[Locked]
+    public string $blockId;
+
+    public function mount(int $sectionId, string $blockId): void
     {
-        $this->authorizeEditor();
+        $this->sectionId = $sectionId;
+        $this->blockId = $blockId;
 
-        $this->parentId = $parentId;
+        $this->authorizeEditor();
     }
 
     /**
-     * Tiles of this level in their current order, i.e. visible sections that are not standalone pages.
+     * Tiles of this block in their current order, as rendered on the homepage.
      *
-     * @return Collection<int, Section>
+     * @return Collection<int, Tile>
      */
     #[Computed]
     public function tiles(): Collection
     {
-        return Section::query()
-            ->visible()
-            ->where('parent_id', $this->parentId)
-            ->where('is_standalone', false)
-            ->orderBy('sort')
-            ->orderBy('id')
-            ->get();
+        return Tile::collect($this->rawTiles($this->section()));
     }
 
     /**
-     * Handler for wire:sort. Hidden and standalone siblings keep their sort values,
-     * the tiles only swap the sort values they already occupy.
+     * Handler for wire:sort. Tiles that are not rendered (e.g. linking to a hidden section) keep their position
+     * among the rendered ones as far as possible.
      */
-    public function sort(int $id, int $position): void
+    public function sort(string $id, int $position): void
     {
         $this->authorizeEditor();
 
-        $tiles = $this->tiles();
-        $moved = $tiles->firstWhere('id', $id);
+        $this->updateTiles(function (array $tiles) use ($id, $position): array {
+            $visibleIds = $this->tiles()->pluck('id')->all();
+            $movedIndex = $this->indexOf($tiles, $id);
+            $moved = $tiles[$movedIndex];
 
-        abort_if($moved === null, 404);
+            array_splice($tiles, $movedIndex, 1);
 
-        $ordered = $tiles->reject(fn (Section $tile): bool => $tile->id === $id)->values();
-        $ordered->splice(max(0, min($position, $ordered->count())), 0, [$moved]);
+            $remainingVisibleIds = array_values(array_diff($visibleIds, [$id]));
+            $position = max(0, min($position, count($remainingVisibleIds)));
+            $insertAt = $position < count($remainingVisibleIds)
+                ? $this->indexOf($tiles, $remainingVisibleIds[$position])
+                : (count($remainingVisibleIds) > 0 ? $this->indexOf($tiles, end($remainingVisibleIds)) + 1 : count($tiles));
 
-        $sortValues = $this->distinctSortValues($tiles);
+            array_splice($tiles, $insertAt, 0, [$moved]);
 
-        DB::transaction(function () use ($ordered, $sortValues): void {
-            foreach ($ordered as $index => $tile) {
-                if ($tile->sort !== $sortValues[$index]) {
-                    $tile->update(['sort' => $sortValues[$index]]);
-                }
-            }
+            return $tiles;
         });
-
-        unset($this->tiles);
     }
 
-    public function resize(int $id, int $width, int $height): void
+    public function resize(string $id, int $width, int $height): void
     {
         $this->authorizeEditor();
 
@@ -88,14 +86,13 @@ class TileEditor extends Component
             ],
         )->validate();
 
-        $tile = $this->tiles()->firstWhere('id', $id);
+        $this->updateTiles(function (array $tiles) use ($id, $width, $height): array {
+            $index = $this->indexOf($tiles, $id);
+            $tiles[$index]['width'] = $width;
+            $tiles[$index]['height'] = $height;
 
-        abort_if($tile === null, 404);
-        abort_unless($this->editor()->can('update', $tile), 403);
-
-        $tile->update(['tile_width' => $width, 'tile_height' => $height]);
-
-        unset($this->tiles);
+            return $tiles;
+        });
     }
 
     public function render(): View
@@ -106,24 +103,54 @@ class TileEditor extends Component
     }
 
     /**
-     * The sort values currently used by the tiles, ascending. Duplicates (e.g. all 0 after creating) are spread out
-     * so that the new order is unambiguous.
-     *
-     * @param  Collection<int, Section>  $tiles
-     * @return list<int>
+     * @param  callable(list<array<string, mixed>>): list<array<string, mixed>>  $change
      */
-    protected function distinctSortValues(Collection $tiles): array
+    protected function updateTiles(callable $change): void
     {
-        $values = [];
-        $previous = null;
+        DB::transaction(function () use ($change): void {
+            $section = Section::query()->lockForUpdate()->findOrFail($this->sectionId);
+            $content = $section->content ?? [];
+            $blockIndex = ContentIds::blockIndex($content, $this->blockId);
 
-        foreach ($tiles->pluck('sort')->sort()->values() as $value) {
-            $value = $previous !== null && $value <= $previous ? $previous + 1 : (int) $value;
-            $values[] = $value;
-            $previous = $value;
+            abort_if($blockIndex === null, 404);
+
+            $content[$blockIndex]['data']['tiles'] = array_values($change($this->rawTiles($section)));
+
+            $section->update(['content' => $content]);
+        });
+
+        unset($this->tiles);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $tiles
+     */
+    protected function indexOf(array $tiles, string $id): int
+    {
+        foreach ($tiles as $index => $tile) {
+            if (($tile['id'] ?? null) === $id) {
+                return $index;
+            }
         }
 
-        return $values;
+        abort(404);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function rawTiles(Section $section): array
+    {
+        $blockIndex = ContentIds::blockIndex($section->content, $this->blockId);
+
+        abort_if($blockIndex === null, 404);
+
+        return array_values(array_filter($section->content[$blockIndex]['data']['tiles'] ?? [], 'is_array'));
+    }
+
+    protected function section(): Section
+    {
+        return Section::query()->findOrFail($this->sectionId);
     }
 
     protected function editor(): User
@@ -138,6 +165,8 @@ class TileEditor extends Component
 
     protected function authorizeEditor(): void
     {
-        abort_unless($this->editor()->can('reorder', Section::class), 403);
+        $editor = $this->editor();
+
+        abort_unless($editor->can('reorder', Section::class) && $editor->can('update', $this->section()), 403);
     }
 }

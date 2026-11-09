@@ -3,16 +3,20 @@
 namespace App\Models;
 
 use App\Enums\SectionLayout;
+use App\Enums\TileStyle;
+use App\Services\Homepage\ContentIds;
+use App\Services\Homepage\LinkTarget;
+use App\Services\Homepage\Tile;
 use Database\Factories\SectionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
-#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'layout', 'tile_width', 'tile_height', 'content'])]
+#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'is_home', 'layout', 'tile_width', 'tile_height', 'content'])]
 class Section extends Model
 {
     /** @use HasFactory<SectionFactory> */
@@ -27,7 +31,7 @@ class Section extends Model
         'cockpit', 'api', 'livewire', 'storage', 'build', 'up',
         'kurse', 'kalender', 'konto', 'anmelden', 'abmelden', 'login', 'logout',
         'schulen', 'buchung', 'warenkorb', 'bestaetigen', 'email-aendern', 'kontaktformular', 'anmeldung', 'freigabe',
-        'bestellung', 'vorschau', 'team', 'news',
+        'bestellung', 'vorschau', 'team', 'news', 'startseite',
     ];
 
     /**
@@ -54,11 +58,94 @@ class Section extends Model
             'show_title' => 'boolean',
             'show_in_navigation' => 'boolean',
             'is_standalone' => 'boolean',
+            'is_home' => 'boolean',
             'layout' => SectionLayout::class,
             'tile_width' => 'integer',
             'tile_height' => 'integer',
             'content' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Section $section): void {
+            $section->content = ContentIds::ensure($section->content);
+        });
+
+        static::saved(function (Section $section): void {
+            if ($section->is_home && ($section->wasRecentlyCreated || $section->wasChanged('is_home'))) {
+                static::query()->whereKeyNot($section->id)->where('is_home', true)->update(['is_home' => false]);
+            }
+        });
+    }
+
+    /**
+     * The start page. It is created on first use with a hero tile and the root sections as tiles,
+     * like the start page looked before it became editable.
+     */
+    public static function home(): Section
+    {
+        $home = static::query()->where('is_home', true)->first();
+
+        if ($home !== null) {
+            return $home;
+        }
+
+        $settings = CompanySetting::current();
+        $content = [[
+            'type' => 'tiles',
+            'data' => ['tiles' => [[
+                'style' => TileStyle::Hero->value,
+                'heading' => $settings->homepageTitle(),
+                'text' => filled($settings->homepage_tagline) ? '<p>'.e($settings->homepage_tagline).'</p>' : null,
+                'target_type' => LinkTarget::NONE,
+                'width' => 6,
+                'height' => 1,
+            ]]],
+        ]];
+
+        $roots = static::query()->roots()->where('is_standalone', false)->where('is_home', false)->get();
+
+        if ($roots->isNotEmpty()) {
+            $content[] = static::tilesBlockFor($roots);
+        }
+
+        return static::query()->create([
+            'title' => 'Startseite',
+            'slug' => static::query()->where('slug', 'startseite')->exists() ? 'startseite-'.Str::lower(Str::random(6)) : 'startseite',
+            'sort' => 0,
+            'is_visible' => true,
+            'show_title' => false,
+            'show_in_navigation' => false,
+            'is_standalone' => true,
+            'is_home' => true,
+            'content' => $content,
+        ]);
+    }
+
+    /**
+     * A tile grid block with one tile per section.
+     *
+     * @param  iterable<Section>  $sections
+     * @return array{type: string, data: array<string, mixed>}
+     */
+    public static function tilesBlockFor(iterable $sections): array
+    {
+        $tiles = [];
+
+        foreach ($sections as $section) {
+            $tiles[] = Tile::dataForSection($section);
+        }
+
+        return ['type' => 'tiles', 'data' => ['tiles' => $tiles]];
+    }
+
+    /**
+     * Whether the page contains at least one tile grid, i.e. there is something to arrange.
+     */
+    public function hasTiles(): bool
+    {
+        return collect($this->content ?? [])->contains(fn (mixed $block): bool => ($block['type'] ?? null) === 'tiles' && ! empty($block['data']['tiles']));
     }
 
     public function parent(): BelongsTo
@@ -129,6 +216,10 @@ class Section extends Model
      */
     public function url(): string
     {
+        if ($this->is_home) {
+            return route('homepage.index');
+        }
+
         return route('homepage.section', $this->slug);
     }
 
@@ -241,15 +332,5 @@ class Section extends Model
         }
 
         return $query->orderByRaw("CASE {$query->qualifyColumn('id')} {$cases} ELSE ".count($ids).' END', $bindings);
-    }
-
-    /**
-     * Child sections shown as tiles, i.e. visible and not only linked in the footer.
-     *
-     * @return Collection<int, Section>
-     */
-    public function tileChildren(): Collection
-    {
-        return $this->visibleChildren->where('is_standalone', false)->values();
     }
 }

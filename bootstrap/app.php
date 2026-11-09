@@ -31,4 +31,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('app:expire-reservations')->everyMinute()->withoutOverlapping();
         $schedule->command('app:send-course-digests')->everyFifteenMinutes()->withoutOverlapping();
         $schedule->command('app:send-school-reminders')->hourly()->withoutOverlapping();
+        $schedule->command('app:send-order-report')->everyFifteenMinutes()->withoutOverlapping();
     })->create();

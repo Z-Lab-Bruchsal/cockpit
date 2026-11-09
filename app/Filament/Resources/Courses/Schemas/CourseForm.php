@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Courses\Schemas;
 
 use App\Enums\CourseAudience;
+use App\Enums\CourseParticipation;
 use App\Enums\SchoolCourseFormat;
 use App\Enums\SchoolType;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
@@ -110,6 +111,13 @@ class CourseForm
                                     ->required()
                                     ->numeric()
                                     ->minValue(1),
+                                Select::make('default_participation')
+                                    ->label('Teilnahme (Vorschlag)')
+                                    ->helperText('Wird für neue Durchführungen übernommen.')
+                                    ->options(CourseParticipation::class)
+                                    ->default(CourseParticipation::Registration)
+                                    ->selectablePlaceholder(false)
+                                    ->visible(fn (Get $get): bool => static::isForKids($get('audience'))),
                                 TextInput::make('default_capacity')
                                     ->label('Plätze (Vorschlag)')
                                     ->required()

@@ -3,15 +3,21 @@
 namespace App\Filament\Resources\CourseInstances\Schemas;
 
 use App\Enums\CourseInstanceStatus;
+use App\Enums\CourseParticipation;
+use App\Enums\CourseProminence;
 use App\Filament\Resources\Courses\Schemas\SchoolClassSettingsFields;
+use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
 use App\Models\Course;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -23,6 +29,52 @@ class CourseInstanceForm
     protected static function isPublished(mixed $status): bool
     {
         return ($status instanceof CourseInstanceStatus ? $status : CourseInstanceStatus::tryFrom((string) $status)) === CourseInstanceStatus::Published;
+    }
+
+    protected static function isDropIn(mixed $participation): bool
+    {
+        return ($participation instanceof CourseParticipation ? $participation : CourseParticipation::tryFrom((string) $participation)) === CourseParticipation::DropIn;
+    }
+
+    /**
+     * Fields for the homepage card and detail page of an instance. Also used when editing directly on the homepage.
+     *
+     * @return array<int, Component>
+     */
+    public static function displayFields(): array
+    {
+        return [
+            TextInput::make('card_label')
+                ->label('Etikett auf dem Bild')
+                ->placeholder('Löten lernen. Selber machen.')
+                ->helperText('Erscheint als Schild auf dem Kartenbild. Leer = kein Etikett.')
+                ->maxLength(60),
+            TextInput::make('card_label_sub')
+                ->label('Zweites Etikett')
+                ->placeholder(fn (Get $get): string => static::isDropIn($get('participation')) ? 'Ohne Anmeldung' : 'z. B. Nur in den Ferien')
+                ->helperText(fn (Get $get): ?string => static::isDropIn($get('participation')) ? 'Leer = „Ohne Anmeldung“' : null)
+                ->maxLength(40),
+            Textarea::make('teaser')
+                ->label('Kurztext')
+                ->placeholder(fn (Get $get): ?string => Course::find($get('course_id'))?->teaser)
+                ->rows(2)
+                ->maxLength(300)
+                ->columnSpanFull(),
+            ContentBlocks::imageUpload('card_image_path')
+                ->label('Kartenbild')
+                ->directory('courses')
+                ->helperText('Leer = Bild vom Kurs. Text am besten nicht ins Bild schreiben, dafür gibt es das Etikett.'),
+            ContentBlocks::altText('card_image_alt', 'card_image_path'),
+            ContentBlocks::imageUpload('image_path')
+                ->label('Bild auf der Detailseite')
+                ->directory('courses')
+                ->helperText('Leer = Kartenbild bzw. Bild vom Kurs.'),
+            ContentBlocks::altText('image_alt', 'image_path'),
+            ContentBlocks::fullRichEditor('description')
+                ->label('Beschreibung')
+                ->helperText('Leer = Beschreibung vom Kurs. Hier z. B. Hinweise nur für diese Durchführung ergänzen.')
+                ->columnSpanFull(),
+        ];
     }
 
     public static function configure(Schema $schema): Schema
@@ -45,6 +97,7 @@ class CourseInstanceForm
                                 if ($course !== null) {
                                     $set('capacity', $course->default_capacity);
                                     $set('waitlist_enabled', $course->default_waitlist_enabled);
+                                    $set('participation', $course->isForSchoolClasses() ? CourseParticipation::Registration : $course->default_participation);
                                 }
                             }),
                         TextInput::make('title')
@@ -57,6 +110,20 @@ class CourseInstanceForm
                             ->default(CourseInstanceStatus::Draft)
                             ->required()
                             ->live(),
+                        ToggleButtons::make('participation')
+                            ->label('Teilnahme')
+                            ->options(CourseParticipation::class)
+                            ->default(fn (): CourseParticipation => Course::find(request()->integer('course'))?->default_participation ?? CourseParticipation::Registration)
+                            ->inline()
+                            ->required()
+                            ->live()
+                            ->hidden(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses()),
+                        Select::make('prominence')
+                            ->label('Darstellung in Angebotslisten')
+                            ->options(CourseProminence::class)
+                            ->default(CourseProminence::Standard)
+                            ->selectablePlaceholder(false)
+                            ->required(),
                         Toggle::make('notify_interested')
                             ->label('Interessierte gleich benachrichtigen')
                             ->helperText('Der Kurs wird für Eltern mit Einwilligung vorgemerkt, deren Kinder zu den Interessen und dem Alter passen. Sie bekommen ihn mit der nächsten Sammelmail. Später geht das auch über „Interessierte benachrichtigen“.')
@@ -82,7 +149,31 @@ class CourseInstanceForm
                     ->columns(2)
                     ->visible(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())
                     ->columnSpanFull(),
+                Section::make('Wann kann man vorbeikommen?')
+                    ->description('Für Angebote ohne Anmeldung gibt es keine einzelnen Termine und keine Plätze.')
+                    ->schema([
+                        TextInput::make('schedule_text')
+                            ->label('Zeiten')
+                            ->placeholder('Mittwochs · 14:00–17:00')
+                            ->required()
+                            ->maxLength(255),
+                        TextInput::make('schedule_note')
+                            ->label('Hinweis')
+                            ->placeholder('Außer in den Schulferien')
+                            ->maxLength(255),
+                        DatePicker::make('available_from')
+                            ->label('Angebot ab')
+                            ->helperText('Leer = sofort sichtbar'),
+                        DatePicker::make('available_until')
+                            ->label('Angebot bis')
+                            ->helperText('Leer = unbefristet')
+                            ->afterOrEqual('available_from'),
+                    ])
+                    ->columns(2)
+                    ->visible(fn (Get $get): bool => static::isDropIn($get('participation')))
+                    ->columnSpanFull(),
                 Section::make('Plätze & Anmeldung')
+                    ->hidden(fn (Get $get): bool => static::isDropIn($get('participation')))
                     ->schema([
                         TextInput::make('max_class_size')
                             ->label('Maximale Klassengröße')
@@ -133,6 +224,7 @@ class CourseInstanceForm
                     ->columns(3)
                     ->columnSpanFull(),
                 Section::make('Termine')
+                    ->hidden(fn (Get $get): bool => static::isDropIn($get('participation')))
                     ->schema([
                         Repeater::make('dates')
                             ->hiddenLabel()
@@ -169,6 +261,12 @@ class CourseInstanceForm
                                 ? Carbon::parse($state['starts_at'])->locale('de')->isoFormat('dd, DD.MM.YYYY HH:mm')
                                 : null),
                     ])
+                    ->columnSpanFull(),
+                Section::make('Karte & Detailseite')
+                    ->description('So erscheint diese Durchführung auf der Homepage. Leere Felder übernehmen die Angaben vom Kurs.')
+                    ->schema(static::displayFields())
+                    ->columns(2)
+                    ->collapsible()
                     ->columnSpanFull(),
                 Section::make('Interne Notizen')
                     ->schema([

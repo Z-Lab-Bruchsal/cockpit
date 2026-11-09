@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Homepage;
 use App\Enums\CourseAudience;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseInstance;
 use App\Models\Interest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -32,6 +33,21 @@ class CourseController extends Controller
             'interests' => Interest::query()->active()->whereHas('courses', fn ($query) => $query->published())->get(),
             'filters' => $filters,
         ]);
+    }
+
+    /**
+     * Detail page of one course instance (an offer), with booking for courses with registration.
+     */
+    public function instance(string $slug, int $instance): View
+    {
+        $instance = CourseInstance::query()
+            ->published()
+            ->whereKey($instance)
+            ->whereHas('course', fn ($course) => $course->published()->where('slug', $slug))
+            ->with(['course.template', 'course.interests', 'dates', 'firstDate'])
+            ->firstOrFail();
+
+        return view('homepage.courses.instance', ['instance' => $instance]);
     }
 
     public function show(string $slug): View

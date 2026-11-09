@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\Homepage\ContentIds;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours', 'booking_limit_per_hour', 'booking_limit_per_day', 'max_seats_per_registration', 'digest_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days', 'directions_document_path', 'newsletter_url', 'donation_url'])]
+#[Fillable(['name', 'street', 'zip', 'city', 'logo_path', 'logo_alt', 'app_title', 'homepage_title', 'homepage_tagline', 'primary_color', 'secondary_color', 'cockpit_primary_color', 'cockpit_success_color', 'cockpit_warning_color', 'cockpit_danger_color', 'cockpit_info_color', 'contact_email', 'contact_phone', 'footer_text', 'footer_links', 'social_links', 'hold_minutes', 'confirmation_hours', 'waitlist_offer_hours', 'booking_limit_per_hour', 'booking_limit_per_day', 'max_seats_per_registration', 'digest_hours', 'school_reminders_enabled', 'teacher_reminder_days', 'staff_reminder_days', 'school_reschedule_deadline_days', 'directions_document_path', 'newsletter_url', 'donation_url', 'order_report_enabled', 'order_report_weekday', 'order_report_time', 'order_report_recipients', 'order_report_last_sent_at', 'footer_blocks'])]
 class CompanySetting extends Model
 {
     /**
@@ -50,7 +51,22 @@ class CompanySetting extends Model
             'footer_links' => 'array',
             'social_links' => 'array',
             'school_reminders_enabled' => 'boolean',
+            'order_report_enabled' => 'boolean',
+            'order_report_weekday' => 'integer',
+            'order_report_recipients' => 'array',
+            'order_report_last_sent_at' => 'datetime',
+            'footer_blocks' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Footer elements need stable ids to be arranged and edited on the homepage.
+        static::saving(function (CompanySetting $settings): void {
+            if ($settings->footer_blocks !== null) {
+                $settings->footer_blocks = array_values(ContentIds::ensure(array_values($settings->footer_blocks)) ?? []);
+            }
+        });
     }
 
     public static function current(): self
@@ -343,6 +359,38 @@ class CompanySetting extends Model
             ->filter(fn (array $ribbon): bool => filled($ribbon['url']))
             ->values()
             ->all();
+    }
+
+    /**
+     * Element types of the footer grid.
+     *
+     * @var array<string, string>
+     */
+    public const FOOTER_BLOCK_TYPES = [
+        'text' => 'Text',
+        'address' => 'Adresse und Kontakt',
+        'links' => 'Footer-Links',
+        'social' => 'Social Media',
+    ];
+
+    /**
+     * Elements of the footer grid in their order, each `['type' => …, 'data' => ['block_id', 'width', 'body'?]]`.
+     * Without a saved arrangement: address, links and social media side by side.
+     *
+     * @return list<array{type: string, data: array<string, mixed>}>
+     */
+    public function footerBlocks(): array
+    {
+        $blocks = $this->footer_blocks ?? [
+            ['type' => 'address', 'data' => ['block_id' => 'footer-address', 'width' => 2]],
+            ['type' => 'links', 'data' => ['block_id' => 'footer-links', 'width' => 2]],
+            ['type' => 'social', 'data' => ['block_id' => 'footer-social', 'width' => 2]],
+        ];
+
+        return array_values(array_filter(
+            ContentIds::ensure(array_values($blocks)) ?? [],
+            fn (mixed $block): bool => is_array($block) && array_key_exists($block['type'] ?? '', self::FOOTER_BLOCK_TYPES),
+        ));
     }
 
     public function copyrightText(): string

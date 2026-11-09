@@ -4,10 +4,12 @@ namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Orderstatus;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
@@ -80,7 +82,20 @@ class OrderForm
                 DateTimePicker::make('orderdatetime')
                     ->label('Bestellzeitpunkt')->inlineLabel()
                     ->visibleOn(['edit', 'view'])
-                    ->disabled(),
+                    ->disabled()
+                    ->hidden(fn (): bool => static::canProcess()),
+                Section::make('Bestellung für die Buchhaltung')
+                    ->description('Wo, wann und zu welchem Preis bestellt wurde. Erscheint im Bestellbericht.')
+                    ->schema(collect(OrderProcessingFields::make(OrderProcessingFields::orderUrl(...)))
+                        ->map(fn ($field) => $field->inlineLabel()->required(false))
+                        ->all())
+                    ->visibleOn(['edit'])
+                    ->visible(fn (): bool => static::canProcess()),
             ])->columns(1);
+    }
+
+    protected static function canProcess(): bool
+    {
+        return (bool) User::find(filament()->auth()->id())?->can('Orders:Process');
     }
 }

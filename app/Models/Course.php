@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CourseAudience;
 use App\Enums\CourseInstanceStatus;
+use App\Enums\CourseParticipation;
 use App\Enums\SchoolCourseFormat;
 use App\Enums\SchoolType;
 use App\Services\Homepage\HomepageImage;
@@ -34,6 +35,7 @@ class Course extends Model
         'image_alt',
         'description',
         'audience',
+        'default_participation',
         'min_age',
         'max_age',
         'default_capacity',
@@ -68,6 +70,7 @@ class Course extends Model
     {
         return [
             'audience' => CourseAudience::class,
+            'default_participation' => CourseParticipation::class,
             'school_format' => SchoolCourseFormat::class,
             'school_types' => AsEnumCollection::of(SchoolType::class),
             'school_reminders_enabled' => 'boolean',
@@ -205,7 +208,7 @@ class Course extends Model
     /**
      * @return array{url: string, alt: string}
      */
-    protected static function image(string $path, ?string $alt): array
+    public static function image(string $path, ?string $alt): array
     {
         return ['url' => HomepageImage::url($path), 'alt' => (string) $alt];
     }

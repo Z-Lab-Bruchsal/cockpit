@@ -27,19 +27,34 @@
     --color-key-hover: color-mix(in srgb, var(--brand, #f59e0b) 5%, white);
 }
 
-@theme {
-    --color-page: #f1eff4;
-    --color-ink: #25252b;
-    --color-footer: #302a31;
-    --color-footer-ink: #f6f2f5;
-    --color-footer-muted: #d4cbd2;
-    --color-footer-hover: #ff94b9;
-    --color-ribbon-newsletter: #f49b58;
+/*
+ * Color roles of the design mode (see App\Services\Homepage\DesignRoles). The custom properties are set on <html>
+ * from the published design, or on a single element that overrides a role for itself.
+ */
+@theme inline {
+    --color-page: var(--page-bg, #f1eff4);
+    --color-ink: var(--ink, #25252b);
+    --color-card: var(--card-bg, #ffffff);
+    --color-nav-link: var(--nav-link, var(--brand-heading, #b45309));
+    --color-tile-heading: var(--tile-heading, var(--brand-heading, #b45309));
+    --color-tile-highlight: var(--tile-highlight, var(--brand, #f59e0b));
+    --color-hero-eyebrow: var(--hero-eyebrow, var(--brand-ink, #b45309));
+    --color-hero-heading: var(--hero-heading, var(--brand-heading, #b45309));
+    --color-button-ink: var(--button-ink, var(--brand-ink, #b45309));
+    --color-offer-featured: var(--offer-featured-bg, var(--accent, #fff7ed));
+    --color-label-border: var(--label-border, var(--brand, #f59e0b));
+    --color-label-outline: var(--label-outline, var(--ribbon-newsletter, #f49b58));
+    --color-footer: var(--footer-bg, #302a31);
+    --color-footer-ink: var(--footer-ink, #f6f2f5);
+    --color-footer-muted: color-mix(in srgb, var(--footer-ink, #f6f2f5) 80%, var(--footer-bg, #302a31));
+    --color-footer-hover: var(--footer-hover, #ff94b9);
+    --color-ribbon-newsletter: var(--ribbon-newsletter, #f49b58);
+    --color-ribbon-donation: var(--ribbon-donation, var(--brand, #f59e0b));
 }
 
 /* White card that looks like a pressable key: a solid lower edge plus a soft shadow. */
 @utility key-card {
-    background-color: var(--color-white);
+    background-color: var(--color-card);
     border: 1px solid var(--color-key-edge);
     border-radius: 0.875rem;
     box-shadow:
@@ -76,6 +91,16 @@
     }
 }
 
+/* Sign on a course image: cream paper with a brand-colored double frame. */
+@utility image-label {
+    display: inline-block;
+    background-color: #fff6e3;
+    color: var(--color-brand-ink);
+    border: 2px solid var(--color-label-border);
+    outline: 4px solid var(--color-label-outline);
+    box-shadow: 0 6px 14px rgb(0 0 0 / 0.25);
+}
+
 /* Small white key button, e.g. footer links. */
 @utility key-button {
     display: flex;
@@ -85,8 +110,8 @@
     padding: 0.5rem 1rem;
     border: 1px solid var(--color-key-edge);
     border-radius: 0.5rem;
-    background-color: var(--color-white);
-    color: var(--color-brand-ink);
+    background-color: var(--color-card);
+    color: var(--color-button-ink);
     font-weight: 700;
     text-align: center;
     box-shadow: 0 4px 0 var(--color-key-edge-strong);
@@ -304,4 +329,16 @@ html {
             }
         }
     }
+}
+
+/* Design mode: outline of the element under the pointer and of the selected one. */
+.design-mode .design-hover {
+    outline: 2px dashed #2563eb;
+    outline-offset: 2px;
+    cursor: crosshair;
+}
+
+.design-mode .design-selected {
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
 }

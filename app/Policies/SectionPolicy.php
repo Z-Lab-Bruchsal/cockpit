@@ -34,7 +34,7 @@ class SectionPolicy
 
     public function delete(AuthUser $authUser, Section $section): bool
     {
-        return $authUser->can('Delete:Section');
+        return ! $section->is_home && $authUser->can('Delete:Section');
     }
 
     public function deleteAny(AuthUser $authUser): bool

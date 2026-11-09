@@ -33,6 +33,44 @@ class TileEditorTest extends TestCase
         return $user;
     }
 
+    /**
+     * A page with one tile grid block linking to the given sections.
+     *
+     * @param  list<Section>  $targets
+     */
+    protected function pageWithTiles(array $targets, array $attributes = []): Section
+    {
+        return Section::factory()->create([
+            'slug' => 'kacheln',
+            ...$attributes,
+            'content' => [Section::tilesBlockFor($targets)],
+        ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function tileIds(Section $page): array
+    {
+        return array_column($page->fresh()->content[0]['data']['tiles'], 'id');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function tileData(Section $page, int $index): array
+    {
+        return $page->fresh()->content[0]['data']['tiles'][$index];
+    }
+
+    protected function editorFor(Section $page): mixed
+    {
+        return Livewire::test(TileEditor::class, [
+            'sectionId' => $page->id,
+            'blockId' => $page->fresh()->content[0]['data']['block_id'],
+        ]);
+    }
+
     public function test_guests_do_not_get_the_editor(): void
     {
         Section::factory()->create(['title' => 'Über uns']);
@@ -68,8 +106,8 @@ class TileEditorTest extends TestCase
 
     public function test_editor_sees_toolbar_and_editor_in_arrange_mode(): void
     {
-        $about = Section::factory()->create(['slug' => 'ueber-uns']);
-        Section::factory()->childOf($about)->create();
+        $child = Section::factory()->create();
+        $this->pageWithTiles([$child], ['slug' => 'ueber-uns']);
 
         $this->actingAs($this->editor());
 
@@ -78,92 +116,94 @@ class TileEditorTest extends TestCase
         $this->get('/ueber-uns?anordnen=1')->assertOk()->assertSeeLivewire(TileEditor::class);
     }
 
-    public function test_sort_reorders_tiles_and_keeps_hidden_siblings(): void
+    public function test_sort_reorders_tiles_and_keeps_hidden_ones_in_place(): void
     {
-        $first = Section::factory()->create(['sort' => 1]);
-        $hidden = Section::factory()->hidden()->create(['sort' => 2]);
-        $second = Section::factory()->create(['sort' => 3]);
-        $third = Section::factory()->create(['sort' => 4]);
+        $first = Section::factory()->create();
+        $hidden = Section::factory()->hidden()->create();
+        $second = Section::factory()->create();
+        $third = Section::factory()->create();
+        $page = $this->pageWithTiles([$first, $hidden, $second, $third]);
+        [$firstId, $hiddenId, $secondId, $thirdId] = $this->tileIds($page);
 
         $this->actingAs($this->editor());
 
-        Livewire::test(TileEditor::class)
-            ->call('sort', $third->id, 0);
+        $this->editorFor($page)->call('sort', $thirdId, 0);
 
-        $this->assertSame(1, $third->fresh()->sort);
-        $this->assertSame(3, $first->fresh()->sort);
-        $this->assertSame(4, $second->fresh()->sort);
-        $this->assertSame(2, $hidden->fresh()->sort);
+        $this->assertSame([$thirdId, $firstId, $hiddenId, $secondId], $this->tileIds($page));
     }
 
-    public function test_sort_spreads_duplicate_sort_values(): void
+    public function test_sort_moves_tile_to_the_end(): void
     {
-        $first = Section::factory()->create(['sort' => 0]);
-        $second = Section::factory()->create(['sort' => 0]);
+        $first = Section::factory()->create();
+        $second = Section::factory()->create();
+        $page = $this->pageWithTiles([$first, $second]);
+        [$firstId, $secondId] = $this->tileIds($page);
 
         $this->actingAs($this->editor());
 
-        Livewire::test(TileEditor::class)
-            ->call('sort', $second->id, 0);
+        $this->editorFor($page)->call('sort', $firstId, 1);
 
-        $this->assertSame(0, $second->fresh()->sort);
-        $this->assertSame(1, $first->fresh()->sort);
+        $this->assertSame([$secondId, $firstId], $this->tileIds($page));
     }
 
     public function test_resize_saves_tile_size(): void
     {
-        $section = Section::factory()->create();
+        $page = $this->pageWithTiles([Section::factory()->create()]);
+        [$tileId] = $this->tileIds($page);
 
         $this->actingAs($this->editor());
 
-        Livewire::test(TileEditor::class)
-            ->call('resize', $section->id, 4, 2)
+        $this->editorFor($page)
+            ->call('resize', $tileId, 4, 2)
             ->assertHasNoErrors();
 
-        $this->assertSame(4, $section->fresh()->tile_width);
-        $this->assertSame(2, $section->fresh()->tile_height);
+        $this->assertSame(4, $this->tileData($page, 0)['width']);
+        $this->assertSame(2, $this->tileData($page, 0)['height']);
     }
 
     public function test_resize_rejects_invalid_sizes(): void
     {
-        $section = Section::factory()->create();
+        $page = $this->pageWithTiles([Section::factory()->create()]);
+        [$tileId] = $this->tileIds($page);
 
         $this->actingAs($this->editor());
 
-        Livewire::test(TileEditor::class)
-            ->call('resize', $section->id, 5, 3)
+        $this->editorFor($page)
+            ->call('resize', $tileId, 5, 3)
             ->assertHasErrors(['width', 'height']);
 
-        $this->assertSame(2, $section->fresh()->tile_width);
+        $this->assertSame(2, $this->tileData($page, 0)['width']);
     }
 
-    public function test_tiles_of_other_levels_cannot_be_changed(): void
+    public function test_tiles_of_other_blocks_cannot_be_changed(): void
     {
-        $parent = Section::factory()->create();
-        $child = Section::factory()->childOf($parent)->create(['sort' => 5]);
+        $page = $this->pageWithTiles([Section::factory()->create()]);
+        $other = Section::factory()->create(['slug' => 'andere', 'content' => [Section::tilesBlockFor([Section::factory()->create()])]]);
+        $foreignTileId = $other->content[0]['data']['tiles'][0]['id'];
 
         $this->actingAs($this->editor());
 
-        Livewire::test(TileEditor::class)
-            ->call('resize', $child->id, 6, 1)
+        $this->editorFor($page)
+            ->call('resize', $foreignTileId, 6, 1)
             ->assertNotFound();
 
-        Livewire::test(TileEditor::class)
-            ->call('sort', $child->id, 0)
+        $this->editorFor($page)
+            ->call('sort', $foreignTileId, 0)
             ->assertNotFound();
 
-        $this->assertSame(2, $child->fresh()->tile_width);
-        $this->assertSame(5, $child->fresh()->sort);
+        $this->assertSame(2, $other->fresh()->content[0]['data']['tiles'][0]['width']);
     }
 
     public function test_user_without_reorder_permission_cannot_use_editor(): void
     {
+        $page = $this->pageWithTiles([Section::factory()->create()]);
+
         $user = User::factory()->create();
         $user->givePermissionTo(Permission::findOrCreate('Update:Section'));
 
         $this->actingAs($user);
 
-        Livewire::test(TileEditor::class)->assertForbidden();
+        $this->editorFor($page)->assertForbidden();
     }
 
     public function test_tiles_render_with_their_size(): void

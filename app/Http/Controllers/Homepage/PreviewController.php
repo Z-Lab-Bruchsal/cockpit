@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Homepage;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\CourseInstance;
 use App\Models\Section;
 use App\Models\User;
 use App\Services\Homepage\HomepagePreview;
@@ -29,6 +30,7 @@ class PreviewController extends Controller
         $view = match ($snapshot['type']) {
             HomepagePreview::TYPE_COURSE => $this->course($user, $snapshot, $variant),
             HomepagePreview::TYPE_SECTION => $this->section($user, $snapshot, $variant),
+            HomepagePreview::TYPE_COURSE_INSTANCE => $this->courseInstance($user, $snapshot, $variant),
             default => abort(404),
         };
 
@@ -60,6 +62,25 @@ class PreviewController extends Controller
     /**
      * @param  array{type: string, user_id: int, record_id: int|null, state: array<string, mixed>}  $snapshot
      */
+    protected function courseInstance(User $user, array $snapshot, string $variant): string
+    {
+        $instance = HomepagePreview::buildCourseInstance($snapshot);
+
+        abort_unless($instance->exists ? $user->can('update', $instance) : $user->can('create', CourseInstance::class), 403);
+
+        if ($variant === 'karte') {
+            return view('homepage.preview.offer-card', ['instance' => $instance])->render();
+        }
+
+        return view('homepage.courses.instance', [
+            'instance' => $instance,
+            'preview' => true,
+        ])->render();
+    }
+
+    /**
+     * @param  array{type: string, user_id: int, record_id: int|null, state: array<string, mixed>}  $snapshot
+     */
     protected function section(User $user, array $snapshot, string $variant): string
     {
         $section = HomepagePreview::buildSection($snapshot);
@@ -73,7 +94,6 @@ class PreviewController extends Controller
         return view('homepage.section', [
             'section' => $section,
             'ancestors' => $section->ancestors(),
-            'tiles' => $section->exists ? $section->tileChildren() : collect(),
             'preview' => true,
         ])->render();
     }

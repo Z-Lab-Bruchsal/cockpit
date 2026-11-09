@@ -43,12 +43,14 @@ class SectionForm
                             ->rule(Rule::notIn(Section::RESERVED_SLUGS))
                             ->validationMessages([
                                 'not_in' => 'Dieser Kurzname ist für die Homepage reserviert.',
-                            ]),
+                            ])
+                            ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                         Select::make('parent_id')
                             ->label('Übergeordneter Bereich')
                             ->placeholder('— Hauptbereich —')
                             ->options(fn (?Section $record): array => static::parentOptions($record))
-                            ->searchable(),
+                            ->searchable()
+                            ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                         Select::make('layout')
                             ->label('Kachelfarbe')
                             ->options(SectionLayout::class)
@@ -56,22 +58,26 @@ class SectionForm
                             ->required(),
                         Toggle::make('is_visible')
                             ->label('Sichtbar')
-                            ->default(true),
+                            ->default(true)
+                            ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                         Toggle::make('show_title')
                             ->label('Titel anzeigen')
                             ->default(true),
                         Toggle::make('show_in_navigation')
                             ->label('In Kopfzeile verlinken')
                             ->helperText('Nur bei Hauptbereichen.')
-                            ->default(true),
+                            ->default(true)
+                            ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                         Toggle::make('is_standalone')
-                            ->label('Nicht als Kachel anzeigen')
-                            ->helperText('z. B. Impressum oder Datenschutz – verlinken unter Firmeninfos → Footer.'),
+                            ->label('Eigenständige Seite')
+                            ->helperText('z. B. Impressum oder Datenschutz – nie in der Kopfzeile, verlinken unter Firmeninfos → Footer.')
+                            ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
                 SchemaSection::make('Kachel')
-                    ->description('So erscheint der Bereich als Kachel auf der übergeordneten Ebene.')
+                    ->description('Standardwerte für Kacheln, die auf diesen Bereich verlinken. Kacheln selbst legst du im Inhalt einer Seite mit dem Block „Kachel-Raster“ an.')
+                    ->hidden(fn (?Section $record): bool => (bool) $record?->is_home)
                     ->schema([
                         Textarea::make('teaser')
                             ->label('Kurztext')
@@ -82,7 +88,7 @@ class SectionForm
                         ContentBlocks::altText('tile_image_alt', 'tile_image_path'),
                         Select::make('tile_width')
                             ->label('Kachelbreite')
-                            ->helperText('Auf dem Handy immer volle Breite. Lässt sich auch direkt auf der Homepage ziehen.')
+                            ->helperText('Auf dem Handy immer volle Breite.')
                             ->options(Section::TILE_WIDTHS)
                             ->default(2)
                             ->required(),
@@ -115,6 +121,7 @@ class SectionForm
         $appendChildren = function (?int $parentId, int $depth) use (&$appendChildren, &$options, $excludedIds): void {
             Section::query()
                 ->where('parent_id', $parentId)
+                ->where('is_home', false)
                 ->orderBy('sort')
                 ->get()
                 ->each(function (Section $section) use ($appendChildren, &$options, $excludedIds, $depth): void {

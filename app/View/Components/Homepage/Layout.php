@@ -4,7 +4,9 @@ namespace App\View\Components\Homepage;
 
 use App\Models\CompanySetting;
 use App\Models\Contact;
+use App\Models\DesignTheme;
 use App\Models\Section;
+use App\Services\Homepage\InlineEditing;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,6 +37,25 @@ class Layout extends Component
 
     public bool $isArranging;
 
+    /**
+     * Cockpit users who may change the company settings also arrange the footer in the arrange mode.
+     */
+    public bool $canArrangeFooter;
+
+    /**
+     * Cockpit users who may edit blocks or offers in place, see InlineEditing.
+     */
+    public bool $canEditInline;
+
+    public bool $isEditingInline;
+
+    /**
+     * Cockpit users with the permission "Homepage:Design" may change the homepage colors in place.
+     */
+    public bool $canDesign;
+
+    public bool $isDesigning;
+
     public function __construct(public ?string $title = null, public bool $isPreview = false)
     {
         $this->settings = CompanySetting::current();
@@ -43,6 +64,7 @@ class Layout extends Component
             ->visible()
             ->roots()
             ->where('is_standalone', false)
+            ->where('is_home', false)
             ->where('show_in_navigation', true)
             ->get();
 
@@ -57,15 +79,28 @@ class Layout extends Component
         });
         $this->isAccountPage = request()->routeIs('homepage.account', 'homepage.login', 'homepage.schools.account');
         $this->canArrangeTiles = (bool) Auth::guard('web')->user()?->can('reorder', Section::class);
-        $this->isArranging = $this->canArrangeTiles && request()->boolean('anordnen');
+        $this->canArrangeFooter = (bool) Auth::guard('web')->user()?->can('View:CompanySettingsPage');
+        $this->isArranging = ($this->canArrangeTiles || $this->canArrangeFooter) && request()->boolean('anordnen');
+        $this->canEditInline = InlineEditing::isAvailable();
+        $this->isEditingInline = InlineEditing::isActive();
+        $this->canDesign = DesignTheme::userMayDesign();
+        $this->isDesigning = ! $this->isPreview && DesignTheme::isDesignModeActive();
+    }
+
+    /**
+     * The floating toolbar for cockpit users: edit mode everywhere, arranging tiles on start and section pages.
+     */
+    public function showsArrangeToolbar(): bool
+    {
+        return ($this->showsArrangeButton() || $this->canEditInline || $this->canDesign) && ! $this->isPreview;
     }
 
     /**
      * Tiles exist on the start page and on section pages only.
      */
-    public function showsArrangeToolbar(): bool
+    public function showsArrangeButton(): bool
     {
-        return $this->canArrangeTiles && ! $this->isPreview && request()->routeIs('homepage.index', 'homepage.section');
+        return ($this->canArrangeTiles && request()->routeIs('homepage.index', 'homepage.section')) || $this->canArrangeFooter;
     }
 
     public function pageTitle(): string

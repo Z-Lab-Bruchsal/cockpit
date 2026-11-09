@@ -6,6 +6,8 @@ use App\Enums\CourseAudience;
 use App\Enums\CourseCardStyle;
 use App\Enums\CourseDetailLayout;
 use App\Enums\CourseInstanceStatus;
+use App\Enums\CourseParticipation;
+use App\Enums\CourseProminence;
 use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\CourseTemplate;
@@ -66,6 +68,56 @@ class CourseSeeder extends Seeder
             'duration' => 180,
             'course_template_id' => $templates['ferien']->id,
         ], $this->daily('2026-10-28 10:00', 3, 180));
+
+        $this->dropIn('Offenes Tüfteln', $interests, ['making', 'informatik'], [
+            'teaser' => 'Einfach vorbeikommen und ausprobieren, was im Z-LAB möglich ist.',
+            'description' => '<p>Beim Offenen Tüfteln kann jede und jeder ab 6 Jahren ohne Anmeldung vorbeikommen und mit Robotern, Elektronik und Werkzeugen experimentieren.</p><p><strong>Wichtig:</strong> Kinder unter 11 Jahren nur in Begleitung eines Erwachsenen.</p>',
+            'min_age' => 6,
+            'max_age' => null,
+        ], 'Mittwochs · 14:00–17:00', 'Offenes Tüfteln');
+
+        $this->dropIn('Drone Soccer Training', $interests, ['informatik'], [
+            'teaser' => 'Drohnen steuern, im Team spielen – Training für das Drone-Soccer-Team.',
+            'description' => '<p>Beim Drone Soccer steuern zwei Teams Drohnen in Schutzkäfigen und versuchen, Tore zu schießen. Wir trainieren jede Woche – komm einfach vorbei.</p>',
+            'min_age' => 12,
+            'max_age' => null,
+        ], 'Montags · 16:30–19:00', 'Drone Soccer Training');
+    }
+
+    /**
+     * A course without registration with one featured drop-in instance.
+     *
+     * @param  array<string, Interest>  $interests
+     * @param  list<string>  $interestSlugs
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function dropIn(string $name, array $interests, array $interestSlugs, array $attributes, string $schedule, string $label): void
+    {
+        $course = Course::query()->updateOrCreate(['slug' => Str::slug($name, language: 'de')], [
+            'name' => $name,
+            'responsible_user_id' => User::query()->oldest('id')->value('id'),
+            'audience' => CourseAudience::Kids,
+            'default_participation' => CourseParticipation::DropIn,
+            'duration' => 180,
+            'default_capacity' => 10,
+            'default_waitlist_enabled' => false,
+            'is_published' => true,
+            ...$attributes,
+        ]);
+
+        $course->interests()->sync(collect($interestSlugs)->map(fn (string $slug): int => $interests[$slug]->id));
+
+        CourseInstance::query()->updateOrCreate(['course_id' => $course->id, 'title' => null], [
+            'capacity' => 0,
+            'waitlist_enabled' => false,
+            'status' => CourseInstanceStatus::Published,
+            'participation' => CourseParticipation::DropIn,
+            'prominence' => CourseProminence::Featured,
+            'schedule_text' => $schedule,
+            'schedule_note' => 'Außer in den Schulferien',
+            'card_label' => $label,
+            'location' => 'Z-LAB Bruchsal',
+        ]);
     }
 
     /**

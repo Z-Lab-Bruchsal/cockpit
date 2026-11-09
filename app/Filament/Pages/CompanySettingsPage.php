@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Forms\HexColorPicker;
 use App\Filament\Resources\Courses\Schemas\SchoolClassSettingsFields;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
 use App\Models\CompanySetting;
@@ -9,10 +10,12 @@ use App\Models\Section as SectionModel;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Builder;
+use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -20,8 +23,11 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\HtmlString;
 use Override;
 use UnitEnum;
 
@@ -53,7 +59,10 @@ class CompanySettingsPage extends Page
 
     public function mount(): void
     {
-        $this->form->fill($this->getRecord()->attributesToArray());
+        $this->form->fill([
+            ...$this->getRecord()->attributesToArray(),
+            'footer_blocks' => $this->getRecord()->footerBlocks(),
+        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -107,16 +116,16 @@ class CompanySettingsPage extends Page
                                 Section::make('Farben Cockpit')
                                     ->description('Leer = Standardfarbe.')
                                     ->schema([
-                                        static::colorPicker('cockpit_primary_color')
+                                        HexColorPicker::make('cockpit_primary_color')
                                             ->label('Hauptfarbe')
                                             ->required(),
-                                        static::colorPicker('cockpit_success_color')
+                                        HexColorPicker::make('cockpit_success_color')
                                             ->label('Erfolg'),
-                                        static::colorPicker('cockpit_warning_color')
+                                        HexColorPicker::make('cockpit_warning_color')
                                             ->label('Warnung'),
-                                        static::colorPicker('cockpit_danger_color')
+                                        HexColorPicker::make('cockpit_danger_color')
                                             ->label('Gefahr'),
-                                        static::colorPicker('cockpit_info_color')
+                                        HexColorPicker::make('cockpit_info_color')
                                             ->label('Info'),
                                     ])
                                     ->columns(5),
@@ -131,14 +140,8 @@ class CompanySettingsPage extends Page
                                 TextInput::make('homepage_tagline')
                                     ->label('Untertitel / Slogan')
                                     ->maxLength(255),
-                                static::colorPicker('primary_color')
-                                    ->label('Hauptfarbe')
-                                    ->helperText('Buttons, Links, hervorgehobene Kacheln')
-                                    ->required(),
-                                static::colorPicker('secondary_color')
-                                    ->label('Akzentfarbe')
-                                    ->helperText('Wird vom aktuellen Homepage-Layout nicht verwendet')
-                                    ->required(),
+                                Text::make(new HtmlString('Farben der Homepage werden unter <a href="'.e(DesignPage::getUrl()).'" class="font-semibold underline">Design</a> eingestellt – oder direkt auf der Homepage mit „Farben gestalten“.'))
+                                    ->columnSpanFull(),
                                 TextInput::make('newsletter_url')
                                     ->label('Link „Zum Newsletter“')
                                     ->helperText('Wimpel unter dem Kopfbereich. Leer = kein Wimpel.')
@@ -154,6 +157,30 @@ class CompanySettingsPage extends Page
                         Tab::make('Footer')
                             ->icon(Heroicon::OutlinedBars3BottomLeft)
                             ->schema([
+                                Builder::make('footer_blocks')
+                                    ->label('Aufbau des Footers')
+                                    ->helperText('Elemente per Ziehen sortieren. Auch direkt auf der Homepage unter „Anordnen“ möglich.')
+                                    ->blocks([
+                                        Block::make('text')
+                                            ->label('Text')
+                                            ->icon(Heroicon::OutlinedBars3BottomLeft)
+                                            ->schema([
+                                                ContentBlocks::blockId(),
+                                                ContentBlocks::fullRichEditor('body')
+                                                    ->label('Text'),
+                                                static::footerWidth(),
+                                            ]),
+                                        ...collect(['address', 'links', 'social'])->map(fn (string $type): Block => Block::make($type)
+                                            ->label(CompanySetting::FOOTER_BLOCK_TYPES[$type])
+                                            ->schema([
+                                                ContentBlocks::blockId(),
+                                                static::footerWidth(),
+                                            ]))->all(),
+                                    ])
+                                    ->blockNumbers(false)
+                                    ->collapsible()
+                                    ->addActionLabel('Element hinzufügen')
+                                    ->columnSpanFull(),
                                 TextInput::make('footer_text')
                                     ->label('Copyright-Text')
                                     ->helperText('Erscheint als „© Jahr Text“. Leer = Firmenname.')
@@ -197,6 +224,36 @@ class CompanySettingsPage extends Page
                                     ->addActionLabel('Profil hinzufügen')
                                     ->defaultItems(0),
                             ]),
+                        Tab::make('Bestellungen')
+                            ->icon(Heroicon::OutlinedShoppingBag)
+                            ->schema([
+                                Toggle::make('order_report_enabled')
+                                    ->label('Bestellbericht jede Woche per E-Mail verschicken')
+                                    ->helperText('Mit Excel- und PDF-Anhang für die Buchhaltung. Enthält alle Bestellungen seit dem letzten Bericht.')
+                                    ->live()
+                                    ->columnSpanFull(),
+                                Select::make('order_report_weekday')
+                                    ->label('Wochentag')
+                                    ->options([1 => 'Montag', 2 => 'Dienstag', 3 => 'Mittwoch', 4 => 'Donnerstag', 5 => 'Freitag', 6 => 'Samstag', 7 => 'Sonntag'])
+                                    ->selectablePlaceholder(false)
+                                    ->required(),
+                                Select::make('order_report_time')
+                                    ->label('Uhrzeit')
+                                    ->options(collect(range(5, 22))->mapWithKeys(fn (int $hour): array => [sprintf('%02d:00', $hour) => sprintf('%02d:00 Uhr', $hour)])->all())
+                                    ->selectablePlaceholder(false)
+                                    ->required(),
+                                TagsInput::make('order_report_recipients')
+                                    ->label('Empfänger')
+                                    ->placeholder('E-Mail-Adresse eingeben und Enter drücken')
+                                    ->nestedRecursiveRules(['email'])
+                                    ->required(fn (Get $get): bool => (bool) $get('order_report_enabled'))
+                                    ->columnSpanFull(),
+                                Text::make(fn (): string => ($sentAt = $this->getRecord()->order_report_last_sent_at)
+                                    ? 'Zuletzt verschickt: '.$sentAt->format('d.m.Y H:i').' Uhr'
+                                    : 'Noch nicht verschickt.')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
                         Tab::make('Kursbuchung')
                             ->icon(Heroicon::OutlinedTicket)
                             ->schema([
@@ -296,11 +353,14 @@ class CompanySettingsPage extends Page
             ->statePath('data');
     }
 
-    protected static function colorPicker(string $name): ColorPicker
+    protected static function footerWidth(): Select
     {
-        return ColorPicker::make($name)
-            ->hex()
-            ->regex('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/');
+        return Select::make('width')
+            ->label('Breite')
+            ->options(SectionModel::TILE_WIDTHS)
+            ->default(2)
+            ->selectablePlaceholder(false)
+            ->required();
     }
 
     public function save(): void

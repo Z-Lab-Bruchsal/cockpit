@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CourseInstances\Pages;
 
 use App\Enums\CourseInstanceStatus;
+use App\Filament\Actions\HomepagePreviewAction;
 use App\Filament\Resources\CourseInstances\CourseInstanceResource;
 use App\Models\CourseInstance;
 use App\Services\Notifications\InterestNotificationService;
@@ -12,6 +13,13 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateCourseInstance extends CreateRecord
 {
     protected static string $resource = CourseInstanceResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            HomepagePreviewAction::make()->forCourseInstance(),
+        ];
+    }
 
     /**
      * Runs after the dates were saved, so the age of the children is checked against the first date.

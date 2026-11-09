@@ -18,6 +18,15 @@
         </div>
     </div>
 
+    @if ($instance->isDropIn())
+        <p class="mt-4 border-y border-gray-100 py-2 text-sm">
+            <span class="font-medium text-gray-800">{{ $instance->schedule_text }}</span>
+            @if ($instance->schedule_note)
+                <span class="block text-gray-500">{{ $instance->schedule_note }}</span>
+            @endif
+        </p>
+        <p class="mt-4 text-sm text-gray-600">Keine Anmeldung nötig – einfach vorbeikommen.</p>
+    @else
     <ul class="mt-4 divide-y divide-gray-100 border-y border-gray-100 text-sm">
         @foreach ($instance->dates as $date)
             <li class="flex flex-col gap-0.5 py-2 sm:flex-row sm:justify-between">
@@ -38,4 +47,9 @@
             <x-homepage.course-registration-form :instance="$instance" :availability="$availability" />
         @endif
     </div>
+    @endif
+
+    @if ($bookable && $instance->exists && $instance->course?->slug)
+        <a href="{{ $instance->url() }}" class="mt-3 inline-block text-sm font-semibold text-brand-ink hover:underline">Details zu diesem Termin</a>
+    @endif
 </article>

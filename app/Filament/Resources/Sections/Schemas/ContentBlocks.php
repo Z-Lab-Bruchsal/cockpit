@@ -4,17 +4,26 @@ namespace App\Filament\Resources\Sections\Schemas;
 
 use App\Enums\ContactFormTopic;
 use App\Enums\CourseAudience;
+use App\Enums\CourseParticipation;
 use App\Enums\TeamArea;
+use App\Enums\TileStyle;
 use App\Models\Interest;
+use App\Models\Section;
+use App\Services\Homepage\LinkTarget;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 
 /**
  * Content blocks shared by everything that is rendered on the homepage.
@@ -40,10 +49,89 @@ class ContentBlocks
     public static function blocks(): array
     {
         return [
+            Block::make('tiles')
+                ->label('Kachel-Raster')
+                ->icon(Heroicon::OutlinedSquares2x2)
+                ->schema([
+                    static::blockId(),
+                    Repeater::make('tiles')
+                        ->label('Kacheln')
+                        ->schema([
+                            Hidden::make('id')
+                                ->default(fn (): string => (string) Str::uuid()),
+                            Select::make('style')
+                                ->label('Darstellung')
+                                ->options(TileStyle::class)
+                                ->default(TileStyle::Standard)
+                                ->selectablePlaceholder(false)
+                                ->live(),
+                            TextInput::make('eyebrow')
+                                ->label('Dachzeile')
+                                ->helperText('Kleine Zeile über der Überschrift.')
+                                ->maxLength(255)
+                                ->visible(fn (Get $get): bool => static::styleValue($get('style')) === TileStyle::Hero),
+                            TextInput::make('heading')
+                                ->label('Überschrift')
+                                ->helperText('Leer = Titel des verlinkten Bereichs.')
+                                ->maxLength(255)
+                                ->live(onBlur: true),
+                            RichEditor::make('text')
+                                ->label('Text')
+                                ->helperText('Leer = Kurztext des verlinkten Bereichs.')
+                                ->toolbarButtons([['bold', 'italic']])
+                                ->columnSpanFull(),
+                            ...LinkTargetFields::make(),
+                            Select::make('width')
+                                ->label('Breite')
+                                ->options(Section::TILE_WIDTHS)
+                                ->default(2)
+                                ->selectablePlaceholder(false),
+                            Select::make('height')
+                                ->label('Höhe')
+                                ->options(Section::TILE_HEIGHTS)
+                                ->default(1)
+                                ->selectablePlaceholder(false),
+                            static::imageUpload('image')
+                                ->label('Bild')
+                                ->helperText('Leer = Kachelbild des verlinkten Bereichs.'),
+                            static::altText('alt', 'image'),
+                        ])
+                        ->columns(2)
+                        ->itemLabel(fn (array $state): ?string => static::tileLabel($state))
+                        ->collapsible()
+                        ->collapsed()
+                        ->cloneable()
+                        ->reorderableWithButtons()
+                        ->addActionLabel('Kachel hinzufügen')
+                        ->defaultItems(1),
+                ]),
+            Block::make('button')
+                ->label('Button')
+                ->icon(Heroicon::OutlinedCursorArrowRipple)
+                ->schema([
+                    static::blockId(),
+                    TextInput::make('label')
+                        ->label('Beschriftung')
+                        ->required()
+                        ->maxLength(80),
+                    ...LinkTargetFields::make(),
+                    Select::make('align')
+                        ->label('Ausrichtung')
+                        ->options(['left' => 'Links', 'center' => 'Mittig', 'right' => 'Rechts'])
+                        ->default('center')
+                        ->selectablePlaceholder(false),
+                    Select::make('variant')
+                        ->label('Stil')
+                        ->options(['outline' => 'Weiß mit Rahmen', 'filled' => 'Farbig gefüllt'])
+                        ->default('outline')
+                        ->selectablePlaceholder(false),
+                ])
+                ->columns(2),
             Block::make('text')
                 ->label('Text')
                 ->icon(Heroicon::OutlinedBars3BottomLeft)
                 ->schema([
+                    static::blockId(),
                     static::richEditor('body')
                         ->label('Text')
                         ->required(),
@@ -52,6 +140,7 @@ class ContentBlocks
                 ->label('Freies Schreiben')
                 ->icon(Heroicon::OutlinedPencilSquare)
                 ->schema([
+                    static::blockId(),
                     static::fullRichEditor('body')
                         ->label('Inhalt')
                         ->helperText('Bilder per Büroklammer einfügen, Spalten über das Raster-Symbol. Tabellen- und Spalten-Werkzeuge erscheinen, sobald der Cursor darin steht.')
@@ -61,6 +150,7 @@ class ContentBlocks
                 ->label('Bild')
                 ->icon(Heroicon::OutlinedPhoto)
                 ->schema([
+                    static::blockId(),
                     static::imageUpload('image')
                         ->label('Bild')
                         ->required(),
@@ -73,6 +163,7 @@ class ContentBlocks
                 ->label('Text mit Bild')
                 ->icon(Heroicon::OutlinedNewspaper)
                 ->schema([
+                    static::blockId(),
                     static::richEditor('body')
                         ->label('Text')
                         ->required()
@@ -95,6 +186,7 @@ class ContentBlocks
                 ->label('Call-to-Action')
                 ->icon(Heroicon::OutlinedCursorArrowRays)
                 ->schema([
+                    static::blockId(),
                     TextInput::make('heading')
                         ->label('Überschrift')
                         ->required()
@@ -113,10 +205,42 @@ class ContentBlocks
                         ->maxLength(500),
                 ])
                 ->columns(2),
+            Block::make('offers')
+                ->label('Angebote (Durchführungen)')
+                ->icon(Heroicon::OutlinedRectangleGroup)
+                ->schema([
+                    static::blockId(),
+                    CheckboxList::make('participations')
+                        ->label('Welche Angebote?')
+                        ->helperText('Nichts ausgewählt = alle.')
+                        ->options(CourseParticipation::class)
+                        ->columns(2),
+                    Toggle::make('show_filter_tabs')
+                        ->label('Filter-Reiter anzeigen')
+                        ->helperText('„Alle Angebote / Einfach vorbeikommen / Kurse & Workshops“')
+                        ->default(true),
+                    Select::make('interest_ids')
+                        ->label('Nur Kurse mit diesen Interessen')
+                        ->placeholder('Alle')
+                        ->options(fn (): array => Interest::query()->active()->pluck('name', 'id')->all())
+                        ->multiple(),
+                    Select::make('audience')
+                        ->label('Zielgruppe')
+                        ->placeholder('Alle')
+                        ->options(CourseAudience::class),
+                    TextInput::make('limit')
+                        ->label('Max. Anzahl')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(48)
+                        ->default(24),
+                ])
+                ->columns(2),
             Block::make('course_list')
                 ->label('Kursliste')
                 ->icon(Heroicon::OutlinedAcademicCap)
                 ->schema([
+                    static::blockId(),
                     Select::make('interest_ids')
                         ->label('Nur Kurse mit diesen Interessen')
                         ->placeholder('Alle')
@@ -141,6 +265,7 @@ class ContentBlocks
                 ->label('Kurskalender')
                 ->icon(Heroicon::OutlinedCalendarDays)
                 ->schema([
+                    static::blockId(),
                     Select::make('audience')
                         ->label('Zielgruppe')
                         ->placeholder('Alle')
@@ -150,6 +275,7 @@ class ContentBlocks
                 ->label('Kontaktformular')
                 ->icon(Heroicon::OutlinedEnvelope)
                 ->schema([
+                    static::blockId(),
                     static::richEditor('intro')
                         ->label('Einleitung'),
                     Select::make('topic')
@@ -161,6 +287,7 @@ class ContentBlocks
                 ->label('Team')
                 ->icon(Heroicon::OutlinedUserGroup)
                 ->schema([
+                    static::blockId(),
                     Select::make('areas')
                         ->label('Nur diese Teambereiche')
                         ->placeholder('Alle')
@@ -176,6 +303,7 @@ class ContentBlocks
                 ->label('News')
                 ->icon(Heroicon::OutlinedMegaphone)
                 ->schema([
+                    static::blockId(),
                     TextInput::make('limit')
                         ->label('Max. Anzahl')
                         ->numeric()
@@ -192,10 +320,38 @@ class ContentBlocks
                 ->label('Kontakt / Adresse')
                 ->icon(Heroicon::OutlinedMapPin)
                 ->schema([
+                    static::blockId(),
                     static::richEditor('intro')
                         ->label('Einleitung'),
                 ]),
         ];
+    }
+
+    /**
+     * Stable id of a block, see ContentIds. Duplicates from cloning are replaced when saving.
+     */
+    public static function blockId(): Hidden
+    {
+        return Hidden::make('block_id')
+            ->default(fn (): string => (string) Str::uuid());
+    }
+
+    protected static function styleValue(mixed $state): ?TileStyle
+    {
+        return $state instanceof TileStyle ? $state : TileStyle::tryFrom((string) $state);
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    protected static function tileLabel(array $state): string
+    {
+        $heading = filled($state['heading'] ?? null) ? $state['heading'] : null;
+        $heading ??= filled($state['section_id'] ?? null) && ($state['target_type'] ?? null) === LinkTarget::SECTION
+            ? Section::query()->whereKey($state['section_id'])->value('title')
+            : null;
+
+        return trim(($heading ?? 'Kachel').' · '.(Section::TILE_WIDTHS[(int) ($state['width'] ?? 2)] ?? ''), ' ·');
     }
 
     protected static function richEditor(string $name): RichEditor

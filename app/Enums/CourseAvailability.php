@@ -19,6 +19,8 @@ enum CourseAvailability: string implements HasColor, HasLabel
     case NotYetOpen = 'not_yet_open';
     case Closed = 'closed';
     case Cancelled = 'cancelled';
+    /** Drop-in offer: no registration, families simply come by. */
+    case DropIn = 'drop_in';
 
     public function getLabel(): string
     {
@@ -31,13 +33,14 @@ enum CourseAvailability: string implements HasColor, HasLabel
             self::NotYetOpen => 'Anmeldung noch nicht geöffnet',
             self::Closed => 'Anmeldung geschlossen',
             self::Cancelled => 'Abgesagt',
+            self::DropIn => 'Ohne Anmeldung',
         };
     }
 
     public function getColor(): string
     {
         return match ($this) {
-            self::Available => 'success',
+            self::Available, self::DropIn => 'success',
             self::FewSeatsLeft => 'warning',
             self::Waitlist => 'info',
             self::Reserved => 'warning',
@@ -52,7 +55,7 @@ enum CourseAvailability: string implements HasColor, HasLabel
     public function hexColor(): string
     {
         return match ($this) {
-            self::Available => '#16a34a',
+            self::Available, self::DropIn => '#16a34a',
             self::FewSeatsLeft => '#d97706',
             self::Waitlist => '#2563eb',
             self::Reserved => '#9333ea',

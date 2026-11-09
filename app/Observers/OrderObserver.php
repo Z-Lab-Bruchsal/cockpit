@@ -20,7 +20,7 @@ class OrderObserver
         $order->save();
         $users = User::all();
         foreach ($users as $user) {
-            if($user->hasAnyPermission(['Orders:GetNotifications'])) {
+            if ($user->hasAnyPermission(['Orders:GetNotifications'])) {
                 Mail::to($user)->send(new OrderRegistered($order));
             }
         }
@@ -33,7 +33,11 @@ class OrderObserver
     {
         $hasChanged = $order->getChanges();
         if ($hasChanged && isset($hasChanged['orderstatus_id'])) {
-            if ($order->orderstatus->name == 'bestellt') {
+            // The relation may still hold the previous status, so it is read from the database.
+            $order->load('orderstatus');
+
+            // Processing an order sets the date explicitly; quick status changes take the current time.
+            if ($order->orderstatus->name == 'bestellt' && $order->orderdatetime === null) {
                 $order->orderdatetime = $order->updated_at;
                 $order->saveQuietly();
             }

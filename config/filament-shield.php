@@ -257,6 +257,8 @@ return [
         'Orders:GetNotifications' => 'Get Order Notifications',
         'Worktimes:ViewForeign' => 'View Foreign Worktime',
         'Worktimes:SupervisorReport' => 'View All-Users Worktime Report',
+        'Homepage:Design' => 'Design Homepage Colors',
+        'Orders:Process' => 'Process Orders',
     ],
 
     /*

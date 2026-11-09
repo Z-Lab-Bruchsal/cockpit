@@ -50,6 +50,9 @@ Route::name('homepage.')->group(function (): void {
 
     Route::get('/kurse', [CourseController::class, 'index'])->name('courses.index');
     Route::get('/kurse/{slug}', [CourseController::class, 'show'])->name('courses.show');
+    Route::get('/kurse/{slug}/{instance}', [CourseController::class, 'instance'])
+        ->whereNumber('instance')
+        ->name('courses.instance');
     Route::get('/kalender', [CourseCalendarController::class, 'index'])->name('calendar');
     Route::get('/news', [NewsController::class, 'index'])->name('news.index');
     Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');

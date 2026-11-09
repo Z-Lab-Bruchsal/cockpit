@@ -3,12 +3,16 @@
 namespace App\Services\Homepage;
 
 use App\Models\Course;
+use App\Models\CourseDate;
+use App\Models\CourseInstance;
 use App\Models\CourseTemplate;
 use App\Models\Interest;
 use App\Models\Section;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -24,6 +28,8 @@ class HomepagePreview
     public const TYPE_COURSE = 'course';
 
     public const TYPE_SECTION = 'section';
+
+    public const TYPE_COURSE_INSTANCE = 'course_instance';
 
     /**
      * Form fields that hold a single image upload.
@@ -85,6 +91,35 @@ class HomepagePreview
         $course->load('upcomingInstances.dates');
 
         return $course;
+    }
+
+    /**
+     * @param  array{record_id: int|null, state: array<string, mixed>}  $snapshot
+     */
+    public static function buildCourseInstance(array $snapshot): CourseInstance
+    {
+        $state = $snapshot['state'];
+        $instance = static::baseModel(CourseInstance::class, $snapshot['record_id']);
+
+        $instance->forceFill(Arr::only($state, $instance->getFillable()));
+
+        $course = Course::query()->with(['template', 'interests'])->find($instance->course_id) ?? new Course(['name' => 'Kurs', 'slug' => 'vorschau']);
+        $instance->setRelation('course', $course);
+
+        $dates = collect(is_array($state['dates'] ?? null) ? $state['dates'] : [])
+            ->filter(fn (mixed $date): bool => is_array($date) && filled($date['starts_at'] ?? null) && filled($date['ends_at'] ?? null))
+            ->map(fn (array $date): CourseDate => new CourseDate([
+                'starts_at' => Carbon::parse($date['starts_at']),
+                'ends_at' => Carbon::parse($date['ends_at']),
+                'location' => $date['location'] ?? null,
+            ]))
+            ->sortBy('starts_at')
+            ->values();
+
+        $instance->setRelation('dates', new EloquentCollection($dates->all()));
+        $instance->setRelation('firstDate', $dates->first());
+
+        return $instance;
     }
 
     /**

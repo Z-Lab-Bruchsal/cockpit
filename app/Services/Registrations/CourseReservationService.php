@@ -59,7 +59,7 @@ class CourseReservationService
         $registration = DB::transaction(function () use ($instance, $seats, $contact, $plainToken): Registration {
             $instance = CourseInstance::query()->lockForUpdate()->findOrFail($instance->id);
 
-            if (in_array($instance->availability(), [CourseAvailability::NotYetOpen, CourseAvailability::Closed, CourseAvailability::Cancelled], true)) {
+            if (in_array($instance->availability(), [CourseAvailability::NotYetOpen, CourseAvailability::Closed, CourseAvailability::Cancelled, CourseAvailability::DropIn], true)) {
                 throw new ReservationException('Für diesen Kurs ist gerade keine Anmeldung möglich.');
             }
 

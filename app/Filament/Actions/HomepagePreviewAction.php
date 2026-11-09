@@ -11,7 +11,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
 
 /**
- * Shows the current, possibly unsaved form state of a course or section as it would look on the homepage.
+ * Shows the current, possibly unsaved form state of a course, course instance or section as it would look on the homepage.
  */
 class HomepagePreviewAction extends Action
 {
@@ -51,14 +51,23 @@ class HomepagePreviewAction extends Action
         return $this;
     }
 
+    public function forCourseInstance(): static
+    {
+        $this->previewType = HomepagePreview::TYPE_COURSE_INSTANCE;
+
+        return $this;
+    }
+
     /**
      * @return array<string, string> Label => URL
      */
     protected function tabs(string $token): array
     {
-        $labels = $this->previewType === HomepagePreview::TYPE_SECTION
-            ? ['karte' => 'Kachel', 'seite' => 'Seite']
-            : ['karte' => 'Visitenkarte', 'seite' => 'Detailseite'];
+        $labels = match ($this->previewType) {
+            HomepagePreview::TYPE_SECTION => ['karte' => 'Kachel', 'seite' => 'Seite'],
+            HomepagePreview::TYPE_COURSE_INSTANCE => ['karte' => 'Karte', 'seite' => 'Detailseite'],
+            default => ['karte' => 'Visitenkarte', 'seite' => 'Detailseite'],
+        };
 
         return collect($labels)
             ->mapWithKeys(fn (string $label, string $variant): array => [$label => route('homepage.preview', ['token' => $token, 'variant' => $variant])])

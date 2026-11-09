@@ -23,9 +23,36 @@ class HomepageTest extends TestCase
 
     public function test_start_page_renders_without_sections(): void
     {
+        CompanySetting::current()->update(['homepage_title' => 'Z-LAB Bruchsal', 'homepage_tagline' => 'Nachhaltig begeistern']);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Z-LAB Bruchsal')
+            ->assertSee('Nachhaltig begeistern');
+
+        $this->assertTrue(Section::home()->is_home);
+        $this->assertSame(1, Section::query()->where('is_home', true)->count());
+    }
+
+    public function test_start_page_without_content_shows_placeholder(): void
+    {
+        Section::factory()->create(['is_home' => true, 'slug' => 'startseite', 'content' => []]);
+
         $this->get('/')
             ->assertOk()
             ->assertSee('Hier entsteht gerade etwas Neues.');
+    }
+
+    public function test_start_page_is_not_reachable_under_its_slug_and_not_in_navigation(): void
+    {
+        Section::factory()->create(['is_home' => true, 'title' => 'Startseite Intern', 'slug' => 'start-intern', 'show_in_navigation' => true, 'content' => []]);
+
+        $this->get('/start-intern')->assertRedirect(route('homepage.index'));
+
+        $html = $this->get('/')->getContent();
+        $nav = substr($html, strpos($html, 'Hauptnavigation'), 1000);
+
+        $this->assertStringNotContainsString('Startseite Intern', $nav);
     }
 
     public function test_start_page_only_shows_root_sections_as_tiles(): void
@@ -53,7 +80,7 @@ class HomepageTest extends TestCase
         $this->get('/')->assertSeeInOrder(['Erster Bereich', 'Zweiter Bereich']);
     }
 
-    public function test_section_page_shows_content_and_next_level_as_tiles(): void
+    public function test_section_page_shows_content_and_its_tile_grid(): void
     {
         $workshops = Section::factory()->create([
             'title' => 'Workshops',
@@ -62,7 +89,8 @@ class HomepageTest extends TestCase
         ]);
         $robotik = Section::factory()->childOf($workshops)->create(['title' => 'Robotik', 'slug' => 'robotik']);
         Section::factory()->childOf($robotik)->create(['title' => 'Lego Mindstorms']);
-        Section::factory()->childOf($workshops)->hidden()->create(['title' => 'Geheimer Workshop']);
+        $secret = Section::factory()->childOf($workshops)->hidden()->create(['title' => 'Geheimer Workshop']);
+        $workshops->update(['content' => [...$workshops->content, Section::tilesBlockFor([$robotik, $secret])]]);
 
         $this->get('/workshops')
             ->assertOk()
