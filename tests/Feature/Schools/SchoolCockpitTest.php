@@ -3,7 +3,7 @@
 namespace Tests\Feature\Schools;
 
 use App\Enums\SchoolCourseFormat;
-use App\Filament\Pages\CompanySettingsPage;
+use App\Filament\Clusters\Settings\Pages\SchoolClassesPage;
 use App\Filament\Resources\Contacts\Pages\EditContact;
 use App\Filament\Resources\Contacts\RelationManagers\TeachersRelationManager;
 use App\Filament\Resources\CourseInstances\Pages\EditCourseInstance;
@@ -122,9 +122,9 @@ class SchoolCockpitTest extends TestCase
 
     public function test_company_settings_store_school_defaults(): void
     {
-        $this->get('/cockpit/company-settings-page?tab=schulklassen::data::tab')->assertOk();
+        $this->get(SchoolClassesPage::getUrl())->assertOk();
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(SchoolClassesPage::class)
             ->fillForm(['teacher_reminder_days' => 10, 'staff_reminder_days' => 20, 'school_reschedule_deadline_days' => 7, 'school_reminders_enabled' => false])
             ->call('save')
             ->assertHasNoFormErrors();

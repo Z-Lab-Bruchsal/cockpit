@@ -87,7 +87,7 @@ class ContactForm
                             ->placeholder('—'),
                         TextInput::make('digest_hours')
                             ->label('Kursinfos sammeln')
-                            ->helperText('Leer = Standard aus den Firmeninfos')
+                            ->helperText('Leer = Standard aus den Einstellungen')
                             ->suffix('Stunden')
                             ->numeric()
                             ->integer()

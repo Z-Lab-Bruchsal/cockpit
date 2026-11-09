@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Chips;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Chips\Pages\CreateChip;
 use App\Filament\Resources\Chips\Pages\EditChip;
 use App\Filament\Resources\Chips\Pages\ListChips;
@@ -21,7 +22,11 @@ class ChipResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
 
+    protected static ?string $cluster = SettingsCluster::class;
+
     protected static string|UnitEnum|null $navigationGroup = 'Zeiterfassung';
+
+    protected static ?int $navigationSort = 41;
 
     protected static ?string $navigationLabel = 'Chips';
 

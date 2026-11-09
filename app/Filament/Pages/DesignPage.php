@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Forms\HexColorPicker;
 use App\Models\DesignTheme;
 use App\Models\DesignThemeRevision;
@@ -33,7 +34,11 @@ class DesignPage extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSwatch;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Administration';
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Homepage';
+
+    protected static ?int $navigationSort = 11;
 
     protected static ?string $navigationLabel = 'Design';
 

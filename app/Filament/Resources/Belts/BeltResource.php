@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Belts;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Belts\Pages\CreateBelt;
 use App\Filament\Resources\Belts\Pages\EditBelt;
 use App\Filament\Resources\Belts\Pages\ListBelts;
@@ -22,7 +23,11 @@ class BeltResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArrowUpCircle;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Kurse';
+
+    protected static ?int $navigationSort = 22;
 
     protected static ?string $recordTitleAttribute = 'name';
 

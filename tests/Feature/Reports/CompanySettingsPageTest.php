@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Reports;
 
-use App\Filament\Pages\CompanySettingsPage;
+use App\Filament\Clusters\Settings\Pages\CockpitPage;
+use App\Filament\Clusters\Settings\Pages\CompanyPage;
+use App\Filament\Clusters\Settings\Pages\FooterPage;
+use App\Filament\Clusters\Settings\Pages\HomepageSettingsPage;
 use App\Models\CompanySetting;
 use App\Models\CourseTemplate;
 use App\Models\Section;
@@ -29,7 +32,7 @@ class CompanySettingsPageTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Z-Lab-Crew');
 
-        $this->actingAs($user)->get('/cockpit/company-settings-page')->assertForbidden();
+        $this->actingAs($user)->get(CompanyPage::getUrl())->assertForbidden();
     }
 
     public function test_boss_can_view_and_save_company_settings(): void
@@ -37,9 +40,9 @@ class CompanySettingsPageTest extends TestCase
         $boss = User::factory()->create();
         $boss->assignRole('Z-Lab-Boss');
 
-        $this->actingAs($boss)->get('/cockpit/company-settings-page')->assertOk();
+        $this->actingAs($boss)->get(CompanyPage::getUrl())->assertOk();
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(CompanyPage::class)
             ->fillForm([
                 'name' => 'Z-Lab GmbH',
                 'street' => 'Firmenweg 5',
@@ -85,7 +88,7 @@ class CompanySettingsPageTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(CockpitPage::class)
             ->fillForm(['app_title' => ''])
             ->call('save')
             ->assertHasFormErrors(['app_title' => 'required']);
@@ -122,13 +125,15 @@ class CompanySettingsPageTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(CockpitPage::class)
             ->fillForm(['cockpit_primary_color' => 'blau'])
             ->call('save')
             ->assertHasFormErrors(['cockpit_primary_color' => 'regex']);
 
-        Livewire::test(CompanySettingsPage::class)
-            ->assertSee('Farben der Homepage werden unter')
+        Livewire::test(HomepageSettingsPage::class)
+            ->assertSee('Farben der Homepage werden unter');
+
+        Livewire::test(CockpitPage::class)
             ->fillForm(['cockpit_primary_color' => '#16a34a'])
             ->call('save')
             ->assertHasNoFormErrors()
@@ -219,12 +224,12 @@ class CompanySettingsPageTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(HomepageSettingsPage::class)
             ->fillForm(['donation_url' => 'kein link'])
             ->call('save')
             ->assertHasFormErrors(['donation_url' => 'url']);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(HomepageSettingsPage::class)
             ->fillForm(['newsletter_url' => 'https://example.test/newsletter', 'donation_url' => null])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -258,7 +263,7 @@ class CompanySettingsPageTest extends TestCase
 
         $impressum = Section::factory()->standalone()->create();
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(FooterPage::class)
             ->fillForm([
                 'footer_text' => 'Z-LAB',
                 'footer_links' => [
@@ -282,7 +287,7 @@ class CompanySettingsPageTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(FooterPage::class)
             ->fillForm([
                 'footer_links' => [
                     ['label' => 'Leer', 'section_id' => null, 'url' => null],

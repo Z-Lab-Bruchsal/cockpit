@@ -49,8 +49,8 @@ class TerminalCockpitTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $this->get('/cockpit/terminals')->assertForbidden();
-        $this->get('/cockpit/chips')->assertForbidden();
+        $this->get('/cockpit/einstellungen/terminals')->assertForbidden();
+        $this->get('/cockpit/einstellungen/chips')->assertForbidden();
         $this->get('/cockpit/terminal-events')->assertForbidden();
     }
 
@@ -59,10 +59,10 @@ class TerminalCockpitTest extends TestCase
         $this->actingAsUserWithPermissions('Terminal', 'Chip', 'TerminalEvent');
         $terminal = Terminal::factory()->create();
 
-        $this->get('/cockpit/terminals')->assertOk();
-        $this->get('/cockpit/terminals/create')->assertOk();
-        $this->get("/cockpit/terminals/{$terminal->id}/edit")->assertOk();
-        $this->get('/cockpit/chips')->assertOk();
+        $this->get('/cockpit/einstellungen/terminals')->assertOk();
+        $this->get('/cockpit/einstellungen/terminals/create')->assertOk();
+        $this->get("/cockpit/einstellungen/terminals/{$terminal->id}/edit")->assertOk();
+        $this->get('/cockpit/einstellungen/chips')->assertOk();
         $this->get('/cockpit/terminal-events')->assertOk();
     }
 

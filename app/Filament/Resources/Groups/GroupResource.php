@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Groups;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Groups\Pages\CreateGroup;
 use App\Filament\Resources\Groups\Pages\EditGroup;
 use App\Filament\Resources\Groups\Pages\ListGroups;
@@ -22,7 +23,11 @@ class GroupResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::UserGroup;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Administration';
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Zugänge';
+
+    protected static ?int $navigationSort = 51;
 
     protected static ?string $navigationLabel = 'Gruppen';
 

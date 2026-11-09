@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Terminals;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Terminals\Pages\CreateTerminal;
 use App\Filament\Resources\Terminals\Pages\EditTerminal;
 use App\Filament\Resources\Terminals\Pages\ListTerminals;
@@ -21,7 +22,11 @@ class TerminalResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDeviceTablet;
 
+    protected static ?string $cluster = SettingsCluster::class;
+
     protected static string|UnitEnum|null $navigationGroup = 'Zeiterfassung';
+
+    protected static ?int $navigationSort = 40;
 
     protected static ?string $navigationLabel = 'Terminals';
 

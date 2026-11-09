@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Orders;
 
-use App\Filament\Pages\CompanySettingsPage;
+use App\Filament\Clusters\Settings\Pages\OrderReportSettingsPage;
 use App\Filament\Pages\OrderReportsPage;
 use App\Mail\OrderReportMail;
 use App\Models\CompanySetting;
@@ -187,7 +187,7 @@ class OrderReportTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(OrderReportSettingsPage::class)
             ->fillForm([
                 'order_report_enabled' => true,
                 'order_report_weekday' => 5,
@@ -197,7 +197,7 @@ class OrderReportTest extends TestCase
             ->call('save')
             ->assertHasFormErrors(['order_report_recipients.0']);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(OrderReportSettingsPage::class)
             ->fillForm([
                 'order_report_enabled' => true,
                 'order_report_weekday' => 5,

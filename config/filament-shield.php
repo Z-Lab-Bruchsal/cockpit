@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+use App\Filament\Clusters\Settings\Pages\CockpitPage;
+use App\Filament\Clusters\Settings\Pages\CompanyPage;
+use App\Filament\Clusters\Settings\Pages\CourseBookingPage;
+use App\Filament\Clusters\Settings\Pages\FooterPage;
+use App\Filament\Clusters\Settings\Pages\HomepageSettingsPage;
+use App\Filament\Clusters\Settings\Pages\OrderReportSettingsPage;
+use App\Filament\Clusters\Settings\Pages\SchoolClassesPage;
+use App\Filament\Clusters\Settings\SettingsCluster;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -22,7 +30,7 @@ return [
     'shield_resource' => [
         'slug' => 'shield/roles',
         'show_model_path' => true,
-        'cluster' => null,
+        'cluster' => SettingsCluster::class,
         'tabs' => [
             'pages' => true,
             'widgets' => true,
@@ -215,6 +223,14 @@ return [
         'prefix' => 'view',
         'exclude' => [
             Dashboard::class,
+            // Settings pages share the custom permission "View:CompanySettingsPage".
+            CompanyPage::class,
+            CockpitPage::class,
+            HomepageSettingsPage::class,
+            FooterPage::class,
+            OrderReportSettingsPage::class,
+            CourseBookingPage::class,
+            SchoolClassesPage::class,
         ],
     ],
 
@@ -259,6 +275,7 @@ return [
         'Worktimes:SupervisorReport' => 'View All-Users Worktime Report',
         'Homepage:Design' => 'Design Homepage Colors',
         'Orders:Process' => 'Process Orders',
+        'View:CompanySettingsPage' => 'Edit Settings',
     ],
 
     /*

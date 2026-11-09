@@ -144,7 +144,7 @@ class CourseInstanceForm
                     ->columns(2)
                     ->columnSpanFull(),
                 Section::make('Schulklassen: Erinnerungen und Fristen')
-                    ->description('Jede Durchführung ist ein Termin für genau eine Klasse. Leer = Einstellung vom Kurs bzw. aus den Firmeninfos.')
+                    ->description('Jede Durchführung ist ein Termin für genau eine Klasse. Leer = Einstellung vom Kurs bzw. aus den Einstellungen.')
                     ->schema(SchoolClassSettingsFields::overrides(fn (string $field, Get $get): string => 'vom Kurs: '.SchoolClassSettingsFields::inheritedValue(Course::find($get('course_id')), $field)))
                     ->columns(2)
                     ->visible(fn (Get $get): bool => (bool) Course::find($get('course_id'))?->isForSchoolClasses())

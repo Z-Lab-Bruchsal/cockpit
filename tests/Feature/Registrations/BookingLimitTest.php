@@ -3,7 +3,7 @@
 namespace Tests\Feature\Registrations;
 
 use App\Exceptions\ReservationException;
-use App\Filament\Pages\CompanySettingsPage;
+use App\Filament\Clusters\Settings\Pages\CourseBookingPage;
 use App\Livewire\Homepage\BookingForm;
 use App\Models\CompanySetting;
 use App\Models\Contact;
@@ -293,7 +293,7 @@ class BookingLimitTest extends TestCase
         $boss->assignRole('Z-Lab-Boss');
         $this->actingAs($boss);
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(CourseBookingPage::class)
             ->fillForm(['booking_limit_per_hour' => 3, 'booking_limit_per_day' => 6, 'max_seats_per_registration' => 3])
             ->call('save')
             ->assertHasNoFormErrors();

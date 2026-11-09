@@ -29,6 +29,7 @@ Route::middleware(['signed', 'throttle:10,1'])->group(function (): void {
 });
 
 Route::redirect('/admin', '/cockpit');
+Route::redirect('/cockpit/company-settings-page', '/cockpit/einstellungen/firma');
 
 // Signed decision links from approval mails to the course lead.
 Route::middleware('signed')->group(function (): void {

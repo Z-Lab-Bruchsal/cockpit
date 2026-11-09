@@ -12,7 +12,7 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
-/* Colors are configured in the cockpit (Firmeninfos) and injected as custom properties on <html>. */
+/* Colors are configured in the cockpit (Einstellungen → Design) and injected as custom properties on <html>. */
 @theme inline {
     --color-brand: var(--brand, #f59e0b);
     --color-brand-contrast: var(--brand-contrast, #111827);

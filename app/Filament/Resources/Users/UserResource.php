@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -21,7 +22,11 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::User;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Administration';
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Zugänge';
+
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $navigationLabel = 'Benutzer';
 

@@ -52,8 +52,8 @@ class CourseCockpitTest extends TestCase
         foreach ([
             '/cockpit/courses', '/cockpit/courses/create', "/cockpit/courses/{$course->id}/edit",
             '/cockpit/course-instances', '/cockpit/course-instances/create', "/cockpit/course-instances/{$instance->id}/edit",
-            '/cockpit/course-templates', '/cockpit/course-templates/create', "/cockpit/course-templates/{$template->id}/edit",
-            '/cockpit/interests', '/cockpit/interests/create', "/cockpit/interests/{$interest->id}/edit",
+            '/cockpit/einstellungen/course-templates', '/cockpit/einstellungen/course-templates/create', "/cockpit/einstellungen/course-templates/{$template->id}/edit",
+            '/cockpit/einstellungen/interests', '/cockpit/einstellungen/interests/create', "/cockpit/einstellungen/interests/{$interest->id}/edit",
         ] as $url) {
             $this->get($url)->assertOk();
         }
@@ -64,7 +64,7 @@ class CourseCockpitTest extends TestCase
         $this->actingAs(User::factory()->create());
 
         $this->get('/cockpit/course-instances')->assertForbidden();
-        $this->get('/cockpit/interests')->assertForbidden();
+        $this->get('/cockpit/einstellungen/interests')->assertForbidden();
     }
 
     public function test_can_create_course_with_interests_and_generated_slug(): void

@@ -145,7 +145,7 @@ class CourseForm
                                     ->maxValue(336)
                                     ->suffix('Stunden')
                                     ->placeholder(fn (): string => 'Standard: '.CompanySetting::current()->waitlist_offer_hours)
-                                    ->helperText('Leer = Einstellung aus den Firmeninfos.')
+                                    ->helperText('Leer = Einstellung aus den Einstellungen.')
                                     ->visible(fn (Get $get): bool => static::isForKids($get('audience'))),
                                 Toggle::make('is_published')
                                     ->label('Auf der Homepage veröffentlicht'),
@@ -196,7 +196,7 @@ class CourseForm
                                     ->suffix('Kinder')
                                     ->helperText('Leer = keine Begrenzung. Pro Durchführung überschreibbar.'),
                                 Section::make('Erinnerungen und Fristen')
-                                    ->description('Leer = Einstellung aus den Firmeninfos. Pro Durchführung überschreibbar.')
+                                    ->description('Leer = Einstellung aus den Einstellungen. Pro Durchführung überschreibbar.')
                                     ->schema(SchoolClassSettingsFields::overrides(fn (string $field): string => 'Standard: '.SchoolClassSettingsFields::inheritedValue(null, $field)))
                                     ->columns(2)
                                     ->columnSpanFull(),

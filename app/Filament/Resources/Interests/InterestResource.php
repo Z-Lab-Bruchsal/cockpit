@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Interests;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\Interests\Pages\CreateInterest;
 use App\Filament\Resources\Interests\Pages\EditInterest;
 use App\Filament\Resources\Interests\Pages\ListInterests;
@@ -21,9 +22,11 @@ class InterestResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
+    protected static ?string $cluster = SettingsCluster::class;
 
-    protected static ?int $navigationSort = 3;
+    protected static string|UnitEnum|null $navigationGroup = 'Kurse';
+
+    protected static ?int $navigationSort = 23;
 
     protected static ?string $navigationLabel = 'Interessen';
 

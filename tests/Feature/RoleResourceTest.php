@@ -28,9 +28,9 @@ class RoleResourceTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get('/cockpit/shield/roles')->assertOk();
-        $this->get('/cockpit/shield/roles/create')->assertOk();
-        $this->get("/cockpit/shield/roles/{$role->id}/edit")->assertOk();
+        $this->get('/cockpit/einstellungen/shield/roles')->assertOk();
+        $this->get('/cockpit/einstellungen/shield/roles/create')->assertOk();
+        $this->get("/cockpit/einstellungen/shield/roles/{$role->id}/edit")->assertOk();
     }
 
     public function test_group_edit_page_renders_with_users_relation_manager(): void
@@ -41,6 +41,6 @@ class RoleResourceTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->get("/cockpit/groups/{$group->id}/edit")->assertOk();
+        $this->get("/cockpit/einstellungen/groups/{$group->id}/edit")->assertOk();
     }
 }

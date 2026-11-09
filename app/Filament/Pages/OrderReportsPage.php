@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Report of placed orders for accounting, as Excel, CSV or PDF. The weekly mail is set up under Firmeninfos.
+ * Report of placed orders for accounting, as Excel, CSV or PDF. The weekly mail is set up under Einstellungen → Wöchentlicher Bericht.
  *
  * @property-read Schema $form
  */

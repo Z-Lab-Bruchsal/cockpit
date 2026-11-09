@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CourseTemplates;
 
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Resources\CourseTemplates\Pages\CreateCourseTemplate;
 use App\Filament\Resources\CourseTemplates\Pages\EditCourseTemplate;
 use App\Filament\Resources\CourseTemplates\Pages\ListCourseTemplates;
@@ -21,9 +22,11 @@ class CourseTemplateResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSwatch;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Kurse und Kinder';
+    protected static ?string $cluster = SettingsCluster::class;
 
-    protected static ?int $navigationSort = 4;
+    protected static string|UnitEnum|null $navigationGroup = 'Kurse';
+
+    protected static ?int $navigationSort = 24;
 
     protected static ?string $navigationLabel = 'Darstellungsvorlagen';
 

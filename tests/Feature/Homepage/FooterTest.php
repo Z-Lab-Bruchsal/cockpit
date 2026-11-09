@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Homepage;
 
-use App\Filament\Pages\CompanySettingsPage;
+use App\Filament\Clusters\Settings\Pages\FooterPage;
 use App\Filament\Pages\Inline\EditFooterBlockInline;
 use App\Filament\Pages\Inline\EditFooterLinkInline;
 use App\Livewire\Homepage\FooterEditor;
@@ -220,7 +220,7 @@ class FooterTest extends TestCase
     {
         $this->actingAs($this->boss());
 
-        Livewire::test(CompanySettingsPage::class)
+        Livewire::test(FooterPage::class)
             ->assertSchemaStateSet(fn (array $state): array => [
                 'footer_blocks' => $state['footer_blocks'],
             ])

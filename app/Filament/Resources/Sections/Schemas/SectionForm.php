@@ -70,7 +70,7 @@ class SectionForm
                             ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                         Toggle::make('is_standalone')
                             ->label('Eigenständige Seite')
-                            ->helperText('z. B. Impressum oder Datenschutz – nie in der Kopfzeile, verlinken unter Firmeninfos → Footer.')
+                            ->helperText('z. B. Impressum oder Datenschutz – nie in der Kopfzeile, verlinken unter Einstellungen → Footer.')
                             ->hidden(fn (?Section $record): bool => (bool) $record?->is_home),
                     ])
                     ->columns(2)
