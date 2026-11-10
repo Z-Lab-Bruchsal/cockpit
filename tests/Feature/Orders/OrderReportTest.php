@@ -4,6 +4,7 @@ namespace Tests\Feature\Orders;
 
 use App\Filament\Clusters\Settings\Pages\OrderReportSettingsPage;
 use App\Filament\Pages\OrderReportsPage;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Mail\OrderReportMail;
 use App\Models\CompanySetting;
 use App\Models\Merchant;
@@ -86,8 +87,11 @@ class OrderReportTest extends TestCase
         $reader->close();
         unlink($path);
 
-        $this->assertSame(OrderReportService::HEADINGS, $rows[0]);
+        $lotzinn = Order::query()->where('name', 'Lötzinn')->firstOrFail();
+
+        $this->assertSame(['Bestellt am', 'Händler', 'Bestellnummer', 'Artikel', 'Anzahl', 'Preis (€)', 'Link Cockpit'], $rows[0]);
         $this->assertSame('Lötzinn', $rows[1][3]);
+        $this->assertSame(OrderResource::getUrl('edit', ['record' => $lotzinn], panel: 'admin'), $rows[1][6]);
         $this->assertEquals(['Gesamt', '', '', '', '', 35], array_slice(end($rows), 0, 6));
 
         $csv = $reports->csv($from, $to);
@@ -95,7 +99,46 @@ class OrderReportTest extends TestCase
         $this->assertStringContainsString('02.11.2026;Reichelt;R-1;Lötzinn;', $csv);
         $this->assertStringContainsString(';10,50;', $csv);
 
+        $this->assertStringContainsString('/cockpit/orders/'.$lotzinn->id.'/edit', $csv);
+        $this->assertStringNotContainsString('Angefragt von', $csv);
+
         $this->assertStringStartsWith('%PDF', $reports->pdf($from, $to));
+    }
+
+    public function test_export_contains_only_selected_columns(): void
+    {
+        $this->seedOrders();
+        Order::query()->where('name', 'Lötzinn')->update(['url' => 'https://example.com/loetzinn']);
+        $requester = Order::query()->where('name', 'Lötzinn')->firstOrFail()->user;
+        $reports = app(OrderReportService::class);
+        [$from, $to] = $this->lastWeek();
+
+        $columns = ['product_url', 'unknown', 'requested_by', 'name'];
+
+        $this->assertSame(['Artikel', 'Angefragt von', 'Link Produkt'], $reports->headings($columns));
+        $this->assertSame(['Lötzinn', $requester?->name, 'https://example.com/loetzinn'], $reports->rows($from, $to, $columns)[0]);
+        $this->assertNull(OrderReportService::priceIndex($columns));
+        $this->assertSame(OrderReportService::defaultColumns(), OrderReportService::resolveColumns(['unknown']));
+
+        $csv = $reports->csv($from, $to, $columns);
+        $this->assertStringContainsString('Artikel;"Angefragt von";"Link Produkt"', $csv);
+        $this->assertStringNotContainsString('Reichelt', $csv);
+
+        $reader = new Reader;
+        $reader->open($path = $reports->xlsx($from, $to, $columns));
+        $rows = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $rows[] = $row->toArray();
+            }
+        }
+        $reader->close();
+        unlink($path);
+
+        $this->assertCount(4, $rows);
+        $this->assertStringNotContainsString('Gesamt', json_encode($rows));
+
+        $this->assertStringStartsWith('%PDF', $reports->pdf($from, $to, ['price', 'name']));
     }
 
     public function test_report_page_downloads_files(): void
@@ -116,9 +159,18 @@ class OrderReportTest extends TestCase
         foreach (['xlsx', 'csv', 'pdf'] as $format) {
             Livewire::test(OrderReportsPage::class)
                 ->fillForm(['from' => '2026-11-02', 'to' => '2026-11-08'])
-                ->callAction('download_'.$format)
+                ->callAction('download_'.$format, data: ['columns' => ['name', 'price', 'cockpit_url', 'ordered_by']])
+                ->assertHasNoActionErrors()
                 ->assertFileDownloaded('bestellungen-2026-11-02-bis-2026-11-08.'.$format);
         }
+
+        Livewire::test(OrderReportsPage::class)
+            ->fillForm(['from' => '2026-11-02', 'to' => '2026-11-08'])
+            ->mountAction('download_xlsx')
+            ->assertSchemaStateSet(['columns' => OrderReportService::defaultColumns()])
+            ->fillForm(['columns' => []])
+            ->callMountedAction()
+            ->assertHasActionErrors(['columns' => 'required']);
 
         $this->actingAs(User::factory()->create())->get(OrderReportsPage::getUrl())->assertForbidden();
     }

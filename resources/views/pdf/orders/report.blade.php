@@ -27,35 +27,46 @@
         <table class="data">
             <thead>
                 <tr>
-                    <th>Bestellt am</th>
-                    <th>Händler</th>
-                    <th>Bestellnummer</th>
-                    <th>Artikel</th>
-                    <th class="text-right">Anzahl</th>
-                    <th class="text-right">Preis</th>
-                    <th>Angefragt von</th>
+                    @foreach ($headings as $index => $heading)
+                        <th @class(['text-right' => in_array($columns[$index], ['count', 'price'], true)])>{{ $heading }}</th>
+                    @endforeach
                 </tr>
             </thead>
             <tbody>
-                @foreach ($orders as $order)
+                @foreach ($rows as $row)
                     <tr>
-                        <td>{{ $order->orderdatetime?->format('d.m.Y') }}</td>
-                        <td>{{ $order->merchant?->name ?? '–' }}</td>
-                        <td>{{ $order->order_number ?? '–' }}</td>
-                        <td>{{ $order->name }}</td>
-                        <td class="text-right">{{ $order->count }}</td>
-                        <td class="text-right">{{ $money($order->total_price !== null ? (float) $order->total_price : null) }}</td>
-                        <td>{{ $order->user?->name }}</td>
+                        @foreach ($row as $index => $value)
+                            @php($column = $columns[$index])
+                            <td @class(['text-right' => in_array($column, ['count', 'price'], true)])>
+                                @if ($column === 'price')
+                                    {{ $money($value) }}
+                                @elseif (in_array($column, ['cockpit_url', 'product_url'], true))
+                                    @if ($value)
+                                        <a href="{{ $value }}">öffnen</a>
+                                    @else
+                                        –
+                                    @endif
+                                @else
+                                    {{ $value ?? '–' }}
+                                @endif
+                            </td>
+                        @endforeach
                     </tr>
                 @endforeach
             </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="5">Gesamt</td>
-                    <td class="text-right">{{ $money($total) }}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
+            @if ($priceIndex !== null)
+                <tfoot>
+                    <tr>
+                        @if ($priceIndex > 0)
+                            <td colspan="{{ $priceIndex }}">Gesamt</td>
+                        @endif
+                        <td class="text-right">{{ $money($total) }}</td>
+                        @if (count($columns) - $priceIndex - 1 > 0)
+                            <td colspan="{{ count($columns) - $priceIndex - 1 }}"></td>
+                        @endif
+                    </tr>
+                </tfoot>
+            @endif
         </table>
 
         <h2>Summen je Händler</h2>

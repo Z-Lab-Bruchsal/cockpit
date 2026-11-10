@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Reports\OrderReportService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -163,15 +164,28 @@ class OrderReportsPage extends Page implements HasTable
             ->label($label)
             ->icon(Heroicon::OutlinedArrowDownTray)
             ->color($format === 'pdf' ? 'primary' : 'gray')
-            ->action(function (OrderReportService $reports) use ($format): BinaryFileResponse|StreamedResponse {
+            ->modalHeading($label.' herunterladen')
+            ->modalSubmitActionLabel('Herunterladen')
+            ->modalWidth('lg')
+            ->schema([
+                CheckboxList::make('columns')
+                    ->label('Spalten')
+                    ->options(OrderReportService::columnOptions())
+                    ->default(OrderReportService::defaultColumns())
+                    ->bulkToggleable()
+                    ->columns(2)
+                    ->required(),
+            ])
+            ->action(function (array $data, OrderReportService $reports) use ($format): BinaryFileResponse|StreamedResponse {
                 $state = $this->form->getState();
                 [$from, $to] = OrderReportService::forDays(Carbon::parse($state['from']), Carbon::parse($state['to']));
                 $filename = $reports->filename($from, $to, $format);
+                $columns = $data['columns'];
 
                 return match ($format) {
-                    'xlsx' => response()->download($reports->xlsx($from, $to), $filename)->deleteFileAfterSend(),
-                    'csv' => response()->streamDownload(fn () => print ($reports->csv($from, $to)), $filename, ['Content-Type' => 'text/csv; charset=UTF-8']),
-                    default => response()->streamDownload(fn () => print ($reports->pdf($from, $to)), $filename, ['Content-Type' => 'application/pdf']),
+                    'xlsx' => response()->download($reports->xlsx($from, $to, $columns), $filename)->deleteFileAfterSend(),
+                    'csv' => response()->streamDownload(fn () => print ($reports->csv($from, $to, $columns)), $filename, ['Content-Type' => 'text/csv; charset=UTF-8']),
+                    default => response()->streamDownload(fn () => print ($reports->pdf($from, $to, $columns)), $filename, ['Content-Type' => 'application/pdf']),
                 };
             });
     }
