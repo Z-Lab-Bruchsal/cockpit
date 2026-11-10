@@ -4,6 +4,7 @@ namespace AlexanderGabriel\FilamentMailTestMode;
 
 use AlexanderGabriel\FilamentMailTestMode\Pages\MailTestModePage;
 use Closure;
+use Filament\Clusters\Cluster;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
@@ -20,6 +21,11 @@ class FilamentMailTestModePlugin implements Plugin
     protected bool $hasBanner = true;
 
     protected string|UnitEnum|null $navigationGroup = null;
+
+    /**
+     * @var class-string<Cluster>|null
+     */
+    protected ?string $cluster = null;
 
     public static function make(): static
     {
@@ -76,8 +82,31 @@ class FilamentMailTestModePlugin implements Plugin
         return $this->navigationGroup;
     }
 
+    /**
+     * Places the page inside a cluster, e.g. the settings area of the panel.
+     *
+     * @param  class-string<Cluster>|null  $cluster
+     */
+    public function cluster(?string $cluster): static
+    {
+        $this->cluster = $cluster;
+
+        return $this;
+    }
+
+    /**
+     * @return class-string<Cluster>|null
+     */
+    public function getCluster(): ?string
+    {
+        return $this->cluster;
+    }
+
     public function register(Panel $panel): void
     {
+        // Routes are registered without a current panel, so the page cannot ask the plugin itself.
+        MailTestModePage::useCluster($this->cluster);
+
         $panel->pages([
             MailTestModePage::class,
         ]);

@@ -17,12 +17,15 @@ return [
     'actions' => [
         'enable' => 'Enable test mode',
         'enable_description' => 'While the test mode is active, no mail reaches its real recipient. All mails go to the following address instead.',
+        'change_recipient' => 'Change address',
+        'change_recipient_description' => 'All mails will be sent to the new address from now on.',
         'disable' => 'Disable test mode',
         'disable_description' => 'Mails will be delivered to their real recipients again.',
         'send_test_mail' => 'Send test mail',
     ],
     'notifications' => [
         'enabled' => 'Test mode active – all mails go to :recipient',
+        'recipient_changed' => 'All mails now go to :recipient',
         'disabled' => 'Test mode disabled',
         'test_mail_sent' => 'Test mail sent to :recipient',
     ],

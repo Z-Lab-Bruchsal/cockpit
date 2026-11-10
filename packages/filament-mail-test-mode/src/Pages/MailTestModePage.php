@@ -23,6 +23,21 @@ class MailTestModePage extends Page
 
     protected static ?string $slug = 'mail-test-mode';
 
+    /**
+     * Set by the plugin, see {@see FilamentMailTestModePlugin::cluster()}.
+     */
+    protected static ?string $configuredCluster = null;
+
+    public static function useCluster(?string $cluster): void
+    {
+        static::$configuredCluster = $cluster;
+    }
+
+    public static function getCluster(): ?string
+    {
+        return static::$configuredCluster;
+    }
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && FilamentMailTestModePlugin::get()->isAuthorized();
@@ -81,6 +96,29 @@ class MailTestModePage extends Page
 
                     Notification::make()
                         ->title(__('filament-mail-test-mode::messages.notifications.enabled', ['recipient' => $data['recipient']]))
+                        ->success()
+                        ->send();
+                }),
+            Action::make('changeRecipient')
+                ->label(__('filament-mail-test-mode::messages.actions.change_recipient'))
+                ->icon(Heroicon::OutlinedPencilSquare)
+                ->color('gray')
+                ->visible(fn (): bool => $this->mailTestMode()->isEnabled() && ! $this->mailTestMode()->isForcedByEnv())
+                ->modalDescription(__('filament-mail-test-mode::messages.actions.change_recipient_description'))
+                ->fillForm(fn (): array => [
+                    'recipient' => $this->mailTestMode()->recipient(),
+                ])
+                ->schema([
+                    TextInput::make('recipient')
+                        ->label(__('filament-mail-test-mode::messages.recipient'))
+                        ->email()
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $this->mailTestMode()->changeRecipient($data['recipient']);
+
+                    Notification::make()
+                        ->title(__('filament-mail-test-mode::messages.notifications.recipient_changed', ['recipient' => $data['recipient']]))
                         ->success()
                         ->send();
                 }),

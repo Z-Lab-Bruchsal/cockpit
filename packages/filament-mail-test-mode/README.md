@@ -21,6 +21,10 @@ $panel->plugins([
 ]);
 ```
 
+Use `->cluster(SettingsCluster::class)` to place the page inside a cluster.
+
+On the page the test mode can be switched on and off, the test recipient can be changed while it is active and a test mail can be sent.
+
 ## Environment
 
 ```dotenv

@@ -17,12 +17,15 @@ return [
     'actions' => [
         'enable' => 'Testmodus aktivieren',
         'enable_description' => 'Solange der Testmodus aktiv ist, geht keine E-Mail an echte Empfänger, sondern alle an die folgende Adresse.',
+        'change_recipient' => 'Adresse ändern',
+        'change_recipient_description' => 'Alle E-Mails gehen ab sofort an die neue Adresse.',
         'disable' => 'Testmodus beenden',
         'disable_description' => 'E-Mails werden danach wieder an die echten Empfänger verschickt.',
         'send_test_mail' => 'Testmail senden',
     ],
     'notifications' => [
         'enabled' => 'Testmodus aktiv – alle E-Mails gehen an :recipient',
+        'recipient_changed' => 'Alle E-Mails gehen jetzt an :recipient',
         'disabled' => 'Testmodus beendet',
         'test_mail_sent' => 'Testmail an :recipient verschickt',
     ],

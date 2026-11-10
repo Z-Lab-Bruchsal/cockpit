@@ -53,6 +53,14 @@ class MailTestMode
         ]);
     }
 
+    /**
+     * Only changes where mails go, the test mode stays as it is.
+     */
+    public function changeRecipient(string $recipient): void
+    {
+        $this->setting()->update(['recipient' => $recipient]);
+    }
+
     public function disable(): void
     {
         $this->setting()->update([

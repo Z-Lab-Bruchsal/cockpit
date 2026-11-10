@@ -77,5 +77,10 @@ COPY --from=frontend /app/public/build ./public/build
 RUN --mount=type=secret,id=composer_auth,target=/var/www/html/auth.json \
     composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 
+# Filament's own JS/CSS (and that of plugins like Guava Calendar) is published
+# to public/js and public/css. Those files are gitignored, so they have to be
+# generated here, otherwise modals, dropdowns etc. don't load in the panel.
+RUN php artisan filament:assets
+
 RUN mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache

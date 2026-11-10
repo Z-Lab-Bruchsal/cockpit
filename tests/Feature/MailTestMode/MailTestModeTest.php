@@ -5,6 +5,7 @@ namespace Tests\Feature\MailTestMode;
 use AlexanderGabriel\FilamentMailTestMode\MailTestMode;
 use AlexanderGabriel\FilamentMailTestMode\Models\MailTestModeSetting;
 use AlexanderGabriel\FilamentMailTestMode\Pages\MailTestModePage;
+use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Mail\Message;
@@ -13,6 +14,7 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
@@ -152,6 +154,70 @@ class MailTestModeTest extends TestCase
             ->assertNotified();
 
         $this->assertFalse(app(MailTestMode::class)->isEnabled());
+    }
+
+    public function test_recipient_can_be_changed_while_active(): void
+    {
+        $this->actingAsAuthorizedUser();
+        app(MailTestMode::class)->enable('qa@example.com');
+
+        Livewire::test(MailTestModePage::class)
+            ->mountAction('changeRecipient')
+            ->assertSchemaStateSet(['recipient' => 'qa@example.com'], 'mountedActionSchema0')
+            ->setActionData(['recipient' => 'neu@example.com'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors()
+            ->assertNotified();
+
+        $this->assertTrue(app(MailTestMode::class)->isEnabled());
+        $this->assertSame('neu@example.com', app(MailTestMode::class)->recipient());
+    }
+
+    public function test_changing_the_recipient_requires_a_valid_address(): void
+    {
+        $this->actingAsAuthorizedUser();
+        app(MailTestMode::class)->enable('qa@example.com');
+
+        Livewire::test(MailTestModePage::class)
+            ->callAction('changeRecipient', ['recipient' => 'keine-adresse'])
+            ->assertHasActionErrors(['recipient' => 'email']);
+
+        $this->assertSame('qa@example.com', app(MailTestMode::class)->recipient());
+    }
+
+    public function test_change_recipient_is_hidden_while_inactive(): void
+    {
+        $this->actingAsAuthorizedUser();
+
+        Livewire::test(MailTestModePage::class)
+            ->assertActionVisible('enable')
+            ->assertActionHidden('changeRecipient');
+    }
+
+    public function test_page_is_part_of_the_settings_cluster(): void
+    {
+        $this->actingAsAuthorizedUser();
+
+        $this->assertSame(SettingsCluster::class, MailTestModePage::getCluster());
+        $this->assertStringContainsString('/einstellungen/mail-test-mode', MailTestModePage::getUrl());
+        $this->get(MailTestModePage::getUrl())->assertOk();
+    }
+
+    public function test_super_admin_has_the_permission_after_migration(): void
+    {
+        $role = Role::findOrCreate('super_admin', 'web');
+        (require database_path('migrations/2026_11_10_081607_add_mail_test_mode_permission.php'))->up();
+
+        $this->assertTrue($role->fresh()->hasPermissionTo('View:MailTestModePage'));
+    }
+
+    public function test_change_recipient_is_hidden_when_forced_by_env(): void
+    {
+        $this->actingAsAuthorizedUser();
+        config(['filament-mail-test-mode.enabled' => true, 'filament-mail-test-mode.recipient' => 'env@example.com']);
+
+        Livewire::test(MailTestModePage::class)
+            ->assertActionHidden('changeRecipient');
     }
 
     public function test_disable_is_hidden_when_forced_by_env(): void
