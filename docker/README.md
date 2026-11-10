@@ -83,6 +83,19 @@ Baut das vollständige Image (Code, `vendor/`, gebaute Assets) und startet drei 
 - **`queue`** – `php artisan queue:work`
 - **`scheduler`** – `php artisan schedule:work`
 
+Beim Bauen wird auch `php artisan filament:assets` ausgeführt: Die JS-/CSS-Dateien von Filament und seinen Plugins (`public/js`, `public/css`) sind nicht im Git und entstehen erst dabei.
+
+### Aktualisieren
+
+Da der Code fest im Image steckt, wirken Änderungen erst nach einem Neubau. Das erledigt das Skript im Projektverzeichnis auf dem Host (nicht im Container):
+
+```bash
+docker/update.sh          # Image neu bauen, Container stoppen und neu starten
+docker/update.sh --pull   # vorher git pull --ff-only
+```
+
+Das Image wird gebaut, bevor die laufenden Container gestoppt werden – schlägt der Build fehl, läuft die alte Version weiter. Danach wartet das Skript, bis der Healthcheck der App grün ist, und zeigt sonst die letzten Log-Zeilen.
+
 `storage/` und `database/` werden aus dem Projektverzeichnis eingebunden, damit Uploads, Logs und die SQLite-Datenbank (`database/database.sqlite`) Neustarts überleben. Die Migrationen kommen dadurch aus dem ausgecheckten Projektverzeichnis, nicht aus dem Image. `auth.json` wird beim Bauen nur als BuildKit-Secret verwendet und landet nicht im Image.
 
 ## Erster Start

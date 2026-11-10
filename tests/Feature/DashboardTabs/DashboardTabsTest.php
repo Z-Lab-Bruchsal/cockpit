@@ -156,6 +156,30 @@ class DashboardTabsTest extends TestCase
         $this->editingDashboard()->assertActionDisabled('createTab');
     }
 
+    /**
+     * The compact time clock in the header and the time clock widget on the tab are nested Livewire components.
+     * Re-rendering the dashboard must keep them as stubs instead of failing on their stored tag name.
+     */
+    public function test_dashboard_with_time_clock_can_be_re_rendered_while_editing(): void
+    {
+        $this->userWithRole();
+
+        // Serves the panel once, so its render hooks (compact time clock in the header) are active.
+        $this->get('/cockpit')->assertOk();
+
+        $dashboard = $this->editingDashboard()->assertSeeHtml('dashboard-header-time-clock');
+
+        $dashboard
+            ->callAction('toggleEditing')
+            ->callAction('toggleEditing')
+            ->assertSet('isEditing', true);
+
+        $this->assertSame(
+            ['div'],
+            collect($dashboard->snapshot['memo']['children'])->map(fn (array $child): string => $child[0])->unique()->values()->all(),
+        );
+    }
+
     public function test_user_can_add_widget_with_width(): void
     {
         $user = $this->userWithRole();

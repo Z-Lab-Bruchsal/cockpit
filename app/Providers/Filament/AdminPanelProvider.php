@@ -42,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->spa()
             ->unsavedChangesAlerts()
+            ->passwordReset()
             ->databaseNotifications()
             ->profile(EditProfile::class)
             ->font(
