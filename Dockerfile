@@ -71,6 +71,10 @@ FROM base AS app
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
 
+# storage/ is excluded from the build context (it's mounted at runtime and may
+# hold files the build user can't read), so create the skeleton here.
+RUN mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
 # auth.json holds the Filament composer repository credentials; it's
 # gitignored and must never end up baked into an image layer, so it's
 # supplied as a BuildKit secret and mounted only for this RUN step.
@@ -80,7 +84,5 @@ RUN --mount=type=secret,id=composer_auth,target=/var/www/html/auth.json \
 # Filament's own JS/CSS (and that of plugins like Guava Calendar) is published
 # to public/js and public/css. Those files are gitignored, so they have to be
 # generated here, otherwise modals, dropdowns etc. don't load in the panel.
-RUN php artisan filament:assets
-
-RUN mkdir -p storage/app storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+RUN php artisan filament:assets \
     && chown -R www-data:www-data storage bootstrap/cache
