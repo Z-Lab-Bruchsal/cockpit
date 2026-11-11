@@ -7,7 +7,6 @@ use AlexanderGabriel\FilamentDashboardTabs\Pages\Dashboard;
 use AlexanderGabriel\FilamentMailTestMode\FilamentMailTestModePlugin;
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Clusters\Settings\SettingsCluster;
-use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
@@ -44,7 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ->unsavedChangesAlerts()
             ->passwordReset()
             ->databaseNotifications()
-            ->profile(EditProfile::class)
+            ->profile()
             ->font(
                 'Bunny',
                 provider: LocalFontProvider::class,

@@ -292,6 +292,7 @@ class ContentBlocks
                         ->label('Nur diese Teambereiche')
                         ->placeholder('Alle')
                         ->options(TeamArea::class)
+                        ->helperText('Personen, Texte und Reihenfolge werden zentral unter Homepage → Team gepflegt.')
                         ->multiple(),
                     Toggle::make('show_area_headings')
                         ->label('Überschriften je Teambereich anzeigen')

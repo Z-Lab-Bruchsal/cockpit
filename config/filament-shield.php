@@ -274,6 +274,7 @@ return [
         'Worktimes:ViewForeign' => 'View Foreign Worktime',
         'Worktimes:SupervisorReport' => 'View All-Users Worktime Report',
         'Homepage:Design' => 'Design Homepage Colors',
+        'Homepage:Team' => 'Manage Homepage Team',
         'Orders:Process' => 'Process Orders',
         'View:CompanySettingsPage' => 'Edit Settings',
     ],
