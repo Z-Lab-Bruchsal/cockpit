@@ -138,6 +138,7 @@ class Tile extends Model
             TileType::Content => $heading ?? 'Kachel ohne Überschrift',
             TileType::Courses => $this->coursesLabel(),
             TileType::Text, TileType::Free, TileType::TextImage => Str::limit(trim(strip_tags((string) $this->setting('body'))), 60) ?: $this->type->getLabel(),
+            TileType::Html => Str::limit(trim(strip_tags((string) $this->setting('html'))), 60) ?: $this->type->getLabel(),
             TileType::Button => (string) ($this->setting('label') ?: $this->type->getLabel()),
             TileType::CallToAction => (string) ($this->setting('heading') ?: $this->type->getLabel()),
             default => $this->type?->getLabel() ?? 'Kachel',

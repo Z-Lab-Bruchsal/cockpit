@@ -18,6 +18,7 @@ enum TileType: string implements HasIcon, HasLabel
     case Offers = 'offers';
     case Text = 'text';
     case Free = 'free';
+    case Html = 'html';
     case Image = 'image';
     case TextImage = 'text_image';
     case Button = 'button';
@@ -37,6 +38,7 @@ enum TileType: string implements HasIcon, HasLabel
             self::Offers => 'Angebote (Durchführungen)',
             self::Text => 'Text',
             self::Free => 'Freies Schreiben',
+            self::Html => 'HTML',
             self::Image => 'Bild',
             self::TextImage => 'Text mit Bild',
             self::Button => 'Button',
@@ -58,6 +60,7 @@ enum TileType: string implements HasIcon, HasLabel
             self::Offers => Heroicon::OutlinedRectangleGroup,
             self::Text => Heroicon::OutlinedBars3BottomLeft,
             self::Free => Heroicon::OutlinedPencilSquare,
+            self::Html => Heroicon::OutlinedCodeBracket,
             self::Image => Heroicon::OutlinedPhoto,
             self::TextImage => Heroicon::OutlinedNewspaper,
             self::Button => Heroicon::OutlinedCursorArrowRipple,
@@ -78,6 +81,7 @@ enum TileType: string implements HasIcon, HasLabel
         return match ($this) {
             self::Section => 'Navigations-Kachel zu einem anderen Bereich, übernimmt dessen Titel, Kurztext und Bild.',
             self::Content => 'Kachel mit Überschrift, Text und Bild, auf Wunsch verlinkt.',
+            self::Html => 'Eigenes HTML, z. B. für Einbettungen oder Sonderlayouts. Wird ungefiltert ausgegeben.',
             self::Courses => 'Je eine Kachel pro passendem Kurs, z. B. alle Kurse für Schulen oder im Bereich Informatik.',
             default => 'Inhalt über die ganze oder einen Teil der Breite.',
         };

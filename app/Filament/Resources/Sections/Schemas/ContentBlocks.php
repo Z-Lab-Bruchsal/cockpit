@@ -10,6 +10,8 @@ use App\Models\Interest;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\CodeEditor;
+use Filament\Forms\Components\CodeEditor\Enums\Language;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -85,6 +87,18 @@ class ContentBlocks
                     static::fullRichEditor('body')
                         ->label('Inhalt')
                         ->helperText('Bilder per Büroklammer einfügen, Spalten über das Raster-Symbol. Tabellen- und Spalten-Werkzeuge erscheinen, sobald der Cursor darin steht.')
+                        ->required(),
+                ]),
+            Block::make('html')
+                ->label('HTML')
+                ->icon(Heroicon::OutlinedCodeBracket)
+                ->schema([
+                    static::blockId(),
+                    CodeEditor::make('html')
+                        ->label('HTML')
+                        ->language(Language::Html)
+                        ->wrap()
+                        ->helperText('Wird ungefiltert auf der Seite ausgegeben, also auch Skripte und Einbettungen (iframes).')
                         ->required(),
                 ]),
             Block::make('image')
