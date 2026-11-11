@@ -20,6 +20,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -44,6 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->databaseNotifications()
             ->profile()
+            ->maxContentWidth(Width::Full)
             ->font(
                 'Bunny',
                 provider: LocalFontProvider::class,
