@@ -31,9 +31,14 @@ class MessagesTable
                         'gelesen' => 'success',
                         default => 'gray',
                     }),
-                TextColumn::make('sender.name')
+                TextColumn::make('sender_display')
                     ->label('Von')
-                    ->searchable(),
+                    ->state(fn (Message $record): string => $record->senderName())
+                    ->icon(fn (Message $record): ?Heroicon => $record->isExternal() ? Heroicon::OutlinedAtSymbol : null)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(fn (Builder $query) => $query
+                        ->whereHas('sender', fn (Builder $users) => $users->where('name', 'like', "%{$search}%"))
+                        ->orWhere('sender_name', 'like', "%{$search}%")
+                        ->orWhere('sender_email', 'like', "%{$search}%"))),
                 TextColumn::make('recipients')
                     ->label('An')
                     ->state(fn (Message $record): string => $record->recipientNames())

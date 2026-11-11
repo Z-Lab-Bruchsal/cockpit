@@ -7,6 +7,7 @@ use App\Models\User;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class MessageInfolist
 {
@@ -18,8 +19,12 @@ class MessageInfolist
                     ->columns(3)
                     ->columnSpanFull()
                     ->components([
-                        TextEntry::make('sender.name')
-                            ->label('Von'),
+                        TextEntry::make('sender_display')
+                            ->label('Von')
+                            ->state(fn (Message $record): string => $record->senderName())
+                            ->badge(fn (Message $record): bool => $record->isExternal())
+                            ->color(fn (Message $record): ?string => $record->isExternal() ? 'info' : null)
+                            ->icon(fn (Message $record): ?Heroicon => $record->isExternal() ? Heroicon::OutlinedAtSymbol : null),
                         TextEntry::make('recipients')
                             ->label('An')
                             ->state(fn (Message $record): string => $record->recipientNames()),

@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\Mail;
 /**
  * An internal message to users and groups. The selected users and groups are kept as written,
  * every user reached by them receives the message once and marks it as read on their own.
+ * Mails sent to the cockpit mailbox are imported as messages with an external sender (no user).
  */
-#[Fillable('user_id', 'subject', 'body')]
+#[Fillable('user_id', 'sender_email', 'sender_name', 'external_message_id', 'subject', 'body')]
 class Message extends Model
 {
     /** @use HasFactory<MessageFactory> */
@@ -30,6 +31,23 @@ class Message extends Model
     public function sender(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function isExternal(): bool
+    {
+        return $this->user_id === null && filled($this->sender_email);
+    }
+
+    /**
+     * Name of the sending user, or "Name <mail>" for imported mails.
+     */
+    public function senderName(): string
+    {
+        if (! $this->isExternal()) {
+            return $this->sender?->name ?? 'Unbekannt';
+        }
+
+        return filled($this->sender_name) ? "{$this->sender_name} <{$this->sender_email}>" : $this->sender_email;
     }
 
     public function recipientUsers(): MorphToMany
@@ -162,7 +180,7 @@ class Message extends Model
     protected function notify(User $receiver): void
     {
         Notification::make()
-            ->title("Neue interne Nachricht von {$this->sender->name}")
+            ->title(($this->isExternal() ? 'Neue E-Mail von ' : 'Neue interne Nachricht von ').$this->senderName())
             ->body($this->subject)
             ->icon('heroicon-o-envelope')
             ->actions([

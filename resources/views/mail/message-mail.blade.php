@@ -3,7 +3,11 @@
 
 Hi,
 
-du hast eine neue interne Nachricht von {{ $internalMessage->sender->name }} im Cockpit.
+@if ($internalMessage->isExternal())
+an das Cockpit-Postfach ist eine E-Mail von {{ $internalMessage->senderName() }} eingegangen.
+@else
+du hast eine neue interne Nachricht von {{ $internalMessage->senderName() }} im Cockpit.
+@endif
 
 An: {{ $internalMessage->recipientNames() }}
 

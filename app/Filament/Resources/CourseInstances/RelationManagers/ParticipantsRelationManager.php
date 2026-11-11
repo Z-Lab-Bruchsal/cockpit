@@ -4,6 +4,8 @@ namespace App\Filament\Resources\CourseInstances\RelationManagers;
 
 use App\Enums\EnrollmentStatus;
 use App\Exceptions\ReservationException;
+use App\Filament\Resources\CourseInstances\Actions\MessageParticipantsAction;
+use App\Filament\Resources\CourseInstances\Actions\MessageSelectedParticipantsAction;
 use App\Filament\Resources\Registrations\Actions\ApproveRegistrationAction;
 use App\Filament\Resources\Registrations\Actions\ApproveSchoolRequestAction;
 use App\Filament\Resources\Registrations\Actions\DeclineRegistrationAction;
@@ -96,6 +98,8 @@ class ParticipantsRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
+                MessageParticipantsAction::make()
+                    ->authorize(fn (): bool => $this->canManageParticipants()),
                 Action::make('registerKid')
                     ->label('Kind anmelden')
                     ->icon(Heroicon::OutlinedUserPlus)
@@ -130,6 +134,10 @@ class ParticipantsRelationManager extends RelationManager
                             ->title($registration->isOnWaitlist() ? 'Auf die Warteliste gesetzt' : 'Angemeldet')
                             ->send();
                     }),
+            ])
+            ->toolbarActions([
+                MessageSelectedParticipantsAction::make()
+                    ->authorize(fn (): bool => $this->canManageParticipants()),
             ])
             ->recordActions([
                 Action::make('openRegistration')

@@ -23,8 +23,10 @@ class ViewMessage extends ViewRecord
             Action::make('reply')
                 ->label('Antworten')
                 ->icon(Heroicon::OutlinedArrowUturnLeft)
-                ->visible(fn (Message $record): bool => $record->user_id !== filament()->auth()->id() && MessageResource::canCreate())
-                ->url(fn (Message $record): string => MessageResource::getUrl('create', ['reply' => $record->id])),
+                ->visible(fn (Message $record): bool => $record->isExternal() || ($record->user_id !== filament()->auth()->id() && MessageResource::canCreate()))
+                ->url(fn (Message $record): string => $record->isExternal()
+                    ? 'mailto:'.$record->sender_email.'?subject='.rawurlencode(str_starts_with($record->subject, 'Re: ') ? $record->subject : "Re: {$record->subject}")
+                    : MessageResource::getUrl('create', ['reply' => $record->id])),
             DeleteAction::make(),
         ];
     }

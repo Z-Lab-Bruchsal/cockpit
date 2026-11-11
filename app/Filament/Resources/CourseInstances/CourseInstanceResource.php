@@ -6,6 +6,7 @@ use App\Filament\Resources\CourseInstances\Pages\CreateCourseInstance;
 use App\Filament\Resources\CourseInstances\Pages\EditCourseInstance;
 use App\Filament\Resources\CourseInstances\Pages\ListCourseInstances;
 use App\Filament\Resources\CourseInstances\RelationManagers\AttendanceRelationManager;
+use App\Filament\Resources\CourseInstances\RelationManagers\MessagesRelationManager;
 use App\Filament\Resources\CourseInstances\RelationManagers\NotesRelationManager;
 use App\Filament\Resources\CourseInstances\RelationManagers\ParticipantsRelationManager;
 use App\Filament\Resources\CourseInstances\Schemas\CourseInstanceForm;
@@ -50,6 +51,7 @@ class CourseInstanceResource extends Resource
             ParticipantsRelationManager::class,
             AttendanceRelationManager::class,
             NotesRelationManager::class,
+            MessagesRelationManager::class,
         ];
     }
 

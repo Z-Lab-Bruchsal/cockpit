@@ -181,6 +181,11 @@ class CourseInstance extends Model
         return $this->hasMany(CourseInstanceNote::class)->latest('id');
     }
 
+    public function participantMessages(): HasMany
+    {
+        return $this->hasMany(CourseInstanceMessage::class)->latest('id');
+    }
+
     public function notifications(): HasMany
     {
         return $this->hasMany(CourseInstanceNotification::class);

@@ -4,7 +4,9 @@ namespace App\Filament\Clusters\Settings\Pages;
 
 use App\Filament\Forms\HexColorPicker;
 use App\Models\CompanySetting;
+use App\Services\Recipients\Recipients;
 use BackedEnum;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
@@ -48,6 +50,20 @@ class CockpitPage extends CompanySettingsSubPage
                         ->label('Info'),
                 ])
                 ->columns(5)
+                ->columnSpanFull(),
+            Section::make('Eingehende E-Mails')
+                ->description(fn (): string => config('imap.inbound.enabled')
+                    ? 'Mails an '.config('imap.accounts.default.username').' landen als interne Nachricht bei diesen Personen und Gruppen.'
+                    : 'Noch kein Postfach eingerichtet (IMAP-Zugang in der .env). Danach landen eingehende Mails als interne Nachricht bei diesen Personen und Gruppen.')
+                ->schema([
+                    Select::make('inbound_mail_recipients')
+                        ->label('Empfänger')
+                        ->multiple()
+                        ->searchable()
+                        ->options(fn (): array => Recipients::options())
+                        ->placeholder('Personen oder Gruppen suchen …')
+                        ->helperText('Ohne Empfänger bleiben die Mails ungelesen im Postfach.'),
+                ])
                 ->columnSpanFull(),
         ];
     }
