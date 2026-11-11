@@ -1,7 +1,7 @@
 @props(['tile', 'editing' => false])
 
 @php
-    /** @var \App\Services\Homepage\Tile $tile */
+    /** @var \App\Services\Homepage\TileCard $tile */
     $isHero = $tile->style === \App\Enums\TileStyle::Hero;
     $isHighlighted = $tile->style === \App\Enums\TileStyle::Highlighted;
     $isHorizontal = $tile->width >= 4 && $tile->height === 1 && ! $isHero;
@@ -20,14 +20,6 @@
         'key-card-interactive focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ink' => $isLink,
         'bg-tile-highlight! text-brand-contrast hover:border-transparent' => $isHighlighted,
         'sm:flex-row' => $isHorizontal || ($isHero && $tile->imagePath),
-        // Literal classes, so that Tailwind picks them up.
-        match ($tile->width) {
-            3 => 'lg:col-span-3',
-            4 => 'sm:col-span-2 lg:col-span-4',
-            6 => 'sm:col-span-2 lg:col-span-6',
-            default => 'lg:col-span-2',
-        },
-        'lg:row-span-2' => $tile->height === 2,
     ]) }}
 >
     @if ($tile->imagePath)

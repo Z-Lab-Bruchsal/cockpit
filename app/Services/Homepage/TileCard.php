@@ -3,14 +3,15 @@
 namespace App\Services\Homepage;
 
 use App\Enums\TileStyle;
+use App\Enums\TileType;
 use App\Models\Section;
-use Illuminate\Support\Collection;
+use App\Models\Tile;
 
 /**
- * One tile of a tile grid block, ready for rendering.
+ * A card tile (content or section link), ready for rendering.
  * Empty heading, text or image fall back to the tile defaults of the linked section.
  */
-final readonly class Tile
+final readonly class TileCard
 {
     public function __construct(
         public string $id,
@@ -26,101 +27,72 @@ final readonly class Tile
     ) {}
 
     /**
-     * Tiles of a tile grid block. Tiles linking to a section that is not publicly visible are left out.
-     *
-     * @param  array<int, mixed>  $items
-     * @return Collection<int, Tile>
+     * The card for a tile, or null if it links to a section that is not publicly visible.
+     * The linked section should be eager loaded (linkSection.parent).
+     * With $evenIfUnreachable such tiles get a card without link instead, e.g. for the editor.
      */
-    public static function collect(array $items): Collection
+    public static function fromTile(Tile $tile, bool $evenIfUnreachable = false): ?TileCard
     {
-        $items = array_values(array_filter($items, 'is_array'));
+        $link = $tile->linkData();
+        $section = $link['target_type'] === LinkTarget::SECTION ? $tile->linkSection : null;
+        $sections = collect($section !== null ? [$section->id => $section] : []);
+        $url = LinkTarget::resolve($link, $sections);
 
-        $sectionIds = collect($items)
-            ->filter(fn (array $item): bool => LinkTarget::type($item) === LinkTarget::SECTION)
-            ->pluck('section_id')
-            ->filter()
-            ->map(fn (mixed $id): int => (int) $id)
-            ->unique();
-
-        $sections = $sectionIds->isEmpty()
-            ? collect()
-            : Section::query()->with('parent')->whereIn('id', $sectionIds)->get()->keyBy('id');
-
-        return collect($items)
-            ->map(fn (array $item): ?Tile => self::fromArray($item, $sections))
-            ->filter()
-            ->values();
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     * @param  Collection<int, Section>|null  $sections
-     */
-    public static function fromArray(array $item, ?Collection $sections = null): ?Tile
-    {
-        $section = LinkTarget::section($item, $sections);
-        $url = LinkTarget::resolve($item, $sections);
-
-        if (LinkTarget::type($item) === LinkTarget::SECTION && $url === null) {
+        if ($link['target_type'] === LinkTarget::SECTION && $url === null && ! $evenIfUnreachable) {
             return null;
         }
 
-        $text = filled(strip_tags((string) ($item['text'] ?? ''))) ? (string) $item['text'] : null;
-        $image = filled($item['image'] ?? null) ? (string) $item['image'] : null;
+        $text = filled(strip_tags((string) $tile->text)) ? (string) $tile->text : null;
+        $image = filled($tile->image_path) ? (string) $tile->image_path : null;
 
-        return new Tile(
-            id: (string) ($item['id'] ?? ''),
-            style: TileStyle::tryFrom((string) ($item['style'] ?? '')) ?? TileStyle::Standard,
-            eyebrow: filled($item['eyebrow'] ?? null) ? (string) $item['eyebrow'] : null,
-            heading: filled($item['heading'] ?? null) ? (string) $item['heading'] : (string) $section?->title,
+        return new TileCard(
+            id: (string) $tile->uuid,
+            style: $tile->style ?? self::sectionStyle($tile->type === TileType::Section ? $section : null),
+            eyebrow: filled($tile->eyebrow) ? (string) $tile->eyebrow : null,
+            heading: filled($tile->heading) ? (string) $tile->heading : (string) $section?->title,
             textHtml: $text ?? ($section?->teaser ? '<p>'.e($section->teaser).'</p>' : null),
             imagePath: $image ?? $section?->tile_image_path,
-            imageAlt: $image !== null ? ($item['alt'] ?? null) : $section?->tile_image_alt,
+            imageAlt: $image !== null ? $tile->image_alt : $section?->tile_image_alt,
             url: $url,
-            width: array_key_exists((int) ($item['width'] ?? 0), Section::TILE_WIDTHS) ? (int) $item['width'] : 2,
-            height: array_key_exists((int) ($item['height'] ?? 0), Section::TILE_HEIGHTS) ? (int) $item['height'] : 1,
+            width: self::width($tile->width),
+            height: self::height($tile->height),
         );
     }
 
     /**
      * The tile a section gets by default when a tile links to it, e.g. for the cockpit preview.
      */
-    public static function forSection(Section $section): Tile
+    public static function forSection(Section $section): TileCard
     {
-        return new Tile(
+        return new TileCard(
             id: 'section-'.($section->id ?? 'new'),
-            style: $section->layout?->value === TileStyle::Highlighted->value ? TileStyle::Highlighted : TileStyle::Standard,
+            style: self::sectionStyle($section),
             eyebrow: null,
             heading: (string) $section->title,
             textHtml: $section->teaser ? '<p>'.e($section->teaser).'</p>' : null,
             imagePath: $section->tile_image_path,
             imageAlt: $section->tile_image_alt,
             url: null,
-            width: array_key_exists((int) $section->tile_width, Section::TILE_WIDTHS) ? (int) $section->tile_width : 2,
-            height: array_key_exists((int) $section->tile_height, Section::TILE_HEIGHTS) ? (int) $section->tile_height : 1,
+            width: self::width($section->tile_width),
+            height: self::height($section->tile_height),
         );
     }
 
-    /**
-     * Tile data that links to the given section, using its tile defaults.
-     *
-     * @return array<string, mixed>
-     */
-    public static function dataForSection(Section $section): array
+    public static function width(mixed $width): int
     {
-        return [
-            'style' => $section->layout?->value === TileStyle::Highlighted->value ? TileStyle::Highlighted->value : TileStyle::Standard->value,
-            'eyebrow' => null,
-            'heading' => null,
-            'text' => null,
-            'image' => null,
-            'alt' => null,
-            'target_type' => LinkTarget::SECTION,
-            'section_id' => $section->id,
-            'url' => null,
-            'anchor' => null,
-            'width' => $section->tile_width ?: 2,
-            'height' => $section->tile_height ?: 1,
-        ];
+        return array_key_exists((int) $width, Tile::WIDTHS) ? (int) $width : 2;
+    }
+
+    public static function height(mixed $height): int
+    {
+        return array_key_exists((int) $height, Tile::HEIGHTS) ? (int) $height : 1;
+    }
+
+    /**
+     * Tiles without an own style take the tile colour of the section they link to.
+     */
+    protected static function sectionStyle(?Section $section): TileStyle
+    {
+        return $section?->layout?->value === TileStyle::Highlighted->value ? TileStyle::Highlighted : TileStyle::Standard;
     }
 }

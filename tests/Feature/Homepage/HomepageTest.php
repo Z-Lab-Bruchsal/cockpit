@@ -36,7 +36,7 @@ class HomepageTest extends TestCase
 
     public function test_start_page_without_content_shows_placeholder(): void
     {
-        Section::factory()->create(['is_home' => true, 'slug' => 'startseite', 'content' => []]);
+        Section::factory()->withContent([])->create(['is_home' => true, 'slug' => 'startseite']);
 
         $this->get('/')
             ->assertOk()
@@ -45,7 +45,7 @@ class HomepageTest extends TestCase
 
     public function test_start_page_is_not_reachable_under_its_slug_and_not_in_navigation(): void
     {
-        Section::factory()->create(['is_home' => true, 'title' => 'Startseite Intern', 'slug' => 'start-intern', 'show_in_navigation' => true, 'content' => []]);
+        Section::factory()->withContent([])->create(['is_home' => true, 'title' => 'Startseite Intern', 'slug' => 'start-intern', 'show_in_navigation' => true]);
 
         $this->get('/start-intern')->assertRedirect(route('homepage.index'));
 
@@ -82,15 +82,14 @@ class HomepageTest extends TestCase
 
     public function test_section_page_shows_content_and_its_tile_grid(): void
     {
-        $workshops = Section::factory()->create([
+        $workshops = Section::factory()->withContent([['type' => 'text', 'data' => ['body' => '<p>Alles über Workshops</p>']]])->create([
             'title' => 'Workshops',
             'slug' => 'workshops',
-            'content' => [['type' => 'text', 'data' => ['body' => '<p>Alles über Workshops</p>']]],
         ]);
         $robotik = Section::factory()->childOf($workshops)->create(['title' => 'Robotik', 'slug' => 'robotik']);
         Section::factory()->childOf($robotik)->create(['title' => 'Lego Mindstorms']);
         $secret = Section::factory()->childOf($workshops)->hidden()->create(['title' => 'Geheimer Workshop']);
-        $workshops->update(['content' => [...$workshops->content, Section::tilesBlockFor([$robotik, $secret])]]);
+        $workshops->addTilesFor([$robotik, $secret]);
 
         $this->get('/workshops')
             ->assertOk()
@@ -126,10 +125,9 @@ class HomepageTest extends TestCase
     public function test_section_without_tile_has_its_own_page(): void
     {
         $parent = Section::factory()->create(['slug' => 'ueber-uns']);
-        Section::factory()->childOf($parent)->standalone()->create([
+        Section::factory()->childOf($parent)->standalone()->withContent([['type' => 'text', 'data' => ['body' => '<p>Ihre Daten sind sicher</p>']]])->create([
             'title' => 'Datenschutz',
             'slug' => 'datenschutz',
-            'content' => [['type' => 'text', 'data' => ['body' => '<p>Ihre Daten sind sicher</p>']]],
         ]);
 
         $this->get('/ueber-uns')->assertDontSee('Ihre Daten sind sicher');
@@ -155,16 +153,15 @@ class HomepageTest extends TestCase
     {
         CompanySetting::current()->update(['contact_email' => 'info@example.com']);
 
-        Section::factory()->create([
+        Section::factory()->withContent([
+            ['type' => 'text', 'data' => ['body' => '<p>Textblock</p>']],
+            ['type' => 'image', 'data' => ['image' => 'homepage/bild.jpg', 'alt' => 'Ein Bild', 'caption' => 'Unterschrift']],
+            ['type' => 'text_image', 'data' => ['body' => '<p>Mit Bild</p>', 'image' => 'homepage/b.jpg', 'alt' => 'B', 'image_position' => 'left']],
+            ['type' => 'call_to_action', 'data' => ['heading' => 'Jetzt mitmachen', 'button_label' => 'Los', 'button_url' => '/kurse']],
+            ['type' => 'contact', 'data' => ['intro' => '<p>Schreib uns</p>']],
+            ['type' => 'unknown', 'data' => []],
+        ])->create([
             'slug' => 'bloecke',
-            'content' => [
-                ['type' => 'text', 'data' => ['body' => '<p>Textblock</p>']],
-                ['type' => 'image', 'data' => ['image' => 'homepage/bild.jpg', 'alt' => 'Ein Bild', 'caption' => 'Unterschrift']],
-                ['type' => 'text_image', 'data' => ['body' => '<p>Mit Bild</p>', 'image' => 'homepage/b.jpg', 'alt' => 'B', 'image_position' => 'left']],
-                ['type' => 'call_to_action', 'data' => ['heading' => 'Jetzt mitmachen', 'button_label' => 'Los', 'button_url' => '/kurse']],
-                ['type' => 'contact', 'data' => ['intro' => '<p>Schreib uns</p>']],
-                ['type' => 'unknown', 'data' => []],
-            ],
         ]);
 
         $this->get('/bloecke')
@@ -252,13 +249,12 @@ class HomepageTest extends TestCase
 
     public function test_call_to_action_with_javascript_url_is_not_linked(): void
     {
-        Section::factory()->create([
+        Section::factory()->withContent([
+            ['type' => 'call_to_action', 'data' => ['heading' => 'Komm vorbei', 'button_label' => 'Los', 'button_url' => 'javascript:alert(1)']],
+            ['type' => 'call_to_action', 'data' => ['heading' => 'Schreib uns', 'button_label' => 'Mail', 'button_url' => 'mailto:info@example.com']],
+        ])->create([
             'title' => 'Mitmachen',
             'slug' => 'mitmachen',
-            'content' => [
-                ['type' => 'call_to_action', 'data' => ['heading' => 'Komm vorbei', 'button_label' => 'Los', 'button_url' => 'javascript:alert(1)']],
-                ['type' => 'call_to_action', 'data' => ['heading' => 'Schreib uns', 'button_label' => 'Mail', 'button_url' => 'mailto:info@example.com']],
-            ],
         ]);
 
         $this->get(route('homepage.section', 'mitmachen'))

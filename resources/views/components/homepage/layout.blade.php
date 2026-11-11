@@ -100,7 +100,7 @@
     </main>
 
     <footer class="bg-footer text-footer-ink shadow-[0_-12px_24px_-12px_rgb(0_0_0/0.35)]" data-design-role="footer-bg">
-        @if ($isArranging && $canArrangeFooter)
+        @if ($isEditingInline && $canArrangeFooter)
             <div class="mx-auto max-w-6xl px-4 py-10 text-sm sm:px-6">
                 <livewire:homepage.footer-editor />
             </div>
@@ -118,23 +118,17 @@
         </div>
     </footer>
 
-    @if ($showsArrangeToolbar())
+    @if ($showsToolbar())
         <div class="fixed right-4 bottom-4 z-50 flex items-center gap-2 rounded-xl bg-ink/90 p-2 text-sm text-white shadow-lg backdrop-blur" data-design-panel>
-            @if ($isArranging)
-                <span class="hidden px-2 sm:inline">Anordnen-Modus</span>
-                <a href="{{ request()->fullUrlWithoutQuery('anordnen') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
-            @elseif ($isDesigning)
+            @if ($isDesigning)
                 <span class="hidden px-2 sm:inline">Design-Modus</span>
                 <a href="{{ request()->fullUrlWithoutQuery('design') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
             @elseif ($isEditingInline)
                 <span class="hidden px-2 sm:inline">Bearbeiten-Modus</span>
-                <a href="{{ request()->fullUrlWithoutQuery('bearbeiten') }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
+                <a href="{{ request()->fullUrlWithoutQuery(['bearbeiten', 'anordnen']) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Fertig</a>
             @else
                 @if ($canEditInline)
                     <a href="{{ request()->fullUrlWithQuery(['bearbeiten' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Bearbeiten</a>
-                @endif
-                @if ($showsArrangeButton())
-                    <a href="{{ request()->fullUrlWithQuery(['anordnen' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">{{ $canArrangeTiles && request()->routeIs('homepage.index', 'homepage.section') ? 'Kacheln anordnen' : 'Footer anordnen' }}</a>
                 @endif
                 @if ($canDesign)
                     <a href="{{ request()->fullUrlWithQuery(['design' => 1]) }}" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">Farben gestalten</a>
@@ -148,7 +142,7 @@
         <livewire:homepage.design-editor />
     @endif
 
-    @if ($isEditingInline || ($isArranging && $canArrangeFooter))
+    @if ($isEditingInline)
         <div
             x-data="inlineEditor"
             x-on:open-inline-editor.window="open($event.detail.url)"

@@ -23,9 +23,8 @@ class NewsBlockTest extends TestCase
      */
     private function newsSection(array $data = []): Section
     {
-        return Section::factory()->create([
+        return Section::factory()->withContent([['type' => 'news', 'data' => $data]])->create([
             'slug' => 'aktuelles',
-            'content' => [['type' => 'news', 'data' => $data]],
         ]);
     }
 

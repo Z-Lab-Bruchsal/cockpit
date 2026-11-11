@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\SectionLayout;
 use App\Models\Section;
+use App\Services\Homepage\LegacyContentConverter;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -33,13 +34,22 @@ class SectionFactory extends Factory
             'layout' => SectionLayout::Standard,
             'tile_width' => 2,
             'tile_height' => 1,
-            'content' => [
-                [
-                    'type' => 'text',
-                    'data' => ['body' => '<p>'.fake()->sentence().'</p>'],
-                ],
-            ],
         ];
+    }
+
+    /**
+     * Gives the section tiles made from content blocks in the former sections.content format,
+     * e.g. [['type' => 'text', 'data' => ['body' => '<p>…</p>']]], see LegacyContentConverter.
+     *
+     * @param  array<int, array<string, mixed>>  $blocks
+     */
+    public function withContent(array $blocks): static
+    {
+        return $this->afterCreating(function (Section $section) use ($blocks): void {
+            foreach (LegacyContentConverter::toTiles($blocks) as $row) {
+                $section->tiles()->create($row);
+            }
+        });
     }
 
     public function hidden(): static

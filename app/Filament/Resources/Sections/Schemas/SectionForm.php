@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Sections\Schemas;
 
 use App\Enums\SectionLayout;
 use App\Models\Section;
+use App\Models\Tile;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -75,8 +76,8 @@ class SectionForm
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                SchemaSection::make('Kachel')
-                    ->description('Standardwerte für Kacheln, die auf diesen Bereich verlinken. Kacheln selbst legst du im Inhalt einer Seite mit dem Block „Kachel-Raster“ an.')
+                SchemaSection::make('Kachel-Vorgaben')
+                    ->description('Standardwerte für Kacheln „Bereich verlinken“, die auf diesen Bereich zeigen. Die Inhalte dieser Seite pflegst du unten unter „Kacheln“.')
                     ->hidden(fn (?Section $record): bool => (bool) $record?->is_home)
                     ->schema([
                         Textarea::make('teaser')
@@ -89,21 +90,16 @@ class SectionForm
                         Select::make('tile_width')
                             ->label('Kachelbreite')
                             ->helperText('Auf dem Handy immer volle Breite.')
-                            ->options(Section::TILE_WIDTHS)
+                            ->options(Tile::WIDTHS)
                             ->default(2)
                             ->required(),
                         Select::make('tile_height')
                             ->label('Kachelhöhe')
-                            ->options(Section::TILE_HEIGHTS)
+                            ->options(Tile::HEIGHTS)
                             ->default(1)
                             ->required(),
                     ])
                     ->columns(2)
-                    ->columnSpanFull(),
-                SchemaSection::make('Inhalt der Seite')
-                    ->schema([
-                        ContentBlocks::make(),
-                    ])
                     ->columnSpanFull(),
             ]);
     }

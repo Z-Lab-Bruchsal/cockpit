@@ -119,9 +119,8 @@ class ContactFormTest extends TestCase
 
     public function test_form_can_be_placed_in_a_section(): void
     {
-        Section::factory()->create([
+        Section::factory()->withContent([['type' => 'contact_form', 'data' => ['intro' => '<p>Wir freuen uns auf deine Nachricht</p>', 'topic' => 'schulen']]])->create([
             'slug' => 'kontakt',
-            'content' => [['type' => 'contact_form', 'data' => ['intro' => '<p>Wir freuen uns auf deine Nachricht</p>', 'topic' => 'schulen']]],
         ]);
 
         $this->get('/kontakt')

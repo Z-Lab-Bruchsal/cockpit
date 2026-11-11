@@ -179,12 +179,11 @@ class CourseHomepageTest extends TestCase
         Course::factory()->create(['name' => 'Roboter bauen'])->interests()->attach($robotics);
         Course::factory()->create(['name' => 'Nähen']);
 
-        Section::factory()->create([
+        Section::factory()->withContent([
+            ['type' => 'course_list', 'data' => ['interest_ids' => [(string) $robotics->id], 'audience' => null, 'limit' => 3, 'show_all_link' => true]],
+            ['type' => 'course_calendar', 'data' => ['audience' => 'kids']],
+        ])->create([
             'slug' => 'kurse-am-nachmittag',
-            'content' => [
-                ['type' => 'course_list', 'data' => ['interest_ids' => [(string) $robotics->id], 'audience' => null, 'limit' => 3, 'show_all_link' => true]],
-                ['type' => 'course_calendar', 'data' => ['audience' => 'kids']],
-            ],
         ]);
 
         $this->get('/kurse-am-nachmittag')

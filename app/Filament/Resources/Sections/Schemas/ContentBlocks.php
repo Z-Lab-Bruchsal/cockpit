@@ -6,22 +6,19 @@ use App\Enums\ContactFormTopic;
 use App\Enums\CourseAudience;
 use App\Enums\CourseParticipation;
 use App\Enums\TeamArea;
-use App\Enums\TileStyle;
 use App\Models\Interest;
-use App\Models\Section;
-use App\Services\Homepage\LinkTarget;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\Builder\Block;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\ToolbarButtonGroup;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Component;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
 
@@ -49,62 +46,6 @@ class ContentBlocks
     public static function blocks(): array
     {
         return [
-            Block::make('tiles')
-                ->label('Kachel-Raster')
-                ->icon(Heroicon::OutlinedSquares2x2)
-                ->schema([
-                    static::blockId(),
-                    Repeater::make('tiles')
-                        ->label('Kacheln')
-                        ->schema([
-                            Hidden::make('id')
-                                ->default(fn (): string => (string) Str::uuid()),
-                            Select::make('style')
-                                ->label('Darstellung')
-                                ->options(TileStyle::class)
-                                ->default(TileStyle::Standard)
-                                ->selectablePlaceholder(false)
-                                ->live(),
-                            TextInput::make('eyebrow')
-                                ->label('Dachzeile')
-                                ->helperText('Kleine Zeile über der Überschrift.')
-                                ->maxLength(255)
-                                ->visible(fn (Get $get): bool => static::styleValue($get('style')) === TileStyle::Hero),
-                            TextInput::make('heading')
-                                ->label('Überschrift')
-                                ->helperText('Leer = Titel des verlinkten Bereichs.')
-                                ->maxLength(255)
-                                ->live(onBlur: true),
-                            RichEditor::make('text')
-                                ->label('Text')
-                                ->helperText('Leer = Kurztext des verlinkten Bereichs.')
-                                ->toolbarButtons([['bold', 'italic']])
-                                ->columnSpanFull(),
-                            ...LinkTargetFields::make(),
-                            Select::make('width')
-                                ->label('Breite')
-                                ->options(Section::TILE_WIDTHS)
-                                ->default(2)
-                                ->selectablePlaceholder(false),
-                            Select::make('height')
-                                ->label('Höhe')
-                                ->options(Section::TILE_HEIGHTS)
-                                ->default(1)
-                                ->selectablePlaceholder(false),
-                            static::imageUpload('image')
-                                ->label('Bild')
-                                ->helperText('Leer = Kachelbild des verlinkten Bereichs.'),
-                            static::altText('alt', 'image'),
-                        ])
-                        ->columns(2)
-                        ->itemLabel(fn (array $state): ?string => static::tileLabel($state))
-                        ->collapsible()
-                        ->collapsed()
-                        ->cloneable()
-                        ->reorderableWithButtons()
-                        ->addActionLabel('Kachel hinzufügen')
-                        ->defaultItems(1),
-                ]),
             Block::make('button')
                 ->label('Button')
                 ->icon(Heroicon::OutlinedCursorArrowRipple)
@@ -337,22 +278,34 @@ class ContentBlocks
             ->default(fn (): string => (string) Str::uuid());
     }
 
-    protected static function styleValue(mixed $state): ?TileStyle
+    /**
+     * The fields of one block type without its block id, e.g. for a tile of that type.
+     *
+     * @return array<Component|Field>
+     */
+    public static function fieldsFor(string $type): array
     {
-        return $state instanceof TileStyle ? $state : TileStyle::tryFrom((string) $state);
+        $block = static::block($type);
+
+        if ($block === null) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $block->getDefaultChildComponents(),
+            fn (mixed $component): bool => ! ($component instanceof Hidden && $component->getName() === 'block_id'),
+        ));
     }
 
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    protected static function tileLabel(array $state): string
+    public static function block(string $type): ?Block
     {
-        $heading = filled($state['heading'] ?? null) ? $state['heading'] : null;
-        $heading ??= filled($state['section_id'] ?? null) && ($state['target_type'] ?? null) === LinkTarget::SECTION
-            ? Section::query()->whereKey($state['section_id'])->value('title')
-            : null;
+        foreach (static::blocks() as $block) {
+            if ($block->getName() === $type) {
+                return $block;
+            }
+        }
 
-        return trim(($heading ?? 'Kachel').' · '.(Section::TILE_WIDTHS[(int) ($state['width'] ?? 2)] ?? ''), ' ·');
+        return null;
     }
 
     protected static function richEditor(string $name): RichEditor

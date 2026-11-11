@@ -4,9 +4,8 @@ namespace App\Models;
 
 use App\Enums\SectionLayout;
 use App\Enums\TileStyle;
-use App\Services\Homepage\ContentIds;
+use App\Enums\TileType;
 use App\Services\Homepage\LinkTarget;
-use App\Services\Homepage\Tile;
 use Database\Factories\SectionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,9 +13,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'is_home', 'layout', 'tile_width', 'tile_height', 'content'])]
+#[Fillable(['parent_id', 'title', 'slug', 'sort', 'teaser', 'tile_image_path', 'tile_image_alt', 'is_visible', 'show_title', 'show_in_navigation', 'is_standalone', 'is_home', 'layout', 'tile_width', 'tile_height'])]
 class Section extends Model
 {
     /** @use HasFactory<SectionFactory> */
@@ -35,18 +35,18 @@ class Section extends Model
     ];
 
     /**
-     * Tile widths in columns of the 6-column homepage grid: one third, half, two thirds, full.
+     * @see Tile::WIDTHS
      *
      * @var array<int, string>
      */
-    public const TILE_WIDTHS = [2 => '⅓ Breite', 3 => '½ Breite', 4 => '⅔ Breite', 6 => 'Ganze Breite'];
+    public const TILE_WIDTHS = Tile::WIDTHS;
 
     /**
-     * Tile heights in grid rows.
+     * @see Tile::HEIGHTS
      *
      * @var array<int, string>
      */
-    public const TILE_HEIGHTS = [1 => 'Normal', 2 => 'Doppelt hoch'];
+    public const TILE_HEIGHTS = Tile::HEIGHTS;
 
     /**
      * @return array<string, string>
@@ -62,16 +62,13 @@ class Section extends Model
             'layout' => SectionLayout::class,
             'tile_width' => 'integer',
             'tile_height' => 'integer',
+            // Former content blocks, kept as a backup since the content moved to tiles.
             'content' => 'array',
         ];
     }
 
     protected static function booted(): void
     {
-        static::saving(function (Section $section): void {
-            $section->content = ContentIds::ensure($section->content);
-        });
-
         static::saved(function (Section $section): void {
             if ($section->is_home && ($section->wasRecentlyCreated || $section->wasChanged('is_home'))) {
                 static::query()->whereKeyNot($section->id)->where('is_home', true)->update(['is_home' => false]);
@@ -91,61 +88,68 @@ class Section extends Model
             return $home;
         }
 
-        $settings = CompanySetting::current();
-        $content = [[
-            'type' => 'tiles',
-            'data' => ['tiles' => [[
-                'style' => TileStyle::Hero->value,
+        return DB::transaction(function (): Section {
+            $settings = CompanySetting::current();
+
+            $home = static::query()->create([
+                'title' => 'Startseite',
+                'slug' => static::query()->where('slug', 'startseite')->exists() ? 'startseite-'.Str::lower(Str::random(6)) : 'startseite',
+                'sort' => 0,
+                'is_visible' => true,
+                'show_title' => false,
+                'show_in_navigation' => false,
+                'is_standalone' => true,
+                'is_home' => true,
+            ]);
+
+            $home->tiles()->create([
+                'type' => TileType::Content,
+                'style' => TileStyle::Hero,
                 'heading' => $settings->homepageTitle(),
                 'text' => filled($settings->homepage_tagline) ? '<p>'.e($settings->homepage_tagline).'</p>' : null,
-                'target_type' => LinkTarget::NONE,
+                'link_type' => LinkTarget::NONE,
                 'width' => 6,
                 'height' => 1,
-            ]]],
-        ]];
+            ]);
 
-        $roots = static::query()->roots()->where('is_standalone', false)->where('is_home', false)->get();
+            $home->addTilesFor(static::query()->roots()->where('is_standalone', false)->where('is_home', false)->get());
 
-        if ($roots->isNotEmpty()) {
-            $content[] = static::tilesBlockFor($roots);
-        }
-
-        return static::query()->create([
-            'title' => 'Startseite',
-            'slug' => static::query()->where('slug', 'startseite')->exists() ? 'startseite-'.Str::lower(Str::random(6)) : 'startseite',
-            'sort' => 0,
-            'is_visible' => true,
-            'show_title' => false,
-            'show_in_navigation' => false,
-            'is_standalone' => true,
-            'is_home' => true,
-            'content' => $content,
-        ]);
+            return $home;
+        });
     }
 
     /**
-     * A tile grid block with one tile per section.
+     * Appends one navigation tile per given section, using their tile defaults.
      *
      * @param  iterable<Section>  $sections
-     * @return array{type: string, data: array<string, mixed>}
      */
-    public static function tilesBlockFor(iterable $sections): array
+    public function addTilesFor(iterable $sections): void
     {
-        $tiles = [];
-
         foreach ($sections as $section) {
-            $tiles[] = Tile::dataForSection($section);
+            $this->tiles()->create([
+                'type' => TileType::Section,
+                'link_type' => LinkTarget::SECTION,
+                'link_section_id' => $section->id,
+                'width' => $section->tile_width ?: 2,
+                'height' => $section->tile_height ?: 1,
+            ]);
         }
-
-        return ['type' => 'tiles', 'data' => ['tiles' => $tiles]];
     }
 
     /**
-     * Whether the page contains at least one tile grid, i.e. there is something to arrange.
+     * Whether the page has at least one tile, i.e. there is something to arrange.
      */
     public function hasTiles(): bool
     {
-        return collect($this->content ?? [])->contains(fn (mixed $block): bool => ($block['type'] ?? null) === 'tiles' && ! empty($block['data']['tiles']));
+        return $this->tiles()->exists();
+    }
+
+    /**
+     * The content of the page: tiles in the 6-column grid, ordered by sort.
+     */
+    public function tiles(): HasMany
+    {
+        return $this->hasMany(Tile::class)->orderBy('sort')->orderBy('id');
     }
 
     public function parent(): BelongsTo

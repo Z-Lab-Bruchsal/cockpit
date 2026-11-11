@@ -60,7 +60,7 @@ class CourseOffersTest extends TestCase
      */
     protected function offersPage(array $data = []): string
     {
-        Section::factory()->create(['slug' => 'angebote', 'content' => [['type' => 'offers', 'data' => $data]]]);
+        Section::factory()->withContent([['type' => 'offers', 'data' => $data]])->create(['slug' => 'angebote']);
 
         return $this->get('/angebote')->assertOk()->getContent();
     }

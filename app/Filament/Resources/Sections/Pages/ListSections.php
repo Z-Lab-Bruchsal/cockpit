@@ -30,13 +30,13 @@ class ListSections extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('arrangeOnHomepage')
-                ->label('Auf der Homepage anordnen')
-                ->icon(Heroicon::OutlinedSquares2x2)
+            Action::make('editOnHomepage')
+                ->label('Auf der Homepage bearbeiten')
+                ->icon(Heroicon::OutlinedPencilSquare)
                 ->color('gray')
-                ->url(fn (): string => route('homepage.index', ['anordnen' => 1]))
+                ->url(fn (): string => route('homepage.index', ['bearbeiten' => 1]))
                 ->openUrlInNewTab()
-                ->visible(fn (): bool => (bool) auth()->user()?->can('reorder', Section::class)),
+                ->visible(fn (): bool => (bool) auth()->user()?->can('Update:Section')),
             CreateAction::make(),
         ];
     }

@@ -84,7 +84,8 @@ class FooterTest extends TestCase
     {
         $this->actingAs($this->boss());
 
-        $this->get('/')->assertOk()->assertSee('Footer anordnen');
+        $this->get('/')->assertOk()->assertSee('>Bearbeiten<', false)->assertDontSeeLivewire(FooterEditor::class);
+        $this->get('/news?bearbeiten=1')->assertOk()->assertSee('Bearbeiten-Modus')->assertSeeLivewire(FooterEditor::class);
         $this->get('/news?anordnen=1')->assertOk()->assertSeeLivewire(FooterEditor::class);
 
         $socialId = $this->footerId(2);
@@ -127,7 +128,7 @@ class FooterTest extends TestCase
 
         $this->actingAs($this->boss());
 
-        $this->get('/?anordnen=1')
+        $this->get('/?bearbeiten=1')
             ->assertOk()
             ->assertSee('data-footer-entries="links"', false)
             ->assertSee(EditFooterLinkInline::getUrl(['kind' => 'social', 'index' => 1]));
@@ -182,7 +183,7 @@ class FooterTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        $this->get('/?anordnen=1')->assertOk()->assertDontSeeLivewire(FooterEditor::class);
+        $this->get('/?bearbeiten=1')->assertOk()->assertDontSeeLivewire(FooterEditor::class)->assertDontSee('Bearbeiten-Modus');
         Livewire::test(FooterEditor::class)->assertForbidden();
         $this->get(EditFooterLinkInline::getUrl(['kind' => 'links', 'index' => 'neu']))->assertForbidden();
     }

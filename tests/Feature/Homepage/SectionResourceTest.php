@@ -57,7 +57,6 @@ class SectionResourceTest extends TestCase
                 'slug' => 'workshops',
                 'parent_id' => $parent->id,
                 'layout' => 'highlighted',
-                'content' => [],
             ])
             ->call('create')
             ->assertHasNoFormErrors();

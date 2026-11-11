@@ -5,10 +5,13 @@ namespace Tests\Feature;
 use App\Enums\CourseDetailLayout;
 use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Sections\Pages\CreateSection;
+use App\Filament\Resources\Sections\Pages\EditSection;
+use App\Filament\Resources\Sections\RelationManagers\TilesRelationManager;
 use App\Models\Course;
 use App\Models\CourseTemplate;
 use App\Models\Section;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -96,35 +99,44 @@ class ImageAltTextTest extends TestCase
             ->assertHasFormErrors(['tile_image_alt' => 'required_with']);
     }
 
-    public function test_image_blocks_require_alt_text(): void
+    public function test_image_tiles_require_alt_text(): void
     {
         $this->actingAsEditor();
 
-        Livewire::test(CreateSection::class)
-            ->fillForm([
-                'title' => 'Galerie',
-                'slug' => 'galerie',
-                'content' => [
-                    ['type' => 'image', 'data' => ['image' => ['homepage/bild.jpg'], 'alt' => '']],
-                ],
+        $section = Section::factory()->create();
+        $manager = fn () => Livewire::test(TilesRelationManager::class, ['ownerRecord' => $section, 'pageClass' => EditSection::class]);
+
+        $manager()
+            ->callAction(TestAction::make('create_image')->table(), [
+                'settings' => ['image' => [UploadedFile::fake()->image('bild.jpg')], 'alt' => ''],
             ])
-            ->call('create')
-            ->assertHasErrors();
+            ->assertHasFormErrors(['settings.alt' => 'required_with']);
 
-        $this->assertSame(0, Section::query()->count());
+        $this->assertSame(0, $section->tiles()->count());
 
-        Livewire::test(CreateSection::class)
-            ->fillForm([
-                'title' => 'Galerie',
-                'slug' => 'galerie',
-                'content' => [
-                    ['type' => 'image', 'data' => ['image' => [UploadedFile::fake()->image('bild.jpg')], 'alt' => 'Werkstatt von innen']],
-                ],
+        $manager()
+            ->callAction(TestAction::make('create_image')->table(), [
+                'settings' => ['image' => [UploadedFile::fake()->image('bild.jpg')], 'alt' => 'Werkstatt von innen'],
             ])
-            ->call('create')
-            ->assertHasNoErrors();
+            ->assertHasNoFormErrors();
 
-        $this->assertSame(1, Section::query()->count());
+        $this->assertSame('Werkstatt von innen', $section->tiles()->firstOrFail()->setting('alt'));
+    }
+
+    public function test_content_tiles_require_alt_text_for_their_image(): void
+    {
+        $this->actingAsEditor();
+
+        $section = Section::factory()->create();
+
+        Livewire::test(TilesRelationManager::class, ['ownerRecord' => $section, 'pageClass' => EditSection::class])
+            ->callAction(TestAction::make('create_content')->table(), [
+                'heading' => 'Mit Bild',
+                'link_type' => 'none',
+                'image_path' => [UploadedFile::fake()->image('bild.jpg')],
+                'image_alt' => '',
+            ])
+            ->assertHasFormErrors(['image_alt' => 'required_with']);
     }
 
     public function test_alt_texts_are_rendered_on_the_homepage(): void

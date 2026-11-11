@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Homepage;
 
+use App\Filament\Resources\Sections\Pages\EditSection;
+use App\Filament\Resources\Sections\RelationManagers\TilesRelationManager;
 use App\Models\Section;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -24,9 +28,8 @@ class FreeWritingBlockTest extends TestCase
 
     private function freeSection(string $html): Section
     {
-        return Section::factory()->create([
+        return Section::factory()->withContent([['type' => 'free', 'data' => ['body' => $html]]])->create([
             'slug' => 'frei',
-            'content' => [['type' => 'free', 'data' => ['body' => $html]]],
         ]);
     }
 
@@ -85,7 +88,16 @@ class FreeWritingBlockTest extends TestCase
 
         $this->actingAs($user)
             ->get("/cockpit/sections/{$section->id}/edit")
-            ->assertOk()
-            ->assertSee('Freies Schreiben');
+            ->assertOk();
+
+        $tile = $section->tiles()->firstOrFail();
+
+        Livewire::test(TilesRelationManager::class, ['ownerRecord' => $section, 'pageClass' => EditSection::class])
+            ->assertSee('Freies Schreiben')
+            ->assertSee('Hallo Welt')
+            ->callAction(TestAction::make('edit')->table($tile), ['settings' => ['body' => '<p>Neu geschrieben</p>']])
+            ->assertHasNoFormErrors();
+
+        $this->assertStringContainsString('Neu geschrieben', (string) $tile->fresh()->setting('body'));
     }
 }

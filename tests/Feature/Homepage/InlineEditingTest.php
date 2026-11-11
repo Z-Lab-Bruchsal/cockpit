@@ -3,11 +3,13 @@
 namespace Tests\Feature\Homepage;
 
 use App\Enums\CourseProminence;
-use App\Filament\Pages\Inline\EditBlockInline;
+use App\Filament\Pages\Inline\CreateTileInline;
 use App\Filament\Pages\Inline\EditOfferInline;
+use App\Filament\Pages\Inline\EditTileInline;
 use App\Models\Course;
 use App\Models\CourseInstance;
 use App\Models\Section;
+use App\Models\Tile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -43,48 +45,47 @@ class InlineEditingTest extends TestCase
 
     protected function page(): Section
     {
-        return Section::factory()->create([
+        return Section::factory()->withContent([
+            ['type' => 'text', 'data' => ['body' => '<p>Erster Block</p>']],
+            ['type' => 'text', 'data' => ['body' => '<p>Zweiter Block</p>']],
+            ['type' => 'offers', 'data' => ['show_filter_tabs' => false]],
+        ])->create([
             'slug' => 'seite',
             'title' => 'Meine Seite',
-            'content' => [
-                ['type' => 'text', 'data' => ['body' => '<p>Erster Block</p>']],
-                ['type' => 'text', 'data' => ['body' => '<p>Zweiter Block</p>']],
-                ['type' => 'offers', 'data' => ['show_filter_tabs' => false]],
-            ],
         ]);
     }
 
-    protected function blockId(Section $section, int $index): string
+    protected function tileUuid(Section $section, int $index): string
     {
-        return $section->fresh()->content[$index]['data']['block_id'];
+        return $section->tiles()->get()[$index]->uuid;
     }
 
     public function test_guests_and_users_without_permission_get_no_edit_mode(): void
     {
         $this->page();
 
-        $this->get('/seite?bearbeiten=1')->assertOk()->assertDontSee('Block bearbeiten')->assertDontSee('Bearbeiten-Modus');
+        $this->get('/seite?bearbeiten=1')->assertOk()->assertDontSee('Kachel bearbeiten')->assertDontSee('Bearbeiten-Modus');
 
         $this->actingAs(User::factory()->create())
             ->get('/seite?bearbeiten=1')
             ->assertOk()
-            ->assertDontSee('Block bearbeiten')
+            ->assertDontSee('Kachel bearbeiten')
             ->assertDontSee('>Bearbeiten<', false);
     }
 
-    public function test_editor_switches_on_edit_mode_and_gets_a_pencil_per_block_and_offer(): void
+    public function test_editor_switches_on_edit_mode_and_gets_a_pencil_per_tile_and_offer(): void
     {
         $page = $this->page();
         $instance = CourseInstance::factory()->withDates()->create(['title' => 'Löten']);
 
         $this->actingAs($this->editor());
 
-        $this->get('/seite')->assertOk()->assertSee('>Bearbeiten<', false)->assertDontSee('Block bearbeiten');
+        $this->get('/seite')->assertOk()->assertSee('>Bearbeiten<', false)->assertDontSee('Kachel bearbeiten');
 
         $this->get('/seite?bearbeiten=1')
             ->assertOk()
             ->assertSee('Bearbeiten-Modus')
-            ->assertSee(EditBlockInline::getUrl(['section' => $page->id, 'block' => $this->blockId($page, 1)]))
+            ->assertSee(EditTileInline::getUrl(['tile' => $this->tileUuid($page, 1)]))
             ->assertSee(EditOfferInline::getUrl(['instance' => $instance->id]))
             ->assertSee('Angebot bearbeiten');
 
@@ -93,7 +94,7 @@ class InlineEditingTest extends TestCase
             ->assertSee(EditOfferInline::getUrl(['instance' => $instance->id]));
     }
 
-    public function test_users_who_may_only_edit_offers_get_no_block_pencils(): void
+    public function test_users_who_may_only_edit_offers_get_no_tile_pencils(): void
     {
         $this->page();
         CourseInstance::factory()->withDates()->create();
@@ -101,54 +102,91 @@ class InlineEditingTest extends TestCase
         $this->actingAs($this->editor(['CourseInstance']))
             ->get('/seite?bearbeiten=1')
             ->assertOk()
-            ->assertDontSee('Block bearbeiten')
+            ->assertDontSee('Kachel bearbeiten')
             ->assertSee('Angebot bearbeiten');
     }
 
-    public function test_block_editor_saves_only_its_block(): void
+    public function test_tile_editor_saves_only_its_tile(): void
     {
         $page = $this->page();
-        $blockId = $this->blockId($page, 1);
+        $uuid = $this->tileUuid($page, 1);
 
         $this->actingAs($this->editor());
 
-        $this->get(EditBlockInline::getUrl(['section' => $page->id, 'block' => $blockId]))
+        $this->get(EditTileInline::getUrl(['tile' => $uuid]))
             ->assertOk()
             ->assertSee('Text bearbeiten')
             ->assertDontSee('fi-sidebar', false);
 
-        Livewire::withQueryParams(['section' => $page->id, 'block' => $blockId])
-            ->test(EditBlockInline::class)
+        Livewire::withQueryParams(['tile' => $uuid])
+            ->test(EditTileInline::class)
             ->assertSee('Seite „Meine Seite“')
-            ->assertSchemaStateSet(['body' => '<p>Zweiter Block</p>'])
-            ->fillForm(['body' => '<p>Geändert</p>'])
+            ->assertSchemaStateSet(['settings.body' => '<p>Zweiter Block</p>'])
+            ->fillForm(['settings' => ['body' => '<p>Geändert</p>'], 'width' => 3])
             ->call('save')
             ->assertHasNoFormErrors()
             ->assertNotified('Gespeichert');
 
-        $content = $page->fresh()->content;
+        $tiles = $page->tiles()->get();
 
-        $this->assertSame('<p>Erster Block</p>', $content[0]['data']['body']);
-        $this->assertStringContainsString('Geändert', $content[1]['data']['body']);
-        $this->assertSame($blockId, $content[1]['data']['block_id']);
-        $this->assertSame('offers', $content[2]['type']);
+        $this->assertSame('<p>Erster Block</p>', $tiles[0]->setting('body'));
+        $this->assertStringContainsString('Geändert', $tiles[1]->setting('body'));
+        $this->assertSame(3, $tiles[1]->width);
+        $this->assertSame($uuid, $tiles[1]->uuid);
+        $this->assertSame('offers', $tiles[2]->type->value);
     }
 
-    public function test_block_editor_rejects_unknown_blocks_and_missing_permission(): void
+    public function test_tile_editor_rejects_unknown_tiles_and_missing_permission(): void
     {
         $page = $this->page();
 
         $this->actingAs($this->editor());
 
-        Livewire::withQueryParams(['section' => $page->id, 'block' => 'gibt-es-nicht'])
-            ->test(EditBlockInline::class)
+        Livewire::withQueryParams(['tile' => 'gibt-es-nicht'])
+            ->test(EditTileInline::class)
             ->assertNotFound();
 
         $this->actingAs($this->editor(['CourseInstance']));
 
-        Livewire::withQueryParams(['section' => $page->id, 'block' => $this->blockId($page, 0)])
-            ->test(EditBlockInline::class)
+        Livewire::withQueryParams(['tile' => $this->tileUuid($page, 0)])
+            ->test(EditTileInline::class)
             ->assertForbidden();
+    }
+
+    public function test_new_tiles_are_added_at_the_end_of_the_page(): void
+    {
+        $page = $this->page();
+
+        $this->actingAs($this->editor());
+
+        $this->get(CreateTileInline::getUrl(['section' => $page->id, 'type' => 'content']))
+            ->assertOk()
+            ->assertSee('Inhalt hinzufügen');
+
+        Livewire::withQueryParams(['section' => $page->id, 'type' => 'content'])
+            ->test(CreateTileInline::class)
+            ->fillForm(['heading' => 'Ganz neu', 'link_type' => 'none'])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Gespeichert');
+
+        $tile = $page->tiles()->get()->last();
+
+        $this->assertSame('Ganz neu', $tile->heading);
+        $this->assertSame('content', $tile->type->value);
+        $this->assertSame(4, $page->tiles()->count());
+
+        Livewire::withQueryParams(['section' => $page->id, 'type' => 'gibt-es-nicht'])
+            ->test(CreateTileInline::class)
+            ->assertNotFound();
+
+        $this->actingAs($this->editor(['CourseInstance']));
+
+        Livewire::withQueryParams(['section' => $page->id, 'type' => 'text'])
+            ->test(CreateTileInline::class)
+            ->assertForbidden();
+
+        $this->assertSame(4, Tile::query()->count());
     }
 
     public function test_offer_editor_changes_only_the_instance(): void

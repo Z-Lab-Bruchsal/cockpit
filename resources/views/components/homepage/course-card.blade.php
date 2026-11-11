@@ -9,12 +9,12 @@
 
 <article
     style="{{ $template->accentStyle() }}"
-    @class([
+    {{ $attributes->class([
         'key-card key-card-interactive group relative flex overflow-hidden',
         'flex-col' => $style !== \App\Enums\CourseCardStyle::ImageLeft,
         'flex-col sm:flex-row' => $style === \App\Enums\CourseCardStyle::ImageLeft,
         'border-l-4 border-l-brand' => $style === \App\Enums\CourseCardStyle::Compact,
-    ])
+    ]) }}
 >
     @if ($image)
         <div @class([

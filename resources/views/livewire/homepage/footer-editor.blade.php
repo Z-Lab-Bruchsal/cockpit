@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-white/40 px-4 py-3 text-sm">
-        <p class="grow"><strong>Footer anordnen:</strong> Elemente am Griff ⠿ ziehen, Links und Profile innerhalb ihres Elements direkt ziehen. Breite mit −/+ ändern. Änderungen werden sofort gespeichert.</p>
+        <p class="grow"><strong>Footer bearbeiten:</strong> Elemente am Griff ⠿ ziehen, Links und Profile innerhalb ihres Elements direkt ziehen. Breite mit −/+ ändern. Änderungen werden sofort gespeichert.</p>
         <button type="button" wire:click="addText" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-ink hover:bg-gray-100">+ Text hinzufügen</button>
     </div>
 

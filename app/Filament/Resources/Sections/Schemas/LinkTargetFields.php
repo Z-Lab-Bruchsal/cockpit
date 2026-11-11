@@ -14,36 +14,46 @@ use Filament\Schemas\Components\Utilities\Get;
 class LinkTargetFields
 {
     /**
+     * Field names as stored in tiles.
+     *
+     * @var array{type: string, section: string, url: string, anchor: string}
+     */
+    public const TILE_COLUMNS = ['type' => 'link_type', 'section' => 'link_section_id', 'url' => 'link_url', 'anchor' => 'link_anchor'];
+
+    /**
+     * @param  array{type: string, section: string, url: string, anchor: string}  $names  Field names, by default those of block data.
      * @return list<Select|TextInput>
      */
-    public static function make(string $default = LinkTarget::SECTION): array
+    public static function make(string $default = LinkTarget::SECTION, array $names = ['type' => 'target_type', 'section' => 'section_id', 'url' => 'url', 'anchor' => 'anchor']): array
     {
+        $isType = fn (Get $get, string ...$types): bool => in_array($get($names['type']), $types, true);
+
         return [
-            Select::make('target_type')
+            Select::make($names['type'])
                 ->label('Verlinkt auf')
                 ->options(LinkTarget::options())
                 ->default($default)
                 ->selectablePlaceholder(false)
                 ->live(),
-            Select::make('section_id')
+            Select::make($names['section'])
                 ->label('Bereich')
                 ->options(fn (): array => static::sectionOptions())
                 ->searchable()
-                ->required(fn (Get $get): bool => $get('target_type') === LinkTarget::SECTION)
-                ->visible(fn (Get $get): bool => $get('target_type') === LinkTarget::SECTION),
-            TextInput::make('url')
+                ->required(fn (Get $get): bool => $isType($get, LinkTarget::SECTION))
+                ->visible(fn (Get $get): bool => $isType($get, LinkTarget::SECTION)),
+            TextInput::make($names['url'])
                 ->label('Adresse')
                 ->helperText('z. B. /kurse, #kontakt, https://… oder mailto:…')
                 ->maxLength(500)
-                ->required(fn (Get $get): bool => $get('target_type') === LinkTarget::URL)
-                ->visible(fn (Get $get): bool => $get('target_type') === LinkTarget::URL),
-            TextInput::make('anchor')
+                ->required(fn (Get $get): bool => $isType($get, LinkTarget::URL))
+                ->visible(fn (Get $get): bool => $isType($get, LinkTarget::URL)),
+            TextInput::make($names['anchor'])
                 ->label('Sprungmarke')
                 ->helperText('Optional, z. B. „team“ für …/ueber-uns#team')
                 ->prefix('#')
                 ->alphaDash()
                 ->maxLength(60)
-                ->visible(fn (Get $get): bool => in_array($get('target_type'), [LinkTarget::SECTION, LinkTarget::COURSES, LinkTarget::NEWS, LinkTarget::CALENDAR], true)),
+                ->visible(fn (Get $get): bool => $isType($get, LinkTarget::SECTION, LinkTarget::COURSES, LinkTarget::NEWS, LinkTarget::CALENDAR)),
         ];
     }
 

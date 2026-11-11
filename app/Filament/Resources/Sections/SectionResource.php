@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Sections;
 use App\Filament\Resources\Sections\Pages\CreateSection;
 use App\Filament\Resources\Sections\Pages\EditSection;
 use App\Filament\Resources\Sections\Pages\ListSections;
+use App\Filament\Resources\Sections\RelationManagers\TilesRelationManager;
 use App\Filament\Resources\Sections\Schemas\SectionForm;
 use App\Filament\Resources\Sections\Tables\SectionsTable;
 use App\Models\Section;
@@ -46,7 +47,7 @@ class SectionResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            TilesRelationManager::class,
         ];
     }
 

@@ -31,19 +31,12 @@ class Layout extends Component
     public bool $isAccountPage;
 
     /**
-     * Cockpit users (guard "web") who may arrange the homepage tiles in place.
-     */
-    public bool $canArrangeTiles;
-
-    public bool $isArranging;
-
-    /**
-     * Cockpit users who may change the company settings also arrange the footer in the arrange mode.
+     * Cockpit users who may change the company settings also arrange the footer in the edit mode.
      */
     public bool $canArrangeFooter;
 
     /**
-     * Cockpit users who may edit blocks or offers in place, see InlineEditing.
+     * Cockpit users who may edit or arrange anything in place, see InlineEditing.
      */
     public bool $canEditInline;
 
@@ -78,9 +71,7 @@ class Layout extends Component
             default => 'homepage.login',
         });
         $this->isAccountPage = request()->routeIs('homepage.account', 'homepage.login', 'homepage.schools.account');
-        $this->canArrangeTiles = (bool) Auth::guard('web')->user()?->can('reorder', Section::class);
         $this->canArrangeFooter = (bool) Auth::guard('web')->user()?->can('View:CompanySettingsPage');
-        $this->isArranging = ($this->canArrangeTiles || $this->canArrangeFooter) && request()->boolean('anordnen');
         $this->canEditInline = InlineEditing::isAvailable();
         $this->isEditingInline = InlineEditing::isActive();
         $this->canDesign = DesignTheme::userMayDesign();
@@ -88,19 +79,11 @@ class Layout extends Component
     }
 
     /**
-     * The floating toolbar for cockpit users: edit mode everywhere, arranging tiles on start and section pages.
+     * The floating toolbar for cockpit users: edit mode (with arranging tiles and footer) and design mode.
      */
-    public function showsArrangeToolbar(): bool
+    public function showsToolbar(): bool
     {
-        return ($this->showsArrangeButton() || $this->canEditInline || $this->canDesign) && ! $this->isPreview;
-    }
-
-    /**
-     * Tiles exist on the start page and on section pages only.
-     */
-    public function showsArrangeButton(): bool
-    {
-        return ($this->canArrangeTiles && request()->routeIs('homepage.index', 'homepage.section')) || $this->canArrangeFooter;
+        return ($this->canEditInline || $this->canDesign) && ! $this->isPreview;
     }
 
     public function pageTitle(): string

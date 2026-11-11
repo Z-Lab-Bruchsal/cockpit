@@ -10,6 +10,7 @@ use App\Models\CourseDate;
 use App\Models\CourseInstance;
 use App\Models\Interest;
 use App\Models\Section;
+use App\Models\Tile;
 use App\Models\User;
 use App\Services\Homepage\HomepagePreview;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -138,18 +139,14 @@ class HomepagePreviewTest extends TestCase
     {
         $section = Section::factory()->hidden()->create(['title' => 'Alt']);
         $child = Section::factory()->create(['title' => 'Unterbereich']);
+        Tile::factory()->for($section)->text('<p>Gespeicherter Inhalt</p>')->create();
+        Tile::factory()->for($section)->linkingTo($child)->create();
 
         $state = [
             'title' => 'Workshops',
             'teaser' => 'Neuer Kachel-Text',
             'tile_width' => 4,
             'tile_height' => 1,
-            'content' => [
-                'a1b2' => ['type' => 'text', 'data' => ['body' => '<p>Ungespeicherter Inhalt</p>']],
-                'c3d4' => ['type' => 'tiles', 'data' => ['tiles' => [
-                    'e5f6' => ['target_type' => 'section', 'section_id' => $child->id, 'heading' => null, 'image' => []],
-                ]]],
-            ],
         ];
 
         $this->actingAs($this->user)
@@ -162,7 +159,7 @@ class HomepagePreviewTest extends TestCase
             ->get($this->previewUrl(HomepagePreview::TYPE_SECTION, $state, $section))
             ->assertOk()
             ->assertSee('Workshops')
-            ->assertSee('Ungespeicherter Inhalt')
+            ->assertSee('Gespeicherter Inhalt')
             ->assertSee('Unterbereich');
 
         $this->assertSame('Alt', $section->fresh()->title);

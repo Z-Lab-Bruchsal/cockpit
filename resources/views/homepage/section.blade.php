@@ -24,12 +24,17 @@
             <h1 class="sr-only">{{ $isHome ? \App\Models\CompanySetting::current()->homepageTitle() : $section->title }}</h1>
         @endif
 
-        @if (! empty($section->content))
-            <div @class(['flex flex-col', 'gap-6' => $isHome, 'gap-8' => ! $isHome])>
-                @foreach ($section->content as $block)
-                    <x-homepage.block :block="$block" :section="$section" />
-                @endforeach
-            </div>
+        @php
+            $isArranging = $section->exists
+                && \App\Services\Homepage\InlineEditing::isActive()
+                && \App\Livewire\Homepage\SectionTileEditor::canArrange($section);
+            $items = $isArranging ? collect() : \App\Services\Homepage\TileGrid::items($section);
+        @endphp
+
+        @if ($isArranging)
+            <livewire:homepage.section-tile-editor :section-id="$section->id" :key="'section-tile-editor-'.$section->id" />
+        @elseif ($items->isNotEmpty())
+            <x-homepage.tile-grid :items="$items" />
         @elseif ($isHome)
             <p class="py-12 text-center text-gray-500">Hier entsteht gerade etwas Neues.</p>
         @endif

@@ -8,6 +8,7 @@ use App\Models\CompanySetting;
 use App\Models\DesignTheme;
 use App\Models\DesignThemeRevision;
 use App\Models\Section;
+use App\Models\Tile;
 use App\Models\User;
 use Database\Seeders\ShieldSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,12 +41,9 @@ class DesignModeTest extends TestCase
      */
     protected function pageWithTile(): string
     {
-        $section = Section::factory()->create([
-            'slug' => 'seite',
-            'content' => [['type' => 'tiles', 'data' => ['tiles' => [['heading' => 'Kachel', 'target_type' => 'none']]]]],
-        ]);
+        $section = Section::factory()->create(['slug' => 'seite']);
 
-        return $section->content[0]['data']['tiles'][0]['id'];
+        return Tile::factory()->for($section)->create(['heading' => 'Kachel'])->uuid;
     }
 
     public function test_published_roles_and_element_overrides_are_rendered(): void

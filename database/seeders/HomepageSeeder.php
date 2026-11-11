@@ -4,10 +4,13 @@ namespace Database\Seeders;
 
 use App\Enums\SectionLayout;
 use App\Enums\TileStyle;
+use App\Enums\TileType;
 use App\Models\CompanySetting;
 use App\Models\Section;
+use App\Services\Homepage\LegacyContentConverter;
 use App\Services\Homepage\LinkTarget;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 
 /**
  * Initial homepage content for the Z-LAB Bruchsal, based on the public website (www.z-lab-bruchsal.de).
@@ -338,11 +341,11 @@ class HomepageSeeder extends Seeder
             ->each(function (Section $section): void {
                 $children = $section->children->where('is_standalone', false);
 
-                if ($children->isEmpty() || $section->hasTiles()) {
+                if ($children->isEmpty() || $section->tiles()->where('type', TileType::Section)->exists()) {
                     return;
                 }
 
-                $section->update(['content' => [...($section->content ?? []), Section::tilesBlockFor($children)]]);
+                $section->addTilesFor($children);
             });
     }
 
@@ -367,7 +370,7 @@ class HomepageSeeder extends Seeder
                     'height' => 1,
                 ]]],
             ],
-            Section::tilesBlockFor($roots),
+            $this->tilesBlockFor($roots),
         ];
 
         if ($team !== null) {
@@ -380,7 +383,7 @@ class HomepageSeeder extends Seeder
             ]];
         }
 
-        Section::query()->updateOrCreate(['is_home' => true], [
+        $home = Section::query()->updateOrCreate(['is_home' => true], [
             'title' => 'Startseite',
             'slug' => 'startseite',
             'sort' => 0,
@@ -388,13 +391,22 @@ class HomepageSeeder extends Seeder
             'show_title' => false,
             'show_in_navigation' => false,
             'is_standalone' => true,
-            'content' => $content,
         ]);
+
+        $this->replaceTiles($home, $content);
     }
 
+    /**
+     * Creates or updates a section. Its content is given as content blocks and replaces the tiles of the section.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
     protected function section(string $slug, array $attributes): Section
     {
-        return Section::query()->updateOrCreate(['slug' => $slug], [
+        $content = $attributes['content'] ?? [];
+        unset($attributes['content']);
+
+        $section = Section::query()->updateOrCreate(['slug' => $slug], [
             'parent_id' => null,
             'is_visible' => true,
             'show_title' => true,
@@ -403,6 +415,44 @@ class HomepageSeeder extends Seeder
             'layout' => SectionLayout::Standard,
             ...$attributes,
         ]);
+
+        $this->replaceTiles($section, $content);
+
+        return $section;
+    }
+
+    /**
+     * @param  array<int, mixed>  $content
+     */
+    protected function replaceTiles(Section $section, array $content): void
+    {
+        $section->tiles()->delete();
+
+        foreach (LegacyContentConverter::toTiles($content) as $row) {
+            $section->tiles()->create(Arr::except($row, ['uuid']));
+        }
+    }
+
+    /**
+     * A tile grid block with one tile per section, in the content block format of replaceTiles().
+     *
+     * @param  iterable<Section>  $sections
+     * @return array{type: string, data: array<string, mixed>}
+     */
+    protected function tilesBlockFor(iterable $sections): array
+    {
+        $tiles = [];
+
+        foreach ($sections as $section) {
+            $tiles[] = [
+                'target_type' => LinkTarget::SECTION,
+                'section_id' => $section->id,
+                'width' => $section->tile_width ?: 2,
+                'height' => $section->tile_height ?: 1,
+            ];
+        }
+
+        return ['type' => 'tiles', 'data' => ['tiles' => $tiles]];
     }
 
     /**

@@ -26,9 +26,8 @@ class TeamTest extends TestCase
      */
     private function teamSection(array $data = []): Section
     {
-        return Section::factory()->create([
+        return Section::factory()->withContent([['type' => 'team', 'data' => $data]])->create([
             'slug' => 'ueber-uns',
-            'content' => [['type' => 'team', 'data' => $data]],
         ]);
     }
 
