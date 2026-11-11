@@ -3,11 +3,11 @@
 namespace App\Providers\Filament;
 
 use AlexanderGabriel\FilamentDashboardTabs\FilamentDashboardTabsPlugin;
-use AlexanderGabriel\FilamentDashboardTabs\Pages\Dashboard;
 use AlexanderGabriel\FilamentMailTestMode\FilamentMailTestModePlugin;
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Clusters\Settings\SettingsCluster;
 use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
@@ -83,7 +83,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make()->navigationGroup('Zugänge'),
-                FilamentDashboardTabsPlugin::make(),
+                FilamentDashboardTabsPlugin::make()
+                    ->page(Dashboard::class)
+                    ->defaultWidgets([
+                        TimeClockWidget::class,
+                        MyTodosWidget::class,
+                        MyOrdersWidget::class,
+                    ]),
                 FilamentMailTestModePlugin::make()
                     ->cluster(SettingsCluster::class)
                     ->navigationGroup('Allgemein')

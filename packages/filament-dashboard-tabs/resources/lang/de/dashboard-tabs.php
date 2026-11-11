@@ -20,7 +20,12 @@ return [
         'move_widget' => 'Auf anderen Tab verschieben',
         'remove_widget' => 'Widget entfernen',
         'remove_widget_confirm' => '„:name“ von diesem Tab entfernen?',
+        'reset_filters' => 'Filter zurücksetzen',
         'drag' => 'Ziehen zum Verschieben',
+    ],
+
+    'filters' => [
+        'heading' => 'Filter',
     ],
 
     'fields' => [

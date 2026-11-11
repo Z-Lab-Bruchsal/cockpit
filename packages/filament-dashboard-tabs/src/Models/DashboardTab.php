@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $user_id
  * @property string $name
  * @property int $sort
+ * @property array<string, mixed>|null $filters
  */
 class DashboardTab extends Model
 {
     /** @use HasFactory<DashboardTabFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'sort'];
+    protected $fillable = ['user_id', 'name', 'sort', 'filters'];
 
     /**
      * @return array<string, string>
@@ -28,6 +29,7 @@ class DashboardTab extends Model
     {
         return [
             'sort' => 'integer',
+            'filters' => 'array',
         ];
     }
 

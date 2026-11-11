@@ -10,6 +10,29 @@
             </p>
         @endif
 
+        @if (filled($filtersDescription = $this->getFiltersDescription()))
+            <p class="fi-dashboard-tabs-print-filters hidden text-sm text-gray-600 print:block">
+                {{ $filtersDescription }}
+            </p>
+        @endif
+
+        @if ($this->showsFiltersForm())
+            <x-filament::section
+                wire:key="dashboard-filters-{{ $this->currentTab->id }}"
+                class="fi-dashboard-tabs-filters print:hidden"
+                :heading="__('filament-dashboard-tabs::dashboard-tabs.filters.heading')"
+                :icon="\Filament\Support\Icons\Heroicon::OutlinedFunnel"
+                collapsible
+                compact
+            >
+                <x-slot name="afterHeader">
+                    {{ $this->resetFiltersAction }}
+                </x-slot>
+
+                {{ $this->getFiltersForm() }}
+            </x-filament::section>
+        @endif
+
         @if ($this->currentWidgets->isEmpty())
             <x-filament::empty-state
                 :heading="__('filament-dashboard-tabs::dashboard-tabs.empty.heading')"
@@ -73,7 +96,7 @@
                             </div>
                         </div>
 
-                        @livewire($row->widget, $row->widget::getDefaultProperties(), key('dashboard-tab-widget-'.$row->id))
+                        @livewire($row->widget, $this->widgetProperties($row->widget), key('dashboard-tab-widget-'.$row->id))
                     </div>
                 @endforeach
             </div>

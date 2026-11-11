@@ -327,3 +327,61 @@ ul.fi-ta-text-has-badges {
 .fi-ta-filters .fi-fo-field {
     @apply gap-y-0.5;
 }
+
+/*
+ * Drucken (Dashboard und Auswertungen): nur Inhalte, keine Navigation, Aktionen oder Filter.
+ * Widgets werden nicht über Seitenumbrüche hinweg geteilt.
+ */
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    .fi-sidebar,
+    .fi-topbar,
+    .fi-sidebar-close-overlay,
+    .fi-page-header-actions-ctn,
+    .fi-header .fi-ac,
+    .fi-dashboard-tabs-bar .fi-ac,
+    .fi-dashboard-tabs-filters,
+    .fi-wi-chart-filter,
+    .fi-ta-header-toolbar,
+    .fi-pagination,
+    .fi-no-notification,
+    .fi-notifications {
+        display: none !important;
+    }
+
+    html,
+    body,
+    .fi-body,
+    .fi-layout,
+    .fi-main-ctn {
+        background: #ffffff !important;
+    }
+
+    .fi-main-ctn {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .fi-main {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+
+    .fi-wi-widget,
+    .fi-wi-stats-overview,
+    .fi-wi-chart,
+    .fi-ta-ctn,
+    .fi-section {
+        break-inside: avoid;
+        box-shadow: none !important;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

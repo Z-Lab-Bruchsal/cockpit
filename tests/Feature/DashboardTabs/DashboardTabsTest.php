@@ -5,7 +5,7 @@ namespace Tests\Feature\DashboardTabs;
 use AlexanderGabriel\FilamentDashboardTabs\Enums\WidgetWidth;
 use AlexanderGabriel\FilamentDashboardTabs\Models\DashboardTab;
 use AlexanderGabriel\FilamentDashboardTabs\Models\DashboardTabWidget;
-use AlexanderGabriel\FilamentDashboardTabs\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;

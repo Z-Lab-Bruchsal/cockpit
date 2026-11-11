@@ -24,6 +24,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Fillable([
     'name', 'email', 'password', 'street', 'zip', 'city',
     'team_visible', 'team_area', 'team_role', 'team_bio', 'team_photo_path', 'team_photo_alt', 'team_sort', 'team_contactable',
+    'weekly_hours',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasAvatar
@@ -32,6 +33,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
     use HasRoles;
 
     /**
@@ -57,6 +59,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
             'team_area' => TeamArea::class,
             'team_sort' => 'integer',
             'team_contactable' => 'boolean',
+            'weekly_hours' => 'decimal:2',
         ];
     }
 

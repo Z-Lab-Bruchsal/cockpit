@@ -20,7 +20,12 @@ return [
         'move_widget' => 'Move to another tab',
         'remove_widget' => 'Remove widget',
         'remove_widget_confirm' => 'Remove ":name" from this tab?',
+        'reset_filters' => 'Reset filters',
         'drag' => 'Drag to move',
+    ],
+
+    'filters' => [
+        'heading' => 'Filters',
     ],
 
     'fields' => [

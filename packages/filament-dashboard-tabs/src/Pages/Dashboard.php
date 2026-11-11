@@ -2,6 +2,7 @@
 
 namespace AlexanderGabriel\FilamentDashboardTabs\Pages;
 
+use AlexanderGabriel\FilamentDashboardTabs\Concerns\HasTabFilters;
 use AlexanderGabriel\FilamentDashboardTabs\Enums\WidgetWidth;
 use AlexanderGabriel\FilamentDashboardTabs\FilamentDashboardTabsPlugin;
 use AlexanderGabriel\FilamentDashboardTabs\Models\DashboardTab;
@@ -29,9 +30,12 @@ use Livewire\Attributes\Url;
 /**
  * Dashboard where every user arranges panel widgets on their own tabs:
  * drag to reorder, toggle between half and full width, move between tabs.
+ * Subclasses may add a filter form (see HasTabFilters) whose state is kept per tab.
  */
 class Dashboard extends BaseDashboard
 {
+    use HasTabFilters;
+
     protected string $view = 'filament-dashboard-tabs::pages.dashboard';
 
     #[Url(as: 'tab')]
@@ -42,6 +46,13 @@ class Dashboard extends BaseDashboard
     public function mount(): void
     {
         $this->createDefaultTabIfMissing();
+        $this->loadTabFilters();
+    }
+
+    public function updatedActiveTab(): void
+    {
+        $this->refreshState();
+        $this->loadTabFilters();
     }
 
     /**
@@ -190,6 +201,7 @@ class Dashboard extends BaseDashboard
 
                 $this->activeTab = $tab->id;
                 $this->refreshState();
+                $this->loadTabFilters();
             });
     }
 
@@ -227,6 +239,7 @@ class Dashboard extends BaseDashboard
 
                 $this->activeTab = null;
                 $this->refreshState();
+                $this->loadTabFilters();
             });
     }
 

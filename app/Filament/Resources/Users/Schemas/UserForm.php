@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use App\Filament\Resources\Groups\Schemas\GroupForm;
+use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -40,6 +41,15 @@ class UserForm
                             ->label('Ort'),
                     ])
                     ->columns(3),
+                TextInput::make('weekly_hours')
+                    ->label('Vereinbarte Wochenstunden')
+                    ->helperText('Die Stundenauswertung markiert Wochen, in denen mehr gearbeitet wurde. Leer lassen, wenn keine Wochenstunden vereinbart sind.')
+                    ->numeric()
+                    ->minValue(0)
+                    ->maxValue(80)
+                    ->step(0.25)
+                    ->suffix('h')
+                    ->visible(fn (): bool => (bool) User::find(filament()->auth()->id())?->can('Worktimes:SupervisorReport')),
                 Select::make('groups')
                     ->relationship('groups', 'name')
                     ->label('Gruppen')
