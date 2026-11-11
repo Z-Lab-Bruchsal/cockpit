@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Filament\Actions\SendPasswordResetLinkAction;
 use App\Filament\Resources\Groups\RelationManagers\UsersRelationManager;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -62,6 +63,7 @@ class UsersTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                SendPasswordResetLinkAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -59,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->trustConfiguredProxies();
+
+        Password::defaults(fn (): Password => Password::min(10)
+            ->mixedCase()
+            ->numbers()
+            ->when($this->app->isProduction(), fn (Password $rule): Password => $rule->uncompromised()));
 
         // Magic links: a few per address and per visitor, so the form cannot be used to flood inboxes.
         RateLimiter::for('magic-link', function (Request $request): array {

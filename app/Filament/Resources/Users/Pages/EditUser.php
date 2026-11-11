@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
+use App\Filament\Actions\SendPasswordResetLinkAction;
 use App\Filament\Resources\Users\UserResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -15,6 +16,7 @@ class EditUser extends EditRecord
     {
         return [
             ViewAction::make(),
+            SendPasswordResetLinkAction::make(),
             DeleteAction::make(),
         ];
     }

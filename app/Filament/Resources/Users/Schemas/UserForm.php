@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Password;
 
 class UserForm
 {
@@ -24,7 +25,10 @@ class UserForm
                 DateTimePicker::make('email_verified_at'),
                 TextInput::make('password')
                     ->password()
+                    ->revealable()
                     ->required()
+                    ->rule(Password::default())
+                    ->helperText('Mind. 10 Zeichen, Groß- und Kleinbuchstaben und eine Zahl.')
                     ->visibleOn(['create']),
                 Section::make('Adresse')
                     ->schema([

@@ -7,6 +7,7 @@ use AlexanderGabriel\FilamentDashboardTabs\Pages\Dashboard;
 use AlexanderGabriel\FilamentMailTestMode\FilamentMailTestModePlugin;
 use AlexanderGabriel\FilamentOauth2\FilamentOauth2Plugin;
 use App\Filament\Clusters\Settings\SettingsCluster;
+use App\Filament\Pages\Auth\Login;
 use App\Filament\Resources\Bookings\Widgets\TimeClockWidget;
 use App\Filament\Resources\Orders\Widgets\MyOrdersWidget;
 use App\Filament\Resources\Todos\Widgets\MyTodosWidget;
@@ -39,7 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('cockpit')
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->login()
+            ->login(Login::class)
             ->spa()
             ->unsavedChangesAlerts()
             ->passwordReset()
