@@ -136,6 +136,34 @@ class BookingForm extends Component
         return $this->redirectRoute('homepage.booking.done');
     }
 
+    /**
+     * Gives back the seat of one child slot, keeping the details already entered for the other children.
+     */
+    public function removeKid(int $index, CourseReservationService $reservations): mixed
+    {
+        unset($this->registration);
+
+        if ($this->registration === null) {
+            return $this->redirectRoute('homepage.booking.show', $this->token);
+        }
+
+        try {
+            $reservations->releaseHeldSeat($this->registration, $index);
+        } catch (ReservationException $exception) {
+            $this->addError('booking', $exception->getMessage());
+            unset($this->registration);
+
+            return null;
+        }
+
+        array_splice($this->kids, $index, 1);
+        unset($this->registration);
+        $this->resetErrorBag();
+        $this->syncKidSlots();
+
+        return null;
+    }
+
     public function render(): View
     {
         return view('livewire.homepage.booking-form');

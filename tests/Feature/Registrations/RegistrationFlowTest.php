@@ -455,4 +455,90 @@ class RegistrationFlowTest extends TestCase
             ->call('checkout')
             ->assertHasErrors('kids.0.birthdate');
     }
+
+    public function test_a_child_slot_can_be_removed_and_frees_its_seat(): void
+    {
+        $instance = $this->courseInstance();
+        [$registration, $token] = $this->startBooking($instance, 3);
+        $this->assertSame(2, $instance->freeSeats());
+
+        $form = Livewire::test(BookingForm::class, ['token' => $token])
+            ->assertSeeHtml('aria-label="Kind 3 entfernen"')
+            ->set('kids.0.name', 'Paul')
+            ->set('kids.0.birthdate', now()->subYears(9)->toDateString())
+            ->set('kids.2.name', 'Lena')
+            ->set('kids.2.birthdate', now()->subYears(11)->toDateString())
+            ->call('removeKid', 1)
+            ->assertHasNoErrors()
+            ->assertCount('kids', 2)
+            ->assertSet('kids.0.name', 'Paul')
+            ->assertSet('kids.1.name', 'Lena');
+
+        $this->assertSame(3, $instance->freeSeats());
+        $this->assertSame(1, $registration->enrollments()->where('status', EnrollmentStatus::Cancelled)->count());
+
+        $form->set('name', 'Maria Muster')
+            ->set('email', 'maria@example.com')
+            ->set('phone', '0911 123456')
+            ->set('acceptsPrivacy', true)
+            ->call('checkout')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('homepage.booking.done'));
+
+        $this->assertEqualsCanonicalizing(['Paul', 'Lena'], $registration->enrollments()->where('status', EnrollmentStatus::Pending)->pluck('kid_name')->all());
+    }
+
+    public function test_the_last_child_slot_cannot_be_removed(): void
+    {
+        [$registration, $token] = $this->startBooking($this->courseInstance());
+
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->assertDontSeeHtml('aria-label="Kind 1 entfernen"')
+            ->call('removeKid', 0)
+            ->assertHasErrors('booking')
+            ->assertCount('kids', 1);
+
+        $this->assertSame(EnrollmentStatus::Held, $registration->enrollments()->first()->status);
+    }
+
+    public function test_removing_a_sibling_drops_the_approval_when_all_fit_now(): void
+    {
+        $instance = $this->courseInstance(capacity: 2);
+        [$registration, $token] = $this->startBooking($instance, 3);
+        $this->assertTrue($registration->needs_approval);
+
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->call('removeKid', 2)
+            ->assertHasNoErrors()
+            ->assertCount('kids', 2)
+            ->assertDontSee('Freigabe nötig');
+
+        $this->assertFalse($registration->fresh()->needs_approval);
+    }
+
+    public function test_removing_a_child_from_a_waitlist_booking_keeps_the_others_waiting(): void
+    {
+        $instance = $this->courseInstance(capacity: 1);
+        $this->startBooking($instance);
+        [$registration, $token] = $this->startBooking($instance, 2);
+
+        Livewire::test(BookingForm::class, ['token' => $token])
+            ->call('removeKid', 0)
+            ->assertHasNoErrors()
+            ->assertCount('kids', 1);
+
+        $this->assertSame(1, $registration->enrollments()->where('status', EnrollmentStatus::Waitlisted)->count());
+        $this->assertSame(1, $registration->enrollments()->where('status', EnrollmentStatus::Cancelled)->count());
+    }
+
+    public function test_removing_a_child_after_the_time_ran_out_restarts_the_booking(): void
+    {
+        [$registration, $token] = $this->startBooking($this->courseInstance(), 2);
+        $form = Livewire::test(BookingForm::class, ['token' => $token]);
+
+        $this->travel(16)->minutes();
+
+        $form->call('removeKid', 1)->assertRedirect(route('homepage.booking.show', $token));
+        $this->assertSame(0, $registration->enrollments()->where('status', EnrollmentStatus::Cancelled)->count());
+    }
 }

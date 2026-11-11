@@ -126,6 +126,51 @@ class CourseReservationService
     }
 
     /**
+     * Frees one seat of a running booking, e.g. when fewer children come than first chosen.
+     * The last seat cannot be released this way; the whole booking is cancelled instead.
+     *
+     * @param  int  $index  position among the active seats, in the order of the child slots on the booking page
+     */
+    public function releaseHeldSeat(Registration $registration, int $index): void
+    {
+        $freedSeat = DB::transaction(function () use ($registration, $index): bool {
+            $registration = Registration::query()->with(['enrollments', 'courseInstance'])->lockForUpdate()->find($registration->id);
+
+            if ($registration === null || $registration->status !== RegistrationStatus::Held || ! $registration->expires_at?->isFuture()) {
+                throw new ReservationException('Deine Reservierung ist abgelaufen. Die Plätze wurden wieder freigegeben – bitte starte die Buchung neu.');
+            }
+
+            $activeEnrollments = $registration->enrollments->filter(fn (Enrollment $enrollment): bool => in_array($enrollment->status, [EnrollmentStatus::Held, EnrollmentStatus::Waitlisted], true))->values();
+
+            if ($activeEnrollments->count() <= 1) {
+                throw new ReservationException('Mindestens ein Kind muss angemeldet werden. Um die Buchung ganz zu beenden, klicke auf „Abbrechen“.');
+            }
+
+            $enrollment = $activeEnrollments->get($index);
+
+            if ($enrollment === null) {
+                throw new ReservationException('Dieser Platz gehört nicht mehr zur Buchung.');
+            }
+
+            $wasHeld = $enrollment->status === EnrollmentStatus::Held;
+
+            $enrollment->update(['status' => EnrollmentStatus::Cancelled, 'cancelled_at' => now(), 'expires_at' => null]);
+
+            // With fewer siblings all of them may fit now, then no approval is needed anymore.
+            if ($wasHeld && $registration->needs_approval) {
+                $instance = $registration->courseInstance;
+                $registration->update(['needs_approval' => $instance->takenSeats() > $instance->capacity]);
+            }
+
+            return $wasHeld;
+        });
+
+        if ($freedSeat) {
+            $this->promoteWaitlist($registration->courseInstance);
+        }
+    }
+
+    /**
      * Sends a running booking: stores contact and child details and starts the double opt-in.
      *
      * @param  array{email: string, name: string, phone: string, wants_interest_mails?: bool, message?: ?string}  $contactData

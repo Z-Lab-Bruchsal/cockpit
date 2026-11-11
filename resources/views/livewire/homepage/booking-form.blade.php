@@ -34,7 +34,12 @@
                 @foreach ($kids as $index => $kid)
                     <fieldset wire:key="kid-{{ $index }}" class="grid gap-3 rounded-xl bg-white p-4 sm:grid-cols-2">
                         <legend class="sr-only">Kind {{ $index + 1 }}</legend>
-                        <p class="text-sm font-semibold text-gray-700 sm:col-span-2">Kind {{ $index + 1 }}</p>
+                        <div class="flex items-center justify-between sm:col-span-2">
+                            <p class="text-sm font-semibold text-gray-700">Kind {{ $index + 1 }}</p>
+                            @if (count($kids) > 1)
+                                <button type="button" wire:click="removeKid({{ $index }})" wire:confirm="Platz für Kind {{ $index + 1 }} freigeben?" aria-label="Kind {{ $index + 1 }} entfernen" title="Kind entfernen" class="-mr-1 rounded-lg px-2 py-1 text-xl leading-none text-gray-400 hover:bg-red-50 hover:text-red-600">&times;</button>
+                            @endif
+                        </div>
 
                         @if ($this->ownKids->isNotEmpty())
                             <label class="flex flex-col gap-1 text-sm font-medium text-gray-700 sm:col-span-2">
