@@ -41,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('cockpit')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login(Login::class)
+            ->favicon(asset('favicon.ico'))
             ->spa()
             ->unsavedChangesAlerts()
             ->passwordReset()

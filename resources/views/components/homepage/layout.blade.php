@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle() }}</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     @if ($isPreview)
         <meta name="robots" content="noindex, nofollow">
     @endif
