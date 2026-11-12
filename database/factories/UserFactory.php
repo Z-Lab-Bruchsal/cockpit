@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\TeamArea;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -51,20 +50,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'oauth_subject' => fake()->uuid(),
-        ]);
-    }
-
-    /**
-     * A team member shown on the homepage.
-     */
-    public function teamMember(TeamArea $area = TeamArea::Jugendleitung): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'team_visible' => true,
-            'team_area' => $area,
-            'team_role' => fake()->jobTitle(),
-            'team_bio' => fake()->sentence(12),
-            'team_contactable' => true,
         ]);
     }
 }

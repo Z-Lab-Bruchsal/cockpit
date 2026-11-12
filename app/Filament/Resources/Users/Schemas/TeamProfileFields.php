@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Schemas;
 
 use App\Enums\TeamArea;
 use App\Filament\Resources\Sections\Schemas\ContentBlocks;
+use App\Models\TeamProfile;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -50,6 +51,7 @@ class TeamProfileFields
             Toggle::make('team_contactable')
                 ->label('Über die Homepage kontaktierbar')
                 ->helperText('Besucher können über ein Formular schreiben. Die E-Mail-Adresse bleibt verborgen.')
+                ->visible(fn (TeamProfile $record): bool => $record->user_id !== null)
                 ->default(true),
         ];
     }

@@ -12,6 +12,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
@@ -36,12 +37,13 @@ class UsersTable
                 TextColumn::make('roles.name')
                     ->label('Rollen')
                     ->toggleable(),
-                IconColumn::make('team_visible')
+                IconColumn::make('teamProfile.team_visible')
                     ->label('Homepage')
+                    ->default(false)
                     ->boolean()
                     ->hiddenOn(UsersRelationManager::class)
                     ->toggleable(),
-                TextColumn::make('team_area')
+                TextColumn::make('teamProfile.team_area')
                     ->label('Teambereich')
                     ->hiddenOn(UsersRelationManager::class)
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -58,7 +60,11 @@ class UsersTable
             ])
             ->filters([
                 TernaryFilter::make('team_visible')
-                    ->label('Auf der Homepage'),
+                    ->label('Auf der Homepage')
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereHas('teamProfile', fn (Builder $query): Builder => $query->where('team_visible', true)),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('teamProfile', fn (Builder $query): Builder => $query->where('team_visible', true)),
+                    ),
             ])
             ->recordActions([
                 ViewAction::make(),
