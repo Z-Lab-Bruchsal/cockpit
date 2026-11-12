@@ -3,6 +3,7 @@
 namespace Tests\Feature\Homepage;
 
 use App\Mail\TeamContactMail;
+use App\Models\TeamProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -34,7 +35,7 @@ class TeamContactTest extends TestCase
 
     public function test_message_is_forwarded_to_the_team_member_with_reply_to_sender(): void
     {
-        $member = User::factory()->teamMember()->create(['email' => 'team@example.com']);
+        $member = TeamProfile::factory()->for(User::factory()->state(['email' => 'team@example.com']))->create()->user;
 
         $this->from('/ueber-uns')
             ->post(route('homepage.team.contact', $member), $this->validPayload())
@@ -59,8 +60,8 @@ class TeamContactTest extends TestCase
 
     public function test_hidden_or_not_contactable_members_cannot_be_contacted(): void
     {
-        $hidden = User::factory()->teamMember()->create(['team_visible' => false]);
-        $notContactable = User::factory()->teamMember()->create(['team_contactable' => false]);
+        $hidden = TeamProfile::factory()->for(User::factory())->create(['team_visible' => false])->user;
+        $notContactable = TeamProfile::factory()->for(User::factory())->create(['team_contactable' => false])->user;
         $noTeamMember = User::factory()->create();
 
         foreach ([$hidden, $notContactable, $noTeamMember] as $user) {
@@ -72,7 +73,7 @@ class TeamContactTest extends TestCase
 
     public function test_validation_errors_use_their_own_bag(): void
     {
-        $member = User::factory()->teamMember()->create();
+        $member = TeamProfile::factory()->for(User::factory())->create()->user;
 
         $this->from('/ueber-uns')
             ->post(route('homepage.team.contact', $member), $this->validPayload([
@@ -88,7 +89,7 @@ class TeamContactTest extends TestCase
 
     public function test_honeypot_blocks_bots(): void
     {
-        $member = User::factory()->teamMember()->create();
+        $member = TeamProfile::factory()->for(User::factory())->create()->user;
 
         $this->post(route('homepage.team.contact', $member), $this->validPayload(['website' => 'http://spam.example']))
             ->assertSessionHasErrors(['website'], null, 'teamContact');

@@ -4,15 +4,18 @@
         ->filter()
         ->values();
 
-    $membersByArea = \App\Models\User::query()
-        ->teamMembers()
+    $membersByArea = \App\Models\TeamProfile::query()
+        ->where('team_visible', true)
+        ->whereNotNull('team_area')
         ->when($areas->isNotEmpty(), fn ($query) => $query->whereIn('team_area', $areas->map->value->all()))
         ->with([
             'interests' => fn ($query) => $query->active(),
-            'responsibleCourses' => fn ($query) => $query->forHomepage(),
+            'user.responsibleCourses' => fn ($query) => $query->forHomepage(),
         ])
         ->get()
-        ->groupBy(fn (\App\Models\User $member): string => $member->team_area->value);
+        ->sort(fn (\App\Models\TeamProfile $left, \App\Models\TeamProfile $right): int => ($left->team_sort <=> $right->team_sort)
+            ?: strcasecmp($left->displayName(), $right->displayName()))
+        ->groupBy(fn (\App\Models\TeamProfile $member): string => $member->team_area->value);
 
     $showHeadings = $data['show_area_headings'] ?? true;
     $privacySection = \App\Models\Section::query()->where('slug', 'datenschutz')->where('is_visible', true)->first();

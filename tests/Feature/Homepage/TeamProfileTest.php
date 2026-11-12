@@ -5,9 +5,11 @@ namespace Tests\Feature\Homepage;
 use App\Enums\TeamArea;
 use App\Filament\Pages\TeamPage;
 use App\Models\Interest;
+use App\Models\TeamProfile;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -32,6 +34,31 @@ class TeamProfileTest extends TestCase
         return $admin;
     }
 
+    public function test_existing_team_profiles_are_migrated_with_their_photos_and_interests(): void
+    {
+        $user = User::factory()->create(['name' => 'Paula Beispiel']);
+        $interest = Interest::factory()->create();
+
+        DB::table('users')->where('id', $user->id)->update([
+            'team_area' => TeamArea::Freiwilligendienst->value,
+            'team_visible' => true,
+            'team_photo_path' => 'team/paula.webp',
+            'team_sort' => 4,
+        ]);
+        DB::table('interest_user')->insert(['user_id' => $user->id, 'interest_id' => $interest->id]);
+
+        $migration = require database_path('migrations/2026_11_12_163001_copy_existing_team_profiles.php');
+        $migration->up();
+
+        $profile = $user->teamProfile()->firstOrFail();
+        $this->assertSame('Paula Beispiel', $profile->displayName());
+        $this->assertSame(TeamArea::Freiwilligendienst, $profile->team_area);
+        $this->assertTrue($profile->team_visible);
+        $this->assertSame('team/paula.webp', $profile->team_photo_path);
+        $this->assertSame(4, $profile->team_sort);
+        $this->assertTrue($profile->interests->contains($interest));
+    }
+
     public function test_team_page_requires_permission(): void
     {
         $this->actingAs(User::factory()->create());
@@ -42,21 +69,21 @@ class TeamProfileTest extends TestCase
     public function test_team_page_lists_only_team_members(): void
     {
         $this->actingAsTeamManager();
-        $member = User::factory()->teamMember()->create();
-        $hiddenMember = User::factory()->teamMember()->create(['team_visible' => false]);
-        $otherUser = User::factory()->create();
+        $member = TeamProfile::factory()->create();
+        $hiddenMember = TeamProfile::factory()->create(['team_visible' => false]);
+        $removedProfile = TeamProfile::factory()->create(['team_area' => null]);
 
         $this->get(TeamPage::getUrl())->assertOk();
 
         Livewire::test(TeamPage::class)
             ->assertCanSeeTableRecords([$member, $hiddenMember])
-            ->assertCanNotSeeTableRecords([$otherUser]);
+            ->assertCanNotSeeTableRecords([$removedProfile]);
     }
 
     public function test_user_can_be_added_to_the_team(): void
     {
         $this->actingAsTeamManager();
-        User::factory()->teamMember()->create(['team_sort' => 4]);
+        TeamProfile::factory()->create(['team_sort' => 4]);
         $user = User::factory()->create();
 
         Livewire::test(TeamPage::class)
@@ -64,10 +91,37 @@ class TeamProfileTest extends TestCase
             ->assertHasNoActionErrors()
             ->assertNotified();
 
-        $user->refresh();
-        $this->assertSame(TeamArea::Ehrenamt, $user->team_area);
-        $this->assertFalse($user->team_visible);
-        $this->assertSame(5, $user->team_sort);
+        $profile = $user->teamProfile()->firstOrFail();
+        $this->assertSame(TeamArea::Ehrenamt, $profile->team_area);
+        $this->assertFalse($profile->team_visible);
+        $this->assertSame(5, $profile->team_sort);
+    }
+
+    public function test_standalone_profile_can_be_created_without_an_account(): void
+    {
+        $this->actingAsTeamManager();
+
+        Livewire::test(TeamPage::class)
+            ->callAction(TestAction::make('addStandaloneProfile')->table(), [
+                'name' => 'Paula Beispiel',
+                'team_area' => TeamArea::Freiwilligendienst->value,
+            ])
+            ->assertHasNoActionErrors();
+
+        $profile = TeamProfile::query()->where('name', 'Paula Beispiel')->firstOrFail();
+        $this->assertNull($profile->user_id);
+        $this->assertFalse($profile->team_visible);
+        $this->assertSame(TeamArea::Freiwilligendienst, $profile->team_area);
+
+        Livewire::test(TeamPage::class)
+            ->callAction(TestAction::make('edit')->table($profile), [
+                'name' => 'Paula Beispiel',
+                'team_visible' => true,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertTrue($profile->refresh()->team_visible);
+        $this->assertFalse($profile->isContactableViaHomepage());
     }
 
     public function test_adding_requires_an_area(): void
@@ -83,7 +137,7 @@ class TeamProfileTest extends TestCase
     public function test_team_profile_can_be_edited(): void
     {
         $this->actingAsTeamManager();
-        $member = User::factory()->teamMember()->create(['team_visible' => false]);
+        $member = TeamProfile::factory()->for(User::factory())->create(['team_visible' => false]);
         $interest = Interest::factory()->create();
 
         Livewire::test(TeamPage::class)
@@ -109,8 +163,8 @@ class TeamProfileTest extends TestCase
     public function test_team_members_can_be_reordered(): void
     {
         $this->actingAsTeamManager();
-        $first = User::factory()->teamMember()->create(['team_sort' => 1]);
-        $second = User::factory()->teamMember()->create(['team_sort' => 2]);
+        $first = TeamProfile::factory()->create(['team_sort' => 1]);
+        $second = TeamProfile::factory()->create(['team_sort' => 2]);
 
         Livewire::test(TeamPage::class)
             ->call('reorderTable', [$second->getKey(), $first->getKey()]);
@@ -122,7 +176,7 @@ class TeamProfileTest extends TestCase
     public function test_member_can_be_removed_from_the_team_and_keeps_the_profile(): void
     {
         $this->actingAsTeamManager();
-        $member = User::factory()->teamMember()->create(['team_role' => 'Jugendleiterin']);
+        $member = TeamProfile::factory()->for(User::factory())->create(['team_role' => 'Jugendleiterin']);
 
         Livewire::test(TeamPage::class)
             ->callAction(TestAction::make('removeFromTeam')->table($member));

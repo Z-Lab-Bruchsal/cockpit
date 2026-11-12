@@ -17,7 +17,7 @@ class TeamContactController extends Controller
      */
     public function send(Request $request, User $member): RedirectResponse
     {
-        abort_unless($member->isContactableViaHomepage(), 404);
+        abort_unless($member->teamProfile?->isContactableViaHomepage(), 404);
 
         $validated = $request->validateWithBag('teamContact', [
             'name' => ['required', 'string', 'max:255'],

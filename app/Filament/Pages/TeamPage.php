@@ -4,11 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Enums\TeamArea;
 use App\Filament\Resources\Users\Schemas\TeamProfileFields;
+use App\Models\TeamProfile;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
@@ -60,7 +62,7 @@ class TeamPage extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => static::orderByTeamArea(User::query()->whereNotNull('team_area')))
+            ->query(fn (): Builder => static::orderByTeamArea(TeamProfile::query()->with('user')->whereNotNull('team_area')))
             ->description('Reihenfolge per „Sortieren“ ändern – innerhalb eines Teambereichs. So erscheint das Team im Homepage-Block „Team“.')
             ->reorderable('team_sort')
             ->defaultSort('team_sort')
@@ -68,7 +70,7 @@ class TeamPage extends Page implements HasTable
             ->defaultGroup(
                 Group::make('team_area')
                     ->label('Teambereich')
-                    ->getTitleFromRecordUsing(fn (User $record): string => $record->team_area?->getLabel() ?? '')
+                    ->getTitleFromRecordUsing(fn (TeamProfile $record): string => $record->team_area?->getLabel() ?? '')
                     ->orderQueryUsing(fn (Builder $query): Builder => static::orderByTeamArea($query))
                     ->titlePrefixedWithLabel(false),
             )
@@ -81,8 +83,12 @@ class TeamPage extends Page implements HasTable
                     ->circular(),
                 TextColumn::make('name')
                     ->label('Name')
-                    ->description(fn (User $record): ?string => $record->team_role)
-                    ->searchable(),
+                    ->state(fn (TeamProfile $record): string => $record->displayName())
+                    ->description(fn (TeamProfile $record): ?string => $record->team_role)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                        ->where(fn (Builder $query): Builder => $query
+                            ->whereLike('name', '%'.$search.'%')
+                            ->orWhereHas('user', fn (Builder $query): Builder => $query->whereLike('name', '%'.$search.'%')))),
                 TextColumn::make('team_area')
                     ->label('Teambereich')
                     ->badge(),
@@ -96,49 +102,97 @@ class TeamPage extends Page implements HasTable
             ])
             ->headerActions([
                 Action::make('addMember')
-                    ->label('Person hinzufügen')
+                    ->label('Benutzer hinzufügen')
                     ->icon(Heroicon::OutlinedUserPlus)
                     ->schema([
                         Select::make('user_id')
                             ->label('Benutzer')
-                            ->options(fn (): array => User::query()->whereNull('team_area')->orderBy('name')->pluck('name', 'id')->all())
+                            ->options(fn (): array => User::query()
+                                ->whereDoesntHave('teamProfile', fn (Builder $query): Builder => $query->whereNotNull('team_area'))
+                                ->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()
                             ->required(),
                         TeamProfileFields::area(),
                     ])
                     ->modalDescription('Die Person erscheint erst auf der Homepage, wenn „Auf der Homepage“ eingeschaltet ist.')
                     ->action(function (array $data): void {
-                        $member = User::query()->whereNull('team_area')->findOrFail($data['user_id']);
-                        $member->update([
+                        $user = User::query()->findOrFail($data['user_id']);
+                        $profile = $user->teamProfile()->firstOrNew();
+                        abort_if($profile->team_area !== null, 409);
+
+                        $profile->fill([
                             'team_area' => $data['team_area'],
                             'team_visible' => false,
-                            'team_sort' => ((int) User::query()->whereNotNull('team_area')->max('team_sort')) + 1,
+                            'team_sort' => static::nextTeamSort(),
+                        ])->save();
+
+                        Notification::make()->success()->title($user->name.' ist jetzt im Team')->send();
+                    }),
+                Action::make('addStandaloneProfile')
+                    ->label('Profil ohne Benutzerkonto hinzufügen')
+                    ->icon(Heroicon::OutlinedUserPlus)
+                    ->schema([
+                        TextInput::make('name')->label('Name')->required()->maxLength(255),
+                        TeamProfileFields::area(),
+                    ])
+                    ->action(function (array $data): void {
+                        $profile = TeamProfile::query()->create([
+                            'name' => $data['name'],
+                            'team_area' => $data['team_area'],
+                            'team_visible' => false,
+                            'team_contactable' => false,
+                            'team_sort' => static::nextTeamSort(),
                         ]);
 
-                        Notification::make()->success()->title($member->name.' ist jetzt im Team')->send();
+                        Notification::make()->success()->title($profile->displayName().' ist jetzt im Team')->send();
                     }),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->schema(TeamProfileFields::schema())
-                    ->modalHeading(fn (User $record): string => 'Teamprofil: '.$record->name)
+                    ->schema([
+                        TextInput::make('name')->label('Name')->required()->maxLength(255)
+                            ->visible(fn (TeamProfile $record): bool => $record->user_id === null),
+                        ...TeamProfileFields::schema(),
+                    ])
+                    ->modalHeading(fn (TeamProfile $record): string => 'Teamprofil: '.$record->displayName())
                     ->modalWidth('3xl'),
                 Action::make('removeFromTeam')
                     ->label('Aus dem Team nehmen')
                     ->icon(Heroicon::OutlinedUserMinus)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalDescription('Die Person verschwindet von der Homepage. Foto und Texte bleiben gespeichert, falls sie wieder hinzugefügt wird.')
-                    ->action(fn (User $record) => $record->update(['team_area' => null, 'team_visible' => false])),
+                    ->modalDescription('Die Person verschwindet von der Homepage. Das Profil bleibt gespeichert.')
+                    ->visible(fn (TeamProfile $record): bool => $record->user_id !== null)
+                    ->action(function (TeamProfile $record): void {
+                        abort_if($record->user_id === null, 403);
+
+                        $record->update(['team_area' => null, 'team_visible' => false]);
+                    }),
+                Action::make('deleteStandaloneProfile')
+                    ->label('Profil löschen')
+                    ->icon(Heroicon::OutlinedTrash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (TeamProfile $record): bool => $record->user_id === null)
+                    ->action(function (TeamProfile $record): void {
+                        abort_unless($record->user_id === null, 403);
+
+                        $record->delete();
+                    }),
             ]);
+    }
+
+    protected static function nextTeamSort(): int
+    {
+        return (int) TeamProfile::query()->whereNotNull('team_area')->max('team_sort') + 1;
     }
 
     /**
      * Sorts by the order of the team areas as defined in {@see TeamArea}, the same order as on the homepage.
      * The values are inlined instead of bound, because the reorder update reuses this query.
      *
-     * @param  Builder<User>  $query
-     * @return Builder<User>
+     * @param  Builder<TeamProfile>  $query
+     * @return Builder<TeamProfile>
      */
     protected static function orderByTeamArea(Builder $query): Builder
     {
